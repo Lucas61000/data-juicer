@@ -407,6 +407,10 @@
     <span class="s2">&quot;*_core_web_md-3.*.0&quot;</span><span class="p">:</span> <span class="s2">&quot;https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/&quot;</span> <span class="s2">&quot;data_juicer/models/&quot;</span><span class="p">,</span>
     <span class="c1"># YOLO</span>
     <span class="s2">&quot;yolo11n.pt&quot;</span><span class="p">:</span> <span class="s2">&quot;https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt&quot;</span><span class="p">,</span>
+    <span class="c1"># WiLoR</span>
+    <span class="s2">&quot;wilor_model_path&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/spaces/rolpotamias/WiLoR/resolve/main/pretrained_models/wilor_final.ckpt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wilor_model_config&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/rolpotamias/WiLoR/refs/heads/main/pretrained_models/model_config.yaml&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wilor_detector_model_path&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/spaces/rolpotamias/WiLoR/resolve/main/pretrained_models/detector.pt&quot;</span><span class="p">,</span>
     <span class="c1"># DWPose</span>
     <span class="s2">&quot;dwpose_onnx_det_model&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx&quot;</span><span class="p">,</span>
     <span class="s2">&quot;dwpose_onnx_pose_model&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/yzd-v/DWPose/resolve/main/dw-ll_ucoco_384.onnx&quot;</span><span class="p">,</span>
@@ -1379,6 +1383,82 @@
 
 
 
+<div class="viewcode-block" id="prepare_wilor_model">
+<a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_wilor_model">[文档]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_wilor_model</span><span class="p">(</span><span class="n">wilor_model_path</span><span class="p">,</span> <span class="n">wilor_model_config</span><span class="p">,</span> <span class="n">detector_model_path</span><span class="p">,</span> <span class="n">mano_right_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;device&quot;</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+    <span class="n">wilor_DJMC_model_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DJMC</span><span class="p">,</span> <span class="s2">&quot;WiLoR&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">mano_right_path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Users need to download &#39;MANO_RIGHT.pkl&#39; from https://mano.is.tue.mpg.de/ and comply with the MANO license.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.cache_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_JUICER_ASSETS_CACHE</span>
+
+    <span class="n">wilor_repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_JUICER_ASSETS_CACHE</span><span class="p">,</span> <span class="s2">&quot;WiLoR&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">wilor_repo_path</span><span class="p">):</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;clone&quot;</span><span class="p">,</span> <span class="s2">&quot;https://github.com/rolpotamias/WiLoR.git&quot;</span><span class="p">,</span> <span class="n">wilor_repo_path</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wilor_repo_path</span><span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">wilor.configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_config</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">wilor.models.wilor</span><span class="w"> </span><span class="kn">import</span> <span class="n">WiLoR</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">wilor.utils.renderer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Renderer</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_model_path</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="n">default_filename</span><span class="p">,</span> <span class="n">download_key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">model_path</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">DJMC</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">DJMC</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">wilor_DJMC_model_path</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">wilor_DJMC_model_path</span><span class="p">)</span>
+            <span class="n">model_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wilor_DJMC_model_path</span><span class="p">,</span> <span class="n">default_filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">model_path</span><span class="p">):</span>
+                <span class="n">wget</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">BACKUP_MODEL_LINKS</span><span class="p">[</span><span class="n">download_key</span><span class="p">],</span> <span class="n">wilor_DJMC_model_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model_path</span>
+
+    <span class="n">wilor_model_path</span> <span class="o">=</span> <span class="n">_get_model_path</span><span class="p">(</span><span class="n">wilor_model_path</span><span class="p">,</span> <span class="s2">&quot;wilor_final.ckpt&quot;</span><span class="p">,</span> <span class="s2">&quot;wilor_model_path&quot;</span><span class="p">)</span>
+    <span class="n">wilor_model_config</span> <span class="o">=</span> <span class="n">_get_model_path</span><span class="p">(</span><span class="n">wilor_model_config</span><span class="p">,</span> <span class="s2">&quot;model_config.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;wilor_model_config&quot;</span><span class="p">)</span>
+    <span class="n">detector_model_path</span> <span class="o">=</span> <span class="n">_get_model_path</span><span class="p">(</span><span class="n">detector_model_path</span><span class="p">,</span> <span class="s2">&quot;detector.pt&quot;</span><span class="p">,</span> <span class="s2">&quot;wilor_detector_model_path&quot;</span><span class="p">)</span>
+
+    <span class="n">model_cfg</span> <span class="o">=</span> <span class="n">get_config</span><span class="p">(</span><span class="n">wilor_model_config</span><span class="p">,</span> <span class="n">update_cachedir</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># Override some config values, to crop bbox correctly</span>
+    <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;vit&quot;</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">BACKBONE</span><span class="o">.</span><span class="n">TYPE</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;BBOX_SHAPE&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="p">):</span>
+
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">defrost</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">IMAGE_SIZE</span> <span class="o">==</span> <span class="mi">256</span>
+        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;MODEL.IMAGE_SIZE (</span><span class="si">{</span><span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">IMAGE_SIZE</span><span class="si">}</span><span class="s2">) should be 256 for ViT backbone&quot;</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">BBOX_SHAPE</span> <span class="o">=</span> <span class="p">[</span><span class="mi">192</span><span class="p">,</span> <span class="mi">256</span><span class="p">]</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+
+    <span class="c1"># Update config to be compatible with demo</span>
+    <span class="k">if</span> <span class="s2">&quot;PRETRAINED_WEIGHTS&quot;</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">BACKBONE</span><span class="p">:</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">defrost</span><span class="p">()</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">BACKBONE</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;PRETRAINED_WEIGHTS&quot;</span><span class="p">)</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+
+        <span class="c1"># Update config to be compatible with demo</span>
+    <span class="k">if</span> <span class="s2">&quot;DATA_DIR&quot;</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">MANO</span><span class="p">:</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">defrost</span><span class="p">()</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MANO</span><span class="o">.</span><span class="n">DATA_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wilor_repo_path</span><span class="p">,</span> <span class="s2">&quot;mano_data/&quot;</span><span class="p">)</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MANO</span><span class="o">.</span><span class="n">MODEL_PATH</span> <span class="o">=</span> <span class="n">mano_right_path</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MANO</span><span class="o">.</span><span class="n">MEAN_PARAMS</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wilor_repo_path</span><span class="p">,</span> <span class="s2">&quot;mano_data/mano_mean_params.npz&quot;</span><span class="p">)</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">WiLoR</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">wilor_model_path</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">model_cfg</span><span class="p">)</span>
+    <span class="n">detector</span> <span class="o">=</span> <span class="n">ultralytics</span><span class="o">.</span><span class="n">YOLO</span><span class="p">(</span><span class="n">detector_model_path</span><span class="p">)</span>
+    <span class="n">renderer</span> <span class="o">=</span> <span class="n">Renderer</span><span class="p">(</span><span class="n">model_cfg</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">mano</span><span class="o">.</span><span class="n">faces</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">detector</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">detector</span><span class="p">,</span> <span class="n">model_cfg</span><span class="p">,</span> <span class="n">renderer</span></div>
+
+
+
 <div class="viewcode-block" id="prepare_embedding_model">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_embedding_model">[文档]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_embedding_model</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
@@ -1520,6 +1600,7 @@
     <span class="s2">&quot;vggt&quot;</span><span class="p">:</span> <span class="n">prepare_vggt_model</span><span class="p">,</span>
     <span class="s2">&quot;video_blip&quot;</span><span class="p">:</span> <span class="n">prepare_video_blip_model</span><span class="p">,</span>
     <span class="s2">&quot;vllm&quot;</span><span class="p">:</span> <span class="n">prepare_vllm_model</span><span class="p">,</span>
+    <span class="s2">&quot;wilor&quot;</span><span class="p">:</span> <span class="n">prepare_wilor_model</span><span class="p">,</span>
     <span class="s2">&quot;yolo&quot;</span><span class="p">:</span> <span class="n">prepare_yolo_model</span><span class="p">,</span>
     <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="n">prepare_embedding_model</span><span class="p">,</span>
 <span class="p">}</span>
