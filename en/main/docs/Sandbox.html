@@ -224,10 +224,10 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">hub</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="hub/RecipeGallery.html">Data Recipe Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hub/AlpacaCOT.html">Refine Alpaca-CoT Config Files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hub/AnnotationNotificationSystem.html">Notification System</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hub/BLOOM.html">BLOOM Config Files</a></li>
-<li class="toctree-l1"><a class="reference internal" href="hub/RecipeGallery.html">Data Recipe Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hub/RedPajama.html">Redpajama Config Files</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">tools</span></p>
@@ -239,13 +239,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../tools/fmt_conversion/README.html">Format Conversion Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tools/fmt_conversion/multimodal/README.html">Multimodal Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tools/fmt_conversion/post_tuning_dialog/README.html">Post Tuning Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tools/hpo/README.html">Hyper-parameter Optimization for Data Recipe</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tools/humanops/README.html">Label Studio Service Utility</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tools/mm_eval/inception_metrics/README.html">Metrics for video generation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tools/mm_eval/vbench_metrics/README.html">VBench metrics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tools/postprocess/README.html">Postprocess tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tools/preprocess/README.html">Preprocess Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tools/quality_classifier/README.html">Data Scoring</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">thirdparty</span></p>
 <ul>
@@ -429,15 +427,17 @@
 </tbody>
 </table>
 </div>
-<p>To reproduce the paper’s experiments, please refer to the sandbox usage guide below, the experimental process in the following figure, the <a class="reference external" href="http://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/MM_data/our_refined_data/Data-Juicer-T2V/data_juicer_t2v_init_data_pool.zip">initial dataset</a>, and the configuration file demos for the process: <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/configs/data_juicer_recipes/sandbox/easyanimate_text_to_video/1_single_op_pipeline.yaml">1_single_op_pipeline.yaml</a>, <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/configs/data_juicer_recipes/sandbox/easyanimate_text_to_video/2_multi_op_pipeline.yaml">2_multi_op_pipeline.yaml</a>, <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/configs/data_juicer_recipes/sandbox/easyanimate_text_to_video/3_duplicate_pipeline.yaml">3_duplicate_pipeline.yaml</a>.
+<p>To reproduce the paper’s experiments, please refer to the sandbox usage guide below, the experimental process in the following figure, the <a class="reference external" href="http://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/MM_data/our_refined_data/Data-Juicer-T2V/data_juicer_t2v_init_data_pool.zip">initial dataset</a>, and the configuration file demos for the process: <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/tree/main/configs/easyanimate_text_to_video/1_single_op_pipeline.yaml">1_single_op_pipeline.yaml</a>, <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/tree/main/configs/easyanimate_text_to_video/2_multi_op_pipeline.yaml">2_multi_op_pipeline.yaml</a>, <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/tree/main/configs/easyanimate_text_to_video/3_duplicate_pipeline.yaml">3_duplicate_pipeline.yaml</a>.
 <img alt="bench_bottom_up" src="https://img.alicdn.com/imgextra/i2/O1CN01xvu2fo1HU80biR6Q5_!!6000000000760-2-tps-7756-3693.png" /></p>
 </section>
 <section id="quick-start">
 <h3>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h3>
 <section id="requirements">
 <h4>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">¶</a></h4>
-<p>Before using sandbox, you might need to install sandbox-related dependencies by running the command below:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>sandbox<span class="o">]</span>
+<p>Before using sandbox, you need to install data-juicer-sandbox by running the command below:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/datajuicer/data-juicer-sandbox.git
+<span class="nb">cd</span><span class="w"> </span>data-juicer-sandbox/
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[all]&quot;</span>
 </pre></div>
 </div>
 <p>And prepare third-party libraries used in sandbox (e.g., EasyAnimate, VBench, InternVL, etc.) according to their official instructions, or you can simply clone the third-party repositories from GitHub and leave the installation process to our <code class="docutils literal notranslate"><span class="pre">EnvManager</span></code> during sandbox running.</p>
@@ -461,7 +461,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </section>
 <section id="prepare-configuration-files-for-sandbox">
 <h4>Prepare Configuration Files for Sandbox<a class="headerlink" href="#prepare-configuration-files-for-sandbox" title="Link to this heading">¶</a></h4>
-<p>The sandbox will sequentially execute four types of jobs: Data/Model Probe (<code class="docutils literal notranslate"><span class="pre">probe_job_configs</span></code>), Iterative Recipe Refinement based on Probe Results(<code class="docutils literal notranslate"><span class="pre">refine_recipe_job_configs</span></code>), Dataset Processing and Model Training (<code class="docutils literal notranslate"><span class="pre">execution_job_configs</span></code>) and Data/Model Evaluation (<code class="docutils literal notranslate"><span class="pre">evaluation_job_configs</span></code>). Within each category of jobs, jobs are carried out in the order specified by the configured job list. Each task requires specifying: the hook for mounting this job (<code class="docutils literal notranslate"><span class="pre">hook</span></code>), the tag name for identifying the hook (<code class="docutils literal notranslate"><span class="pre">meta_name</span></code>), Data-Juicer data processing parameters (<code class="docutils literal notranslate"><span class="pre">dj_configs</span></code>), as well as other specific parameters for the job (<code class="docutils literal notranslate"><span class="pre">extra_configs</span></code>). Among these parameters, hook is required, while others may be left empty. dj_configs can refer to the full Data-Juicer data processing parameters available in <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/configs/config_all.yaml">config_all.yaml</a>. The <code class="docutils literal notranslate"><span class="pre">extra_configs</span></code> are task-specific parameters without restrictions. They can include parameters for model training, inference, evaluation, etc. For example, <code class="docutils literal notranslate"><span class="pre">path_k_sigma_recipe</span></code> can be used to specify the path for saving the data recipe refined using the k-sigma method. An example of a sandbox configuration file can be found at <code class="docutils literal notranslate"><span class="pre">configs/demo/sandbox/sandbox.yaml</span></code>:</p>
+<p>The sandbox will sequentially execute four types of jobs: Data/Model Probe (<code class="docutils literal notranslate"><span class="pre">probe_job_configs</span></code>), Iterative Recipe Refinement based on Probe Results(<code class="docutils literal notranslate"><span class="pre">refine_recipe_job_configs</span></code>), Dataset Processing and Model Training (<code class="docutils literal notranslate"><span class="pre">execution_job_configs</span></code>) and Data/Model Evaluation (<code class="docutils literal notranslate"><span class="pre">evaluation_job_configs</span></code>). Within each category of jobs, jobs are carried out in the order specified by the configured job list. Each task requires specifying: the hook for mounting this job (<code class="docutils literal notranslate"><span class="pre">hook</span></code>), the tag name for identifying the hook (<code class="docutils literal notranslate"><span class="pre">meta_name</span></code>), Data-Juicer data processing parameters (<code class="docutils literal notranslate"><span class="pre">dj_configs</span></code>), as well as other specific parameters for the job (<code class="docutils literal notranslate"><span class="pre">extra_configs</span></code>). Among these parameters, hook is required, while others may be left empty. dj_configs can refer to the full Data-Juicer data processing parameters available in <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/data_juicer/config/config_all.yaml">config_all.yaml</a>. The <code class="docutils literal notranslate"><span class="pre">extra_configs</span></code> are task-specific parameters without restrictions. They can include parameters for model training, inference, evaluation, etc. For example, <code class="docutils literal notranslate"><span class="pre">path_k_sigma_recipe</span></code> can be used to specify the path for saving the data recipe refined using the k-sigma method. An example of a sandbox configuration file can be found at <code class="docutils literal notranslate"><span class="pre">configs/demo/sandbox/sandbox.yaml</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sandbox config example</span>
 
 <span class="c1"># global parameters</span>
@@ -491,7 +491,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">hook</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;TrainModelHook&#39;</span>
 <span class="w">    </span><span class="nt">meta_name</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">dj_configs</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">extra_configs</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;configs/demo/sandbox/gpt3_extra_train_config.json&#39;</span>
+<span class="w">    </span><span class="nt">extra_configs</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;configs/demo/gpt3_extra_train_config.json&#39;</span>
 
 <span class="nt">evaluation_job_configs</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">hook</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;ProbeViaAnalyzerHook&#39;</span>
@@ -501,7 +501,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">hook</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;EvaluateDataHook&#39;</span>
 <span class="w">    </span><span class="nt">meta_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;eval_data&#39;</span>
 <span class="w">    </span><span class="nt">dj_configs</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">extra_configs</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;configs/demo/sandbox/gpt3_data_quality_eval_config.yaml&#39;</span>
+<span class="w">    </span><span class="nt">extra_configs</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;configs/demo/gpt3_data_quality_eval_config.yaml&#39;</span>
 </pre></div>
 </div>
 <p>Based on this configuration file, sandbox:</p>
@@ -537,7 +537,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">xxx</span>
 </pre></div>
 </div>
-<p>In this example, there are 3 pipelines organized in the <code class="docutils literal notranslate"><span class="pre">pipelines</span></code> field, named <code class="docutils literal notranslate"><span class="pre">pipeline_1</span></code>, <code class="docutils literal notranslate"><span class="pre">pipeline_2</span></code>, and <code class="docutils literal notranslate"><span class="pre">pipeline_3</span></code>. Each of them has their own different types of jobs. You can find a practical example of such config file for InternVL sandbox experiments in <code class="docutils literal notranslate"><span class="pre">configs/data_juicer_recipes/sandbox/internvl_coco_caption/sandbox_internvl_coco_caption.yaml</span></code>.</p>
+<p>In this example, there are 3 pipelines organized in the <code class="docutils literal notranslate"><span class="pre">pipelines</span></code> field, named <code class="docutils literal notranslate"><span class="pre">pipeline_1</span></code>, <code class="docutils literal notranslate"><span class="pre">pipeline_2</span></code>, and <code class="docutils literal notranslate"><span class="pre">pipeline_3</span></code>. Each of them has their own different types of jobs. You can find a practical example of such config file for InternVL sandbox experiments <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/blob/main/configs/internvl_coco_caption/sandbox_internvl_coco_caption.yaml">here</a>.</p>
 <p>For the single-pipeline format, the only pipeline is named “anonymous” in default.</p>
 <blockquote>
 <div><p>[!Important]</p>
@@ -546,8 +546,9 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </section>
 <section id="start-sandbox">
 <h4>Start Sandbox<a class="headerlink" href="#start-sandbox" title="Link to this heading">¶</a></h4>
-<p>The entry point for running the sandbox is <code class="docutils literal notranslate"><span class="pre">tools/sandbox_starter.py</span></code>. The usage is similar to the data processing and analysis tool, requiring specifying the sandbox configuration file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">python tools/sandbox_starter.py --config configs/demo/sandbox/sandbox.yaml</span>
+<p>The entry point for running the sandbox is <code class="docutils literal notranslate"><span class="pre">dj-sandbox</span></code>. The usage is similar to the data processing and analysis tool, requiring specifying the sandbox configuration file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># in data-juicer-sandbox</span>
+<span class="l l-Scalar l-Scalar-Plain">dj-sandbox --config configs/demo/sandbox.yaml</span>
 </pre></div>
 </div>
 <p>Once the run is started, the sandbox will sequentially execute each of the predefined pipeline steps according to the configuration file. The default one trial of the pipeline mainly includes four major steps:</p>
@@ -558,7 +559,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <li><p><strong>Data/Model Evaluation</strong>: This step evaluates the processed dataset and the model trained in the previous step (if applicable). The evaluation methods may include analysis of the processed dataset and specified benchmark evaluations based on the configuration.</p></li>
 </ol>
 <p>Once this completes one trial of the sandbox pipeline run, the user can validate the effectiveness of the experiment in data production by comparing the probes and evaluation results before and after recipe refinement and dataset processing.</p>
-<p>If the <code class="docutils literal notranslate"><span class="pre">hpo_config</span></code> is set in the configuration file and appropriate optimization objectives and OP hyperparameters to be refined are configured within it, the sandbox will perform multiple trials of pipeline runs in the form of Hyperparameter Optimization (HPO) and automatically conduct iterative refinement and optimization of the operator hyperparameters. The preparation of this configuration file can be referenced from the <a class="reference external" href="https://github.com/datajuicer/data-juicer/tree/main/tools/hpo">HPO tool</a>.</p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">hpo_config</span></code> is set in the configuration file and appropriate optimization objectives and OP hyperparameters to be refined are configured within it, the sandbox will perform multiple trials of pipeline runs in the form of Hyperparameter Optimization (HPO) and automatically conduct iterative refinement and optimization of the operator hyperparameters. The preparation of this configuration file can be referenced from the <a class="reference external" href="https://github.com/datajuicer/data-juicer/tree/main/data_juicer/tools/hpo">HPO tool</a>.</p>
 </section>
 </section>
 <section id="component-factory">
@@ -713,7 +714,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Gpt3QualityEvaluator</span></code></p></td>
 <td><p>Evaluate the quality of a dataset using the GPT-3 text quality classifier reproduced by Data-Juicer.</p></td>
 <td><p><br />- <code class="docutils literal notranslate"><span class="pre">eval_type</span></code>: The type of the object to be evaluated by the evaluator, currently only supports <code class="docutils literal notranslate"><span class="pre">&quot;data&quot;</span></code>.<br />- <code class="docutils literal notranslate"><span class="pre">eval_obj</span></code>: A useless parameter.<br /></p></td>
-<td><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/tree/main/tools/quality_classifier">Data-Juicer Quality Classifier Toolkit</a></p></td>
+<td><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/tree/main/data_juicer/tools/quality_classifier">Data-Juicer Quality Classifier Toolkit</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VBenchEvaluator</span></code></p></td>
 <td><p>Evaluate the generated videos according to given prompts in multi dimensions</p></td>
@@ -873,7 +874,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </tbody>
 </table>
 </div>
-<p>Please refer to <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/factories.py</span></code> for detailed definitions.</p>
+<p>Please refer to the <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/blob/main/data_juicer_sandbox/factories.py">component factory</a> for detailed definitions.</p>
 </section>
 <section id="context-sharing">
 <h3>Context Sharing<a class="headerlink" href="#context-sharing" title="Link to this heading">¶</a></h3>
@@ -949,9 +950,9 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <h3>The Internal Implementation of Components<a class="headerlink" href="#the-internal-implementation-of-components" title="Link to this heading">¶</a></h3>
 <p>Currently, components are mainly divided into three major categories:</p>
 <ul class="simple">
-<li><p><strong>Executor</strong>: Since the data executor is already handled by the Data-Juicer’s Executor, the executor here specifically refers to the model executor, including model training, inference, evaluation, etc. The code is located in <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/model_executors.py</span></code>.</p></li>
-<li><p><strong>Evaluator</strong>: Used for evaluating the quality and performance of datasets or models. The code is located in <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/evaluators.py</span></code>.</p></li>
-<li><p><strong>DataPoolManipulator</strong>: Used for manipulating the data pool, such as construction, combination, sampling, etc. The code is located in <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/data_pool_manipulators.py</span></code>.</p></li>
+<li><p><strong>Executor</strong>: Since the data executor is already handled by the Data-Juicer’s Executor, the executor here specifically refers to the model executor, including model training, inference, evaluation, etc. The code is located <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/blob/main/data_juicer_sandbox/model_executors.py">here</a>.</p></li>
+<li><p><strong>Evaluator</strong>: Used for evaluating the quality and performance of datasets or models. The code is located <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/blob/main/data_juicer_sandbox/evaluators.py">here</a>.</p></li>
+<li><p><strong>DataPoolManipulator</strong>: Used for manipulating the data pool, such as construction, combination, sampling, etc. The code is located <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/blob/main/data_juicer_sandbox/data_pool_manipulators.py">here</a>.</p></li>
 </ul>
 <section id="executor">
 <h4>Executor<a class="headerlink" href="#executor" title="Link to this heading">¶</a></h4>
@@ -979,7 +980,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <section id="datapoolmanipulator">
 <h4>DataPoolManipulator<a class="headerlink" href="#datapoolmanipulator" title="Link to this heading">¶</a></h4>
 <p>The core function of the data pool manipulator is to manipulate the data pool, such as construction, combination, sampling, etc. The data pool manipulator needs to inherit from the base class <code class="docutils literal notranslate"><span class="pre">BaseDataPoolManipulator</span></code> and implement the <code class="docutils literal notranslate"><span class="pre">run</span></code> method. The <code class="docutils literal notranslate"><span class="pre">run</span></code> method. The necessary parameters usually come from the input data pool configs in the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method, covering input data pools, export paths, and specific parameters for each type of manipulators.</p>
-<p>Users can refer to the doc string of the <code class="docutils literal notranslate"><span class="pre">run</span></code> method of each manipulator for more details in <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/data_pool_manipulators.py</span></code>.</p>
+<p>Users can refer to the doc string of the <code class="docutils literal notranslate"><span class="pre">run</span></code> method of each manipulator for more details <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/blob/main/data_juicer_sandbox/data_pool_manipulators.py">here</a>.</p>
 </section>
 </section>
 <section id="pipeline-hook">
@@ -1137,7 +1138,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 one environment, version conflicts on some important and complex dependencies will occur. Therefore, we provide an
 easy-to-use environment manager to manage different environments for different third-party libraries, allow users to run
 commands in isolated environments independently.</p>
-<p>The basic class of environment is <code class="docutils literal notranslate"><span class="pre">Env</span></code> in <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/env_manager.py</span></code> implemented as below:</p>
+<p>The basic class of environment is <code class="docutils literal notranslate"><span class="pre">Env</span></code> <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/blob/main/data_juicer_sandbox/env_manager.py">here</a> implemented as below:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Env</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
   
     <span class="nd">@abstractmethod</span>
@@ -1195,7 +1196,7 @@ commands in isolated environments independently.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">VirtualEnv</span></code>: use <code class="docutils literal notranslate"><span class="pre">venv</span></code>, <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code>, or <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">venv</span></code> to manage environments.</p></li>
 </ul>
 <p>When initializing the environment manager, we can specify the environment manager to use by setting the <code class="docutils literal notranslate"><span class="pre">env_manager</span></code> parameter in the configuration file and the name of the environment by setting the <code class="docutils literal notranslate"><span class="pre">env_name</span></code> parameter. An example of the basic usage is as follows:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.sandbox.env_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENV_ROUTER</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer_sandbox.env_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENV_ROUTER</span>
 
 <span class="n">env_manager</span> <span class="o">=</span> <span class="s1">&#39;conda&#39;</span>
 <span class="n">env_name</span> <span class="o">=</span> <span class="s1">&#39;new_conda_env&#39;</span>
@@ -1224,7 +1225,7 @@ commands in isolated environments independently.</p>
 <span class="n">env</span><span class="o">.</span><span class="n">run_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>A complete example of using the environment manager in a hook is available in the <code class="docutils literal notranslate"><span class="pre">InternVLCOCOCaptionEvaluator</span></code> class in <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/specific_hooks/intervl_coco_captioning/model_hooks.py</span></code>.</p>
+<p>A complete example of using the environment manager in a hook is available in the <code class="docutils literal notranslate"><span class="pre">InternVLCOCOCaptionEvaluator</span></code> class <a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox/blob/main/data_juicer_sandbox/specific_hooks/intervl_coco_captioning/model_hooks.py">here</a>.</p>
 </section>
 </section>
 <section id="q-a">

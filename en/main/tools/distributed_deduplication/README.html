@@ -224,10 +224,10 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">hub</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/hub/RecipeGallery.html">Data Recipe Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/hub/AlpacaCOT.html">Refine Alpaca-CoT Config Files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/hub/AnnotationNotificationSystem.html">Notification System</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/hub/BLOOM.html">BLOOM Config Files</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../docs/hub/RecipeGallery.html">Data Recipe Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/hub/RedPajama.html">Redpajama Config Files</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">tools</span></p>
@@ -239,13 +239,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../fmt_conversion/README.html">Format Conversion Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../fmt_conversion/multimodal/README.html">Multimodal Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../fmt_conversion/post_tuning_dialog/README.html">Post Tuning Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../hpo/README.html">Hyper-parameter Optimization for Data Recipe</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../humanops/README.html">Label Studio Service Utility</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../mm_eval/inception_metrics/README.html">Metrics for video generation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../mm_eval/vbench_metrics/README.html">VBench metrics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../postprocess/README.html">Postprocess tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../preprocess/README.html">Preprocess Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quality_classifier/README.html">Data Scoring</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">thirdparty</span></p>
 <ul>
@@ -364,7 +362,7 @@
 <blockquote>
 <div><p>To further improve model quality and prevent overfitting (which becomes increasingly important as model capacity increases), we fuzzily deduplicated documents (i.e. removed documents with high overlap with other documents) within each dataset using Spark’s MinHashLSH implementation with 10 hashes, using <strong>the same features as were used for classification above</strong>. We also fuzzily removed WebText from Common Crawl. Overall this decreased dataset size by an average of 10%.</p>
 </div></blockquote>
-<p>As the paper mentioned, the features used are the same as were used for  quality classification, as described in <a class="reference internal" href="../quality_classifier/README.html"><span class="std std-doc">quality_classifier tools</span></a>.</p>
+<p>As the paper mentioned, the features used are the same as were used for  quality classification, as described in <a class="reference internal" href="../../data_juicer/tools/quality_classifier/README.html"><span class="std std-doc">quality_classifier tools</span></a>.</p>
 <p>The whole toolkit is based on PySpark.</p>
 <ul class="simple">
 <li><p>tokenizer: Since the standard tokenizer of pyspark have trouble tokenizing text in languages such as Chinese, the <a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.feature.Tokenizer.html#tokenizer">standard Tokenizer</a> of PySpark or <a class="reference external" href="https://github.com/google/sentencepiece">sentencepiece</a> model are used.</p></li>
