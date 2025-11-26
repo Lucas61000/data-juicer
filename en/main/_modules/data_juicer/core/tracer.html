@@ -357,6 +357,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">OPERATORS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.constant</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fields</span>
 
 
 <div class="viewcode-block" id="Tracer">
@@ -519,8 +520,14 @@
         <span class="c1"># number of found filtered samples. It&#39;s the offset between two</span>
         <span class="c1"># datasets as well.</span>
         <span class="n">num</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">previous_ds_no_stats</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">previous_ds</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">(</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">)</span> <span class="k">if</span> <span class="n">Fields</span><span class="o">.</span><span class="n">stats</span> <span class="ow">in</span> <span class="n">previous_ds</span><span class="o">.</span><span class="n">column_names</span> <span class="k">else</span> <span class="n">previous_ds</span>
+        <span class="p">)</span>
+        <span class="n">processed_ds_no_stats</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">processed_ds</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">(</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">)</span> <span class="k">if</span> <span class="n">Fields</span><span class="o">.</span><span class="n">stats</span> <span class="ow">in</span> <span class="n">processed_ds</span><span class="o">.</span><span class="n">column_names</span> <span class="k">else</span> <span class="n">processed_ds</span>
+        <span class="p">)</span>
         <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">previous_ds</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">i</span> <span class="o">-</span> <span class="n">num</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">processed_ds</span><span class="p">)</span> <span class="ow">or</span> <span class="n">previous_ds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">processed_ds</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">num</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">-</span> <span class="n">num</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">processed_ds</span><span class="p">)</span> <span class="ow">or</span> <span class="n">previous_ds_no_stats</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">processed_ds_no_stats</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">num</span><span class="p">]:</span>
                 <span class="c1"># 1. If all samples in processed dataset are checked but there</span>
                 <span class="c1"># still some samples left in the previous dataset, all of these</span>
                 <span class="c1"># left samples are filtered.</span>
