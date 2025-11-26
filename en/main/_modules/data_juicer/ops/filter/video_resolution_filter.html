@@ -3,14 +3,15 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html">
+        <link rel="prefetch" href="../../../../_static/logo.png" as="image">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+    <link rel="shortcut icon" href="../../../../_static/icon.png"><!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
         <title>data_juicer.ops.filter.video_resolution_filter - Data Juicer</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/sidebar-menu.css?v=aecff795" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sidebar-menu.css?v=0d5d0242" />
     
     
 
@@ -183,9 +184,13 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
-  
-  <span class="sidebar-brand-text">Data Juicer</span>
+      <div class="sidebar-sticky"><a class="sidebar-brand centered" href="../../../../index.html">
+    <div class="sidebar-logo-container">
+      <img class="sidebar-logo" src="../../../../_static/logo.png" alt="Logo"/>
+    </div>
+    <svg class="sidebar-brand-text" viewBox="0 0 200 30"><text x="100" y="15" dominant-baseline="middle" text-anchor="middle">Data-Juicer</text>
+    </svg>
+
   
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -352,7 +357,7 @@
 
 
 <div class="viewcode-block" id="VideoResolutionFilter">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.video_resolution_filter.html#data_juicer.ops.filter.video_resolution_filter.VideoResolutionFilter">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.VideoResolutionFilter">[docs]</a>
 <span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="nd">@LOADED_VIDEOS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VideoResolutionFilter</span><span class="p">(</span><span class="n">Filter</span><span class="p">):</span>
@@ -369,7 +374,7 @@
 <span class="sd">    values are used to determine whether to keep or filter out the sample.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="VideoResolutionFilter.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.video_resolution_filter.html#data_juicer.ops.filter.video_resolution_filter.VideoResolutionFilter.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.VideoResolutionFilter.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">min_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -405,7 +410,7 @@
 
 
 <div class="viewcode-block" id="VideoResolutionFilter.compute_stats_single">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.video_resolution_filter.html#data_juicer.ops.filter.video_resolution_filter.VideoResolutionFilter.compute_stats_single">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.VideoResolutionFilter.compute_stats_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_stats_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="c1"># check if it&#39;s computed already</span>
         <span class="k">if</span> <span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_width</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">]</span> <span class="ow">and</span> <span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_height</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">]:</span>
@@ -445,7 +450,7 @@
 
 
 <div class="viewcode-block" id="VideoResolutionFilter.process_single">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.video_resolution_filter.html#data_juicer.ops.filter.video_resolution_filter.VideoResolutionFilter.process_single">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.VideoResolutionFilter.process_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">process_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">):</span>
         <span class="n">ws</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">][</span><span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_width</span><span class="p">]</span>
         <span class="n">hs</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">][</span><span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_height</span><span class="p">]</span>

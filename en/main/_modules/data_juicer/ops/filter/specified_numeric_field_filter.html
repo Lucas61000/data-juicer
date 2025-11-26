@@ -3,14 +3,15 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html">
+        <link rel="prefetch" href="../../../../_static/logo.png" as="image">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+    <link rel="shortcut icon" href="../../../../_static/icon.png"><!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
         <title>data_juicer.ops.filter.specified_numeric_field_filter - Data Juicer</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/sidebar-menu.css?v=aecff795" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sidebar-menu.css?v=0d5d0242" />
     
     
 
@@ -183,9 +184,13 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
-  
-  <span class="sidebar-brand-text">Data Juicer</span>
+      <div class="sidebar-sticky"><a class="sidebar-brand centered" href="../../../../index.html">
+    <div class="sidebar-logo-container">
+      <img class="sidebar-logo" src="../../../../_static/logo.png" alt="Logo"/>
+    </div>
+    <svg class="sidebar-brand-text" viewBox="0 0 200 30"><text x="100" y="15" dominant-baseline="middle" text-anchor="middle">Data-Juicer</text>
+    </svg>
+
   
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -346,7 +351,7 @@
 
 
 <div class="viewcode-block" id="is_number">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.specified_numeric_field_filter.html#data_juicer.ops.filter.specified_numeric_field_filter.is_number">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.specified_numeric_field_filter.html#data_juicer.ops.filter.is_number">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">is_number</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">s</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
@@ -362,7 +367,7 @@
 
 
 <div class="viewcode-block" id="SpecifiedNumericFieldFilter">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.specified_numeric_field_filter.html#data_juicer.ops.filter.specified_numeric_field_filter.SpecifiedNumericFieldFilter">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.SpecifiedNumericFieldFilter">[docs]</a>
 <span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SpecifiedNumericFieldFilter</span><span class="p">(</span><span class="n">Filter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter samples based on a specified numeric field value.</span>
@@ -379,7 +384,7 @@
 <span class="sd">    - Returns False for non-numeric or out-of-range values, filtering the sample.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="SpecifiedNumericFieldFilter.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.specified_numeric_field_filter.html#data_juicer.ops.filter.specified_numeric_field_filter.SpecifiedNumericFieldFilter.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.SpecifiedNumericFieldFilter.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">field_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">min_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="n">max_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -406,7 +411,7 @@
 
 
 <div class="viewcode-block" id="SpecifiedNumericFieldFilter.compute_stats_single">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.specified_numeric_field_filter.html#data_juicer.ops.filter.specified_numeric_field_filter.SpecifiedNumericFieldFilter.compute_stats_single">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.SpecifiedNumericFieldFilter.compute_stats_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_stats_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">):</span>
         <span class="c1"># get the value from the original field</span>
         <span class="n">field_value</span> <span class="o">=</span> <span class="n">sample</span>
@@ -420,7 +425,7 @@
 
 
 <div class="viewcode-block" id="SpecifiedNumericFieldFilter.process_single">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.specified_numeric_field_filter.html#data_juicer.ops.filter.specified_numeric_field_filter.SpecifiedNumericFieldFilter.process_single">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.SpecifiedNumericFieldFilter.process_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">process_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_key</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>

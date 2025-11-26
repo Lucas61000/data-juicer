@@ -4,14 +4,15 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Data Recipe Gallery" href="RecipeGallery.html"><link rel="prev" title="Quick Start" href="tutorial/QuickStart.html">
+        <link rel="prefetch" href="../_static/logo.png" as="image">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+    <link rel="shortcut icon" href="../_static/icon.png"><!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
         <title>Operator Schemas 算子提要 - Data Juicer</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/sidebar-menu.css?v=aecff795" />
+    <link rel="stylesheet" type="text/css" href="../_static/sidebar-menu.css?v=0d5d0242" />
     
     
 
@@ -184,9 +185,13 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
-  
-  <span class="sidebar-brand-text">Data Juicer</span>
+      <div class="sidebar-sticky"><a class="sidebar-brand centered" href="../index.html">
+    <div class="sidebar-logo-container">
+      <img class="sidebar-logo" src="../_static/logo.png" alt="Logo"/>
+    </div>
+    <svg class="sidebar-brand-text" viewBox="0 0 200 30"><text x="100" y="15" dominant-baseline="middle" text-anchor="middle">Data-Juicer</text>
+    </svg>
+
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -1089,19 +1094,19 @@ Data-Juicer 中的算子分为以下 7 种类型。</p>
 <tr class="row-odd"><td><p>detect_character_attributes_mapper</p></td>
 <td><p>🚀GPU 🟡Beta</p></td>
 <td><p>Takes an image, a caption, and main character names as input to extract the characters’ attributes. 根据给定的图像、图像描述信息和（多个）角色名称，提取图像中主要角色的属性。</p></td>
-<td><p>-</p></td>
+<td><p><a class="reference internal" href="operators/mapper/detect_character_attributes_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2505.16915">DetailMaster</a></p></td>
 </tr>
 <tr class="row-even"><td><p>detect_character_locations_mapper</p></td>
 <td><p>🚀GPU 🟡Beta</p></td>
 <td><p>Given an image and a list of main character names, extract the bounding boxes for each present character. 给定一张图像和主要角色的名称列表，提取每个在场角色的边界框。(YOLOE + MLLM)</p></td>
-<td><p>-</p></td>
+<td><p><a class="reference internal" href="operators/mapper/detect_character_locations_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2505.16915">DetailMaster</a></p></td>
 </tr>
 <tr class="row-odd"><td><p>detect_main_character_mapper</p></td>
 <td><p>🚀GPU 🟡Beta</p></td>
 <td><p>Extract all main character names based on the given image and its caption. 根据给定的图像及其图像描述，提取所有主要角色的名字。</p></td>
-<td><p>-</p></td>
+<td><p><a class="reference internal" href="operators/mapper/detect_main_character_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2505.16915">DetailMaster</a></p></td>
 </tr>
 <tr class="row-even"><td><p>dialog_intent_detection_mapper</p></td>
@@ -1442,8 +1447,8 @@ Data-Juicer 中的算子分为以下 7 种类型。</p>
 </tr>
 <tr class="row-even"><td><p>vggt_mapper</p></td>
 <td><p>🎬Video 🚀GPU 🟡Beta</p></td>
-<td><p>Input a video of a single scene, and use VGGT to extract information including Camera Pose, Depth Maps, Point Maps, and 3D Point Tracks (if outputting point tracks is required, the user needs to provide query points). 输入单个场景的视频，并使用VGGT提取包括相机姿态，深度图，点图和3D点轨迹的信息 (如果需要输出点轨迹，则用户需要提供查询点)。</p></td>
-<td><p>-</p></td>
+<td><p>Input a video of a single scene, and use VGGT to extract information including Camera Pose, Depth Maps, Point Maps, and 3D Point Tracks. 输入单个场景的视频，并使用VGGT提取包括相机姿态、深度图、点图和3D点轨迹的信息。</p></td>
+<td><p><a class="reference internal" href="operators/mapper/vggt_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
 <tr class="row-odd"><td><p>video_captioning_from_audio_mapper</p></td>
