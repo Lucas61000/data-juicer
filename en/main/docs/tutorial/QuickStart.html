@@ -208,7 +208,6 @@
 <p class="caption" role="heading"><span class="caption-text">docs</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../Operators.html">Operator Schemas 算子提要</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../RecipeGallery.html">Data Recipe Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../DatasetCfg.html">Dataset Configuration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../BadDataExhibition.html">“Bad” Data Exhibition</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../DJ_SORA.html">DJ-SORA</a></li>
@@ -222,6 +221,14 @@
 <p class="caption" role="heading"><span class="caption-text">demos</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../demos/README.html">Demos</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">hub</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hub/AlpacaCOT.html">Refine Alpaca-CoT Config Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hub/AnnotationNotificationSystem.html">Notification System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hub/BLOOM.html">BLOOM Config Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hub/RecipeGallery.html">Data Recipe Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hub/RedPajama.html">Redpajama Config Files</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">tools</span></p>
 <ul>
@@ -379,16 +386,16 @@
 your dataset.</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># only for installation from source</span>
-python<span class="w"> </span>tools/process_data.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/process.yaml
+python<span class="w"> </span>tools/process_data.py<span class="w"> </span>--config<span class="w"> </span>demos/process_simple/process.yaml
 
 <span class="c1"># use command line tool</span>
-dj-process<span class="w"> </span>--config<span class="w"> </span>configs/demo/process.yaml
+dj-process<span class="w"> </span>--config<span class="w"> </span>demos/process_simple/process.yaml
 </pre></div>
 </div>
 <ul class="simple">
 <li><p><strong>Note:</strong> For some operators that involve third-party models or resources that are not stored locally on your computer, it might be slow for the first running because these ops need to download corresponding resources into a directory first.
 The default download cache directory is <code class="docutils literal notranslate"><span class="pre">~/.cache/data_juicer</span></code>. Change the cache location by setting the shell environment variable, <code class="docutils literal notranslate"><span class="pre">DATA_JUICER_CACHE_HOME</span></code> to another directory, and you can also change <code class="docutils literal notranslate"><span class="pre">DATA_JUICER_MODELS_CACHE</span></code> or <code class="docutils literal notranslate"><span class="pre">DATA_JUICER_ASSETS_CACHE</span></code> in the same way:</p></li>
-<li><p><strong>Note:</strong> When using operators with third-party models, it’s necessary to declare the corresponding <code class="docutils literal notranslate"><span class="pre">mem_required</span></code> in the configuration file (you can refer to the settings in the <code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code> file). During runtime, Data-Juicer will control the number of processes based on memory availability and the memory requirements of the operator models to achieve better data processing efficiency. When running with CUDA environments, if the mem_required for an operator is not declared correctly, it could potentially lead to a CUDA Out of Memory issue.</p></li>
+<li><p><strong>Note:</strong> When using operators with third-party models, it’s necessary to declare the corresponding <code class="docutils literal notranslate"><span class="pre">mem_required</span></code> in the configuration file (you can refer to the settings in the <code class="docutils literal notranslate"><span class="pre">data_juicer/config/config_all.yaml</span></code> file). During runtime, Data-Juicer will control the number of processes based on memory availability and the memory requirements of the operator models to achieve better data processing efficiency. When running with CUDA environments, if the mem_required for an operator is not declared correctly, it could potentially lead to a CUDA Out of Memory issue.</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># cache home</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">DATA_JUICER_CACHE_HOME</span><span class="o">=</span><span class="s2">&quot;/path/to/another/directory&quot;</span>
@@ -439,10 +446,10 @@ python<span class="w"> </span>tools/process_data.py<span class="w"> </span>--con
 <li><p>The analyzer will produce the overall distribution of the stats computed by the OPs for the whole dataset, the detailed distribution of each type of stats, and the correlation analysis among stats from different OPs.</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># only for installation from source</span>
-python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/analyzer.yaml
+python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--config<span class="w"> </span>demos/analyze_simple/analyzer.yaml
 
 <span class="c1"># use command line tool</span>
-dj-analyze<span class="w"> </span>--config<span class="w"> </span>configs/demo/analyzer.yaml
+dj-analyze<span class="w"> </span>--config<span class="w"> </span>demos/analyze_simple/analyzer.yaml
 
 <span class="c1"># you can also use auto mode to avoid writing a recipe. It will analyze a small</span>
 <span class="c1"># part (e.g. 1000 samples, specified by argument `auto_num`) of your dataset </span>
@@ -460,7 +467,7 @@ dj-analyze<span class="w"> </span>--auto<span class="w"> </span>--dataset_path<s
 <li><p>Sometimes, “Glyph missing” warning occurs and invalid characters show in the analyzed results figures. Users can specify appropriate font using the environment variable <code class="docutils literal notranslate"><span class="pre">ANALYZER_FONT</span></code>. For example:</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ANALYZER_FONT</span><span class="o">=</span><span class="s2">&quot;Heiti TC&quot;</span><span class="w">  </span><span class="c1"># Use Heiti for Chinese characters. And it&#39;s the default font for analyzer.</span>
-python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/analyzer.yaml
+python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--config<span class="w"> </span>demos/analyze_simple/analyzer.yaml
 </pre></div>
 </div>
 </section>
@@ -486,18 +493,18 @@ data process. You need to set:</p>
 </li>
 <li><p>You can build up your own config files by:</p>
 <ul>
-<li><p>➖：Modify from our example config file <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/configs/config_all.yaml"><code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code></a> which includes <strong>all</strong> ops and default
+<li><p>➖：Modify from our example config file <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/data_juicer/config/config_all.yaml"><code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code></a> which includes <strong>all</strong> ops and default
 arguments. You just need to <strong>remove</strong> ops that you won’t use and refine
 some arguments of ops.</p></li>
 <li><p>➕：Build up your own config files <strong>from scratch</strong>. You can refer our
-example config file <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/configs/config_all.yaml"><code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code></a>, <a class="reference internal" href="../Operators.html"><span class="std std-doc">op documents</span></a>, and advanced <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/docs/DeveloperGuide.md#2-build-your-own-ops">Build-Up Guide for developers</a>.</p></li>
+example config file <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/data_juicer/config/config_all.yaml"><code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code></a>, <a class="reference internal" href="../Operators.html"><span class="std std-doc">op documents</span></a>, and advanced <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/docs/DeveloperGuide.md#2-build-your-own-ops">Build-Up Guide for developers</a>.</p></li>
 <li><p>Besides the yaml files, you also have the flexibility to specify just
 one (of several) parameters on the command line, which will override
 the values in yaml files.</p></li>
 </ul>
 </li>
 </ul>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>xxx.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/process.yaml<span class="w"> </span>--language_id_score_filter.lang<span class="o">=</span>en
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>xxx.py<span class="w"> </span>--config<span class="w"> </span>demos/process_simple/process.yaml<span class="w"> </span>--language_id_score_filter.lang<span class="o">=</span>en
 </pre></div>
 </div>
 <ul>
@@ -513,10 +520,7 @@ the values in yaml files.</p></li>
 <li><p>In the sandbox, users can quickly experiment, iterate, and refine data recipes based on small-scale datasets and models, before scaling up to produce high-quality data to serve large-scale models.</p></li>
 <li><p>In addition to the basic data optimization and recipe refinement features offered by Data-Juicer, users can seamlessly use configurable components such as data probe and analysis, model training and evaluation, and data and model feedback-based recipe refinement to form a complete one-stop data-model research and development pipeline.</p></li>
 </ul>
-<p>The sandbox is run using the following commands by default, and for more information and details, please refer to the <a class="reference internal" href="../Sandbox.html"><span class="std std-doc">sandbox documentation</span></a>.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/sandbox_starter.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/sandbox/sandbox.yaml
-</pre></div>
-</div>
+<p>For more information and details, please refer to the <a class="reference internal" href="../Sandbox.html"><span class="std std-doc">sandbox documentation</span></a>.</p>
 </section>
 <section id="preprocess-raw-data-optional">
 <h2>Preprocess Raw Data (Optional)<a class="headerlink" href="#preprocess-raw-data-optional" title="Link to this heading">¶</a></h2>

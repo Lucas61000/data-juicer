@@ -208,7 +208,6 @@
 <p class="caption" role="heading"><span class="caption-text">帮助文档</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../Operators.html">Operator Schemas 算子提要</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../RecipeGallery_ZH.html">数据菜谱Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../DatasetCfg_ZH.html">数据集配置指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../BadDataExhibition_ZH.html">“坏”数据展览</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../DJ_SORA_ZH.html">DJ-SORA</a></li>
@@ -224,6 +223,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../demos/README_ZH.html">演示</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../demos/auto_evaluation_helm/README_ZH.html">自动化评测：HELM 评测及可视化</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../demos/role_playing_system_prompt/README_ZH.html">为LLM构造角色扮演的system prompt</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">hub</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hub/AlpacaCOT_ZH.html">Alpaca-CoT 完善配置文件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hub/AnnotationNotificationSystem.html">Notification System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hub/BLOOM_ZH.html">BLOOM 配置文件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hub/RecipeGallery_ZH.html">数据菜谱Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../hub/RedPajama_ZH.html">Redpajama 配置文件</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">工具</span></p>
 <ul>
@@ -380,15 +387,15 @@
 <li><p>以配置文件路径作为参数来运行 <code class="docutils literal notranslate"><span class="pre">process_data.py</span></code> 或者 <code class="docutils literal notranslate"><span class="pre">dj-process</span></code> 命令行工具来处理数据集。</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># 适用于从源码安装</span>
-python<span class="w"> </span>tools/process_data.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/process.yaml
+python<span class="w"> </span>tools/process_data.py<span class="w"> </span>--config<span class="w"> </span>demos/process_simple/process.yaml
 
 <span class="c1"># 使用命令行工具</span>
-dj-process<span class="w"> </span>--config<span class="w"> </span>configs/demo/process.yaml
+dj-process<span class="w"> </span>--config<span class="w"> </span>demos/process_simple/process.yaml
 </pre></div>
 </div>
 <ul class="simple">
 <li><p><strong>注意</strong>：使用未保存在本地的第三方模型或资源的算子第一次运行可能会很慢，因为这些算子需要将相应的资源下载到缓存目录中。默认的下载缓存目录为<code class="docutils literal notranslate"><span class="pre">~/.cache/data_juicer</span></code>。您可通过设置 shell 环境变量 <code class="docutils literal notranslate"><span class="pre">DATA_JUICER_CACHE_HOME</span></code> 更改缓存目录位置，您也可以通过同样的方式更改 <code class="docutils literal notranslate"><span class="pre">DATA_JUICER_MODELS_CACHE</span></code> 或 <code class="docutils literal notranslate"><span class="pre">DATA_JUICER_ASSETS_CACHE</span></code> 来分别修改模型缓存或资源缓存目录:</p></li>
-<li><p><strong>注意</strong>：对于使用了第三方模型的算子，在填写config文件时需要去声明其对应的<code class="docutils literal notranslate"><span class="pre">mem_required</span></code>（可以参考<code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code>文件中的设置）。Data-Juicer在运行过程中会根据内存情况和算子模型所需的memory大小来控制对应的进程数，以达成更好的数据处理的性能效率。而在使用CUDA环境运行时，如果不正确的声明算子的<code class="docutils literal notranslate"><span class="pre">mem_required</span></code>情况，则有可能导致CUDA Out of Memory。</p></li>
+<li><p><strong>注意</strong>：对于使用了第三方模型的算子，在填写config文件时需要去声明其对应的<code class="docutils literal notranslate"><span class="pre">mem_required</span></code>（可以参考<code class="docutils literal notranslate"><span class="pre">data_juicer/config/config_all.yaml</span></code>文件中的设置）。Data-Juicer在运行过程中会根据内存情况和算子模型所需的memory大小来控制对应的进程数，以达成更好的数据处理的性能效率。而在使用CUDA环境运行时，如果不正确的声明算子的<code class="docutils literal notranslate"><span class="pre">mem_required</span></code>情况，则有可能导致CUDA Out of Memory。</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># 缓存主目录</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">DATA_JUICER_CACHE_HOME</span><span class="o">=</span><span class="s2">&quot;/path/to/another/directory&quot;</span>
@@ -441,10 +448,10 @@ python<span class="w"> </span>tools/process_data.py<span class="w"> </span>--con
 <li><p>分析器会产出算子为整个数据集计算的 stats 的整体分布情况，每类 stats 的详细分布，以及不同算子的 stats 之间的相关性分析。</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># 适用于从源码安装</span>
-python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/analyzer.yaml
+python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--config<span class="w"> </span>demos/analyze_simple/analyzer.yaml
 
 <span class="c1"># 使用命令行工具</span>
-dj-analyze<span class="w"> </span>--config<span class="w"> </span>configs/demo/analyzer.yaml
+dj-analyze<span class="w"> </span>--config<span class="w"> </span>demos/analyze_simple/analyzer.yaml
 
 <span class="c1"># 你也可以使用&quot;自动&quot;模式来避免写一个新的数据菜谱。它会使用全部可产出统计信息的 Filter 来分析</span>
 <span class="c1"># 你的数据集的一小部分（如1000条样本，可通过 `auto_num` 参数指定）</span>
@@ -461,7 +468,7 @@ dj-analyze<span class="w"> </span>--auto<span class="w"> </span>--dataset_path<s
 <li><p>有时会产生 &quot;Glyph missing&quot; 的警告，并且在分析结果图表中会出现一些非法字符。用户可以使用环境变量 <code class="docutils literal notranslate"><span class="pre">ANALYZER_FONT</span></code> 来指定合适的字体。例如：</p></li>
 </ul>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ANALYZER_FONT</span><span class="o">=</span><span class="s2">&quot;Heiti TC&quot;</span><span class="w">  </span><span class="c1"># 使用黑体来支持中文字符，这也是 Analyzer 的默认字体</span>
-python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/analyzer.yaml
+python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--config<span class="w"> </span>demos/analyze_simple/analyzer.yaml
 </pre></div>
 </div>
 </section>
@@ -486,13 +493,13 @@ python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--con
 </li>
 <li><p>您可以通过如下方式构建自己的配置文件:</p>
 <ul>
-<li><p>➖：修改我们的样例配置文件 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/configs/config_all.yaml"><code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code></a>。该文件包含了<strong>所有</strong>算子以及算子对应的默认参数。您只需要<strong>移除</strong>不需要的算子并重新设置部分算子的参数即可。</p></li>
-<li><p>➕：从头开始构建自己的配置文件。您可以参考我们提供的样例配置文件 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/configs/config_all.yaml"><code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code></a>，<a class="reference internal" href="../Operators.html"><span class="std std-doc">算子文档</span></a>，以及 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/docs/DeveloperGuide_ZH.md#2-%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E7%AE%97%E5%AD%90">开发者指南</a>.</p></li>
+<li><p>➖：修改我们的样例配置文件 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/data_juicer/config/config_all.yaml"><code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code></a>。该文件包含了<strong>所有</strong>算子以及算子对应的默认参数。您只需要<strong>移除</strong>不需要的算子并重新设置部分算子的参数即可。</p></li>
+<li><p>➕：从头开始构建自己的配置文件。您可以参考我们提供的样例配置文件 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/data_juicer/config/config_all.yaml"><code class="docutils literal notranslate"><span class="pre">config_all.yaml</span></code></a>，<a class="reference internal" href="../Operators.html"><span class="std std-doc">算子文档</span></a>，以及 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/docs/DeveloperGuide_ZH.md#2-%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E7%AE%97%E5%AD%90">开发者指南</a>.</p></li>
 <li><p>除了使用 yaml 文件外，您还可以在命令行上指定一个或多个参数，这些参数将覆盖 yaml 文件中的值。</p></li>
 </ul>
 </li>
 </ul>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>xxx.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/process.yaml<span class="w"> </span>--language_id_score_filter.lang<span class="o">=</span>en
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>xxx.py<span class="w"> </span>--config<span class="w"> </span>demos/process_simple/process.yaml<span class="w"> </span>--language_id_score_filter.lang<span class="o">=</span>en
 </pre></div>
 </div>
 <ul>
@@ -508,10 +515,7 @@ python<span class="w"> </span>tools/analyze_data.py<span class="w"> </span>--con
 <li><p>用户在沙盒中可以基于一些小规模数据集、模型对数据菜谱进行快速实验、迭代、优化，再迁移到更大尺度上，大规模生产高质量数据以服务大模型。</p></li>
 <li><p>用户在沙盒中，除了Data-Juicer基础的数据优化与数据菜谱微调功能外，还可以便捷地使用数据洞察与分析、沙盒模型训练与评测、基于数据和模型反馈优化数据菜谱等可配置组件，共同组成完整的一站式数据-模型研发流水线。</p></li>
 </ul>
-<p>沙盒默认通过如下命令运行，更多介绍和细节请参阅<a class="reference internal" href="../Sandbox_ZH.html"><span class="std std-doc">沙盒文档</span></a>.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/sandbox_starter.py<span class="w"> </span>--config<span class="w"> </span>configs/demo/sandbox/sandbox.yaml
-</pre></div>
-</div>
+<p>更多介绍和细节请参阅<a class="reference internal" href="../Sandbox_ZH.html"><span class="std std-doc">沙盒文档</span></a>.</p>
 </section>
 <section id="id9">
 <h2>预处理原始数据（可选）<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>

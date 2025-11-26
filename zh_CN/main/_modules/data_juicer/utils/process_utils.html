@@ -207,7 +207,6 @@
 <p class="caption" role="heading"><span class="caption-text">帮助文档</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../docs/Operators.html">Operator Schemas 算子提要</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../docs/RecipeGallery_ZH.html">数据菜谱Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../docs/DatasetCfg_ZH.html">数据集配置指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../docs/BadDataExhibition_ZH.html">“坏”数据展览</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../docs/DJ_SORA_ZH.html">DJ-SORA</a></li>
@@ -223,6 +222,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../demos/README_ZH.html">演示</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../demos/auto_evaluation_helm/README_ZH.html">自动化评测：HELM 评测及可视化</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../demos/role_playing_system_prompt/README_ZH.html">为LLM构造角色扮演的system prompt</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">hub</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/AlpacaCOT_ZH.html">Alpaca-CoT 完善配置文件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/AnnotationNotificationSystem.html">Notification System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/BLOOM_ZH.html">BLOOM 配置文件</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/RecipeGallery_ZH.html">数据菜谱Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/RedPajama_ZH.html">Redpajama 配置文件</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">工具</span></p>
 <ul>
@@ -435,7 +442,7 @@
                 <span class="sa">f</span><span class="s2">&quot;The required cuda memory and gpu of Op[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">] &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;has not been specified. &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;Please specify the mem_required field or gpu_required field in the &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;config file. You can reference the config_all.yaml file.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;config file. You can reference data_juicer/config/config_all.yaml.&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;Set the auto `num_proc` to number of GPUs </span><span class="si">{</span><span class="n">auto_num_proc</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -634,7 +641,7 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Neither the required cuda memory nor gpu of Op[</span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">] is specified. &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;We recommend specifying the `mem_required` field or `gpu_required` field in the &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;config file. You can reference the `config_all.yaml` file.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;config file. You can reference data_juicer/config/config_all.yaml.&quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;Set the `gpu_required` to 1 now.&quot;</span>
                 <span class="p">)</span>
                 <span class="n">gpu_req</span> <span class="o">=</span> <span class="mi">1</span>
@@ -663,7 +670,7 @@
                     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Neither the required memory nor cpu of Op[</span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">] is specified. &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;We recommend specifying the `cpu_required` field in the &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;config file. You can reference the `config_all.yaml` file.&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;config file. You can reference data_juicer/config/config_all.yaml.&quot;</span>
                     <span class="p">)</span>
                 <span class="c1"># if no cpu is specified, ray will apply for 1 cpu by default</span>
                 <span class="n">cpu_required_frac</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">total_cpu</span>

@@ -207,7 +207,6 @@
 <p class="caption" role="heading"><span class="caption-text">docs</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../docs/Operators.html">Operator Schemas 算子提要</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../docs/RecipeGallery.html">Data Recipe Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../docs/DatasetCfg.html">Dataset Configuration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../docs/BadDataExhibition.html">“Bad” Data Exhibition</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../docs/DJ_SORA.html">DJ-SORA</a></li>
@@ -221,6 +220,14 @@
 <p class="caption" role="heading"><span class="caption-text">demos</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../demos/README.html">Demos</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">hub</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/AlpacaCOT.html">Refine Alpaca-CoT Config Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/AnnotationNotificationSystem.html">Notification System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/BLOOM.html">BLOOM Config Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/RecipeGallery.html">Data Recipe Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/hub/RedPajama.html">Redpajama Config Files</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">tools</span></p>
 <ul>
@@ -543,7 +550,8 @@
                 <span class="nb">type</span><span class="o">=</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">Dict</span><span class="p">],</span>
                 <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
                 <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Dataset setting to define local/remote datasets; could be a &quot;</span>  <span class="c1"># noqa: E251</span>
-                <span class="s2">&quot;dict or a list of dicts; refer to configs/datasets for more &quot;</span>
+                <span class="s2">&quot;dict or a list of dicts; refer to &quot;</span>
+                <span class="s2">&quot;https://datajuicer.github.io/data-juicer/en/main/docs/DatasetCfg.html for more &quot;</span>
                 <span class="s2">&quot;detailed examples&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
@@ -1561,12 +1569,12 @@
 <div class="viewcode-block" id="get_default_cfg">
 <a class="viewcode-back" href="../../../api/data_juicer.config.config.html#data_juicer.config.get_default_cfg">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_default_cfg</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get default config values from config_all.yaml&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get default config values from config_min.yaml&quot;&quot;&quot;</span>
     <span class="n">cfg</span> <span class="o">=</span> <span class="n">Namespace</span><span class="p">()</span>
 
-    <span class="c1"># Get path to config_all.yaml</span>
+    <span class="c1"># Get path to config_min.yaml</span>
     <span class="n">config_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
-    <span class="n">default_config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config_dir</span><span class="p">,</span> <span class="s2">&quot;../../configs/config_min.yaml&quot;</span><span class="p">)</span>
+    <span class="n">default_config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config_dir</span><span class="p">,</span> <span class="s2">&quot;config_min.yaml&quot;</span><span class="p">)</span>
 
     <span class="c1"># Load default values from yaml</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">default_config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>

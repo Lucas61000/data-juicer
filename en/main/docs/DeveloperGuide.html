@@ -208,7 +208,6 @@
 <p class="caption" role="heading"><span class="caption-text">docs</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Operators.html">Operator Schemas 算子提要</a></li>
-<li class="toctree-l1"><a class="reference internal" href="RecipeGallery.html">Data Recipe Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="DatasetCfg.html">Dataset Configuration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="BadDataExhibition.html">“Bad” Data Exhibition</a></li>
 <li class="toctree-l1"><a class="reference internal" href="DJ_SORA.html">DJ-SORA</a></li>
@@ -222,6 +221,14 @@
 <p class="caption" role="heading"><span class="caption-text">demos</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../demos/README.html">Demos</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">hub</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hub/AlpacaCOT.html">Refine Alpaca-CoT Config Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hub/AnnotationNotificationSystem.html">Notification System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hub/BLOOM.html">BLOOM Config Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hub/RecipeGallery.html">Data Recipe Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hub/RedPajama.html">Redpajama Config Files</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">tools</span></p>
 <ul>
@@ -492,7 +499,7 @@
 <h2>2. Build Your Own Data Recipes and Configs<a class="headerlink" href="#build-your-own-data-recipes-and-configs" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>We provide easy configuration based on <a class="reference external" href="https://github.com/omni-us/jsonargparse/">jsonargparse</a> to reduce cost for boilerplate codes.</p></li>
-<li><p>We provide fruitful examples in <a class="reference internal" href="RecipeGallery.html"><span class="std std-doc">Data Recipe Gallery</span></a> for reference reuse and extension.</p></li>
+<li><p>We provide fruitful examples in <a class="reference internal" href="hub/RecipeGallery.html"><span class="std std-doc">Data Recipe Gallery</span></a> for reference reuse and extension.</p></li>
 <li><p>📣📣📣 Community contributors can submit PRs in the <em>Data Recipe Gallery</em> to add customized data recipes to promote dissemination, reuse and related technical evolution. We greatly welcome co-construction and will highlight <a class="reference external" href="https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements">acknowledgements</a>!</p></li>
 </ul>
 <section id="fruitful-config-sources-type-hints">
@@ -762,7 +769,7 @@ and ② execute <code class="docutils literal notranslate"><span class="pre">pre
 <li><p>(<img alt="beta" src="https://img.shields.io/badge/beta-yellow?style=plastic" /> strongly recommend) In order to facilitate other users to understand and use, it is best to update the newly added operator information to the corresponding documents, including the following two basic actions:</p>
 <ol class="arabic simple">
 <li><p>Please add basic information to the doc string of the operator class to ensure that it is complete and readable (including basic function description of the operator, input parameters, output parameters, etc.). There is no need for users to write in multiple places. Our <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> and sphinx build scripts will automatically extract doc strings to form operator pool documents and API documents.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">configs/config_all.yaml</span></code>: This complete configuration file saves a list of all operators and parameters, as a source of information for some automated features and one of the important documents for users to refer to available operators. Therefore, after adding a new operator, please also add it to the document process list (grouped by operator type and sorted alphabetically):</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data_juicer/config/config_all.yaml</span></code>: This complete configuration file saves a list of all operators and parameters, as a source of information for some automated features and one of the important documents for users to refer to available operators. Therefore, after adding a new operator, please also add it to the document process list (grouped by operator type and sorted alphabetically):</p></li>
 </ol>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nn">...</span>
 <span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">stopwords_filter</span><span class="p">:</span><span class="w">                                       </span><span class="c1"># filter text with stopword ratio smaller than a specific min value</span>
@@ -1002,7 +1009,7 @@ it’s calculated by this new OP.</p></li>
 <section id="contribute-your-new-recipes">
 <h3>4.4 Contribute Your New Recipes<a class="headerlink" href="#contribute-your-new-recipes" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p>Community contributors can submit PRs in the <a class="reference internal" href="RecipeGallery.html"><span class="std std-doc">Data Recipe Gallery</span></a> to add customized data recipes to promote dissemination, reuse and related technical evolution.</p></li>
+<li><p>Community contributors can submit PRs in the <a class="reference internal" href="hub/RecipeGallery.html"><span class="std std-doc">Data Recipe Gallery</span></a> to add customized data recipes to promote dissemination, reuse and related technical evolution.</p></li>
 <li><p>Feel free to add the corresponding references of your new recipe, or just propose some requirements/ideas to improve the existing recipes.</p></li>
 <li><p>We greatly welcome co-construction and will highlight <a class="reference external" href="https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements">acknowledgements</a>!</p></li>
 </ul>
