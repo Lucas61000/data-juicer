@@ -822,6 +822,7 @@
     <span class="n">output_video</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">start_seconds</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">end_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">video_stream_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Cut a video into several segments by times in second.</span>
@@ -831,6 +832,8 @@
 <span class="sd">    :param start_seconds: the start time in second.</span>
 <span class="sd">    :param end_seconds: the end time in second. If it&#39;s None, this function</span>
 <span class="sd">        will cut the video from the start_seconds to the end of the video.</span>
+<span class="sd">    :param video_stream_index: the video stream index to decode,</span>
+<span class="sd">        default set to 0.</span>
 <span class="sd">    :return: a boolean flag indicating whether the video was successfully</span>
 <span class="sd">        cut or not.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -848,7 +851,7 @@
         <span class="n">output_container</span> <span class="o">=</span> <span class="n">av</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">output_buffer</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;mp4&quot;</span><span class="p">)</span>
 
     <span class="c1"># add the video stream into the output video according to input video</span>
-    <span class="n">input_video_stream</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">input_video_stream</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="n">video_stream_index</span><span class="p">]</span>
     <span class="n">codec_name</span> <span class="o">=</span> <span class="n">input_video_stream</span><span class="o">.</span><span class="n">codec_context</span><span class="o">.</span><span class="n">name</span>
     <span class="n">fps</span> <span class="o">=</span> <span class="n">input_video_stream</span><span class="o">.</span><span class="n">base_rate</span>
     <span class="n">output_video_stream</span> <span class="o">=</span> <span class="n">output_container</span><span class="o">.</span><span class="n">add_stream</span><span class="p">(</span><span class="n">codec_name</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
@@ -865,7 +868,6 @@
 
     <span class="c1"># seek to the start time, time must be in microsecond if no</span>
     <span class="c1"># stream is specified</span>
-    <span class="n">container</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">start_seconds</span> <span class="o">*</span> <span class="mi">1000000</span><span class="p">),</span> <span class="n">any_frame</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="c1"># copy the video and audio streams until the end time</span>
     <span class="c1"># NOTICE: for different streams, the time have to be converted to be</span>
@@ -874,6 +876,14 @@
     <span class="c1"># compute the start/end pts for video/audio streams</span>
     <span class="n">video_start_pts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">start_seconds</span> <span class="o">/</span> <span class="n">input_video_stream</span><span class="o">.</span><span class="n">time_base</span><span class="p">)</span>
     <span class="n">video_end_pts</span> <span class="o">=</span> <span class="n">end_seconds</span> <span class="o">/</span> <span class="n">input_video_stream</span><span class="o">.</span><span class="n">time_base</span> <span class="k">if</span> <span class="n">end_seconds</span> <span class="k">else</span> <span class="n">input_video_stream</span><span class="o">.</span><span class="n">duration</span>
+
+    <span class="n">container</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span>
+        <span class="n">video_start_pts</span><span class="p">,</span>
+        <span class="n">stream</span><span class="o">=</span><span class="n">input_video_stream</span><span class="p">,</span>
+        <span class="n">any_frame</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># only seek to the nearest keyframe</span>
+        <span class="n">backward</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># select the nearest keyframe if no exact position is found</span>
+    <span class="p">)</span>
+
     <span class="k">if</span> <span class="n">input_audio_stream</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">audio_start_pts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">start_seconds</span> <span class="o">/</span> <span class="n">input_audio_stream</span><span class="o">.</span><span class="n">time_base</span><span class="p">)</span>
         <span class="n">audio_end_pts</span> <span class="o">=</span> <span class="n">end_seconds</span> <span class="o">/</span> <span class="n">input_audio_stream</span><span class="o">.</span><span class="n">time_base</span> <span class="k">if</span> <span class="n">end_seconds</span> <span class="k">else</span> <span class="n">input_audio_stream</span><span class="o">.</span><span class="n">duration</span>
@@ -1029,12 +1039,14 @@
 
 <div class="viewcode-block" id="extract_key_frames">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.mm_utils.html#data_juicer.utils.mm_utils.extract_key_frames">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">extract_key_frames</span><span class="p">(</span><span class="n">input_video</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">av</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">InputContainer</span><span class="p">]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_key_frames</span><span class="p">(</span><span class="n">input_video</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">av</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">InputContainer</span><span class="p">],</span> <span class="n">video_stream_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Extract key frames from the input video. If there is no keyframes in the</span>
 <span class="sd">    video, return the first frame.</span>
 
 <span class="sd">    :param input_video: input video path or container.</span>
+<span class="sd">    :param video_stream_index: the video stream index to decode,</span>
+<span class="sd">        default set to 0.</span>
 <span class="sd">    :return: a list of key frames.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># load the input video</span>
@@ -1050,7 +1062,7 @@
         <span class="p">)</span>
 
     <span class="n">key_frames</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">input_video_stream</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">input_video_stream</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="n">video_stream_index</span><span class="p">]</span>
     <span class="n">ori_skip_method</span> <span class="o">=</span> <span class="n">input_video_stream</span><span class="o">.</span><span class="n">codec_context</span><span class="o">.</span><span class="n">skip_frame</span>
     <span class="n">input_video_stream</span><span class="o">.</span><span class="n">codec_context</span><span class="o">.</span><span class="n">skip_frame</span> <span class="o">=</span> <span class="s2">&quot;NONKEY&quot;</span>
     <span class="c1"># restore to the beginning of the video</span>
