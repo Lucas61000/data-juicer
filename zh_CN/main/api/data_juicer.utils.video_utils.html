@@ -817,16 +817,6 @@ will cut the video from the start_seconds to the end of the video.</p></li>
 <dd class="field-even"><p>Clip object.</p>
 </dd>
 </dl>
-<p>Note:
-- When saving to output_path (video file mode):</p>
-<blockquote>
-<div><p>1. This implementation uses full re-encoding with OpenCV's VideoWriter,
-which is slower than stream copy methods and may cause quality loss
-2. The output video uses MPEG-4 codec (mp4v fourcc) with default encoding parameters,
-which may not be optimal for quality/size balance
-3. For large-scale video processing, consider using FFmpeg-based implementations
-(see AVReader/FFmpegReader) for better performance.</p>
-</div></blockquote>
 </dd></dl>
 
 <dl class="py method">
