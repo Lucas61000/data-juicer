@@ -386,7 +386,7 @@
 <span class="sd">    video does not contain any scenes, it remains unchanged.&quot;&quot;&quot;</span>
 
     <span class="c1"># Define shared detector keys and their properties</span>
-    <span class="n">avaliable_detectors</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">available_detectors</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;ContentDetector&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">,</span> <span class="s2">&quot;luma_only&quot;</span><span class="p">,</span> <span class="s2">&quot;kernel_size&quot;</span><span class="p">],</span>
         <span class="s2">&quot;AdaptiveDetector&quot;</span><span class="p">:</span> <span class="p">[</span>
             <span class="s2">&quot;window_width&quot;</span><span class="p">,</span>
@@ -430,10 +430,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_extra_parameters</span><span class="p">(</span><span class="nb">locals</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_parameters</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;save_dir&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">detector</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">avaliable_detectors</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">detector</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_detectors</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Scene detector </span><span class="si">{</span><span class="n">detector</span><span class="si">}</span><span class="s2"> is not supported. &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Can only be one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">avaliable_detectors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Can only be one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_detectors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">detector</span> <span class="o">=</span> <span class="n">detector</span>
@@ -443,9 +443,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">=</span> <span class="n">save_dir</span>
 
         <span class="c1"># prepare detector args</span>
-        <span class="n">avaliable_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">avaliable_detectors</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="p">]</span>
+        <span class="n">available_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_detectors</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">detector_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">scenedetect</span><span class="o">.</span><span class="n">detectors</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">detector_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">avaliable_kwargs</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detector_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">available_kwargs</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="VideoSplitBySceneMapper.process_single">
