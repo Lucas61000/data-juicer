@@ -211,7 +211,7 @@
 <li class="toctree-l1"><a class="reference internal" href="docs/DatasetCfg_ZH.html">数据集配置指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/BadDataExhibition_ZH.html">“坏”数据展览</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/DJ_SORA_ZH.html">DJ-SORA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="docs/DJ_agent_ZH.html">DataJuicer-Agent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/DJ_agent_ZH.html">DataJuicer 智能体</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/DJ_service_ZH.html">DJ_服务化</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/DeveloperGuide_ZH.html">开发者指南</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/Distributed_ZH.html">Data-Juicer 分布式数据处理</a></li>
@@ -432,16 +432,15 @@
 <section id="data-juicer">
 <h2>为什么选择 Data-Juicer？<a class="headerlink" href="#data-juicer" title="Link to this heading">¶</a></h2>
 <img src="https://img.alicdn.com/imgextra/i4/O1CN015URK6i21KU3XdkUpK_!!6000000006966-2-tps-3994-3956.png" align="center" width="500" />
-<ul class="simple">
+<ul>
 <li><p><strong>系统化和可重用</strong>：
 系统化地为用户提供 100 多个核心 <a class="reference internal" href="docs/Operators.html"><span class="std std-doc">算子</span></a> 和 50 多个可重用的数据菜谱和
 专用工具套件，旨在解耦于特定的多模态 LLM 数据集和处理管道运行。支持预训练、后训练、英语、中文等场景中的数据分析、清洗和合成。</p></li>
 <li><p><strong>易用、可扩展</strong>：
-简洁灵活，提供快速<a class="reference internal" href="docs/tutorial/QuickStart_ZH.html"><span class="std std-doc">入门指南</span></a>和包含丰富使用示例的<a class="reference internal" href="docs/tutorial/DJ-Cookbook_ZH.html"><span class="std std-doc">DJ-Cookbook</span></a>。您可以灵活实现自己的OP，<a class="reference internal" href="docs/DeveloperGuide_ZH.html"><span class="std std-doc">自定义</span></a>数据处理工作流。</p></li>
-</ul>
+简洁灵活，提供快速<a class="reference internal" href="docs/tutorial/QuickStart_ZH.html"><span class="std std-doc">入门指南</span></a>和包含丰富使用示例的<a class="reference internal" href="docs/tutorial/DJ-Cookbook_ZH.html"><span class="std std-doc">DJ-Cookbook</span></a>。您可以灵活实现自己的OP，<a class="reference internal" href="docs/DeveloperGuide_ZH.html"><span class="std std-doc">自定义</span></a>数据处理工作流。</p>
 <p>Data-Juicer 现采用 AI 自动重写和优化算子的 docstring，并生成详细的算子文档，帮助更快理解每个算子的功能及用法。<br />
-如需了解该文档增强流程的具体实现，欢迎访问 <a class="reference external" href="https://github.com/datajuicer/data-juicer/tree/dj_agents/demos/op_doc_enhance_workflow"><code class="docutils literal notranslate"><span class="pre">dj_agents</span></code> 分支下的 demos/op_doc_enhance_workflow 文件夹</a>。</p>
-<ul class="simple">
+如需了解该文档增强流程的具体实现，欢迎访问 <a class="reference external" href="https://github.com/datajuicer/data-juicer/tree/main/docs/op_doc_enhance_workflow">op_doc_enhance_workflow</a>。</p>
+</li>
 <li><p><strong>高效、稳定</strong>：提供性能优化的<a class="reference internal" href="docs/Distributed_ZH.html"><span class="std std-doc">并行数据处理能力</span></a>（Aliyun-PAI\Ray\CUDA\OP Fusion），
 更快、更少资源消耗，基于大规模生产环境打磨。</p></li>
 <li><p><strong>效果验证、沙盒</strong>：支持数据模型协同开发，通过<a class="reference internal" href="docs/Sandbox_ZH.html"><span class="std std-doc">沙盒实验室</span></a>实现快速迭代，提供反馈循环、可视化等功能，让您更好地理解和改进数据和模型。已经有许多基于 DJ 衍生的数据菜谱和模型经过了效用验证，譬如在预训练、文生视频、图文生成等场景。
