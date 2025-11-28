@@ -279,12 +279,12 @@
       <dt>Language</dt>
       <dd>
         
-        <a href="../../../en/main/docs/DJ_agent.html"
+        <a href="../../../en/main/docs/DJ_agents.html"
           >
           English
         </a>
         
-        <a href="../../../zh_CN/main/docs/DJ_agent_ZH.html"
+        <a href="../../../zh_CN/main/docs/DJ_agents_ZH.html"
           >
           简体中文
         </a>
@@ -298,23 +298,23 @@
       <dt>Version</dt>
       <dd>
         
-        <a href="../../main/docs/DJ_agent_ZH.html" class="active" >
+        <a href="../../main/docs/DJ_agents_ZH.html" class="active" >
           main
         </a>
         
-        <a href="../../v1.4.3/docs/DJ_agent_ZH.html" >
+        <a href="../../v1.4.3/docs/DJ_agents_ZH.html" >
           v1.4.3
         </a>
         
-        <a href="../../v1.4.2/docs/DJ_agent_ZH.html" >
+        <a href="../../v1.4.2/docs/DJ_agents_ZH.html" >
           v1.4.2
         </a>
         
-        <a href="../../v1.4.1/docs/DJ_agent_ZH.html" >
+        <a href="../../v1.4.1/docs/DJ_agents_ZH.html" >
           v1.4.1
         </a>
         
-        <a href="../../v1.4.0/docs/DJ_agent_ZH.html" >
+        <a href="../../v1.4.0/docs/DJ_agents_ZH.html" >
           v1.4.0
         </a>
         
@@ -338,7 +338,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/docs/DJ_agent_ZH.md.txt" title="View this page">
+  <a class="muted-link" href="../_sources/docs/DJ_agents_ZH.md.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -359,17 +359,17 @@
           <section id="datajuicer">
 <h1>DataJuicer 智能体<a class="headerlink" href="#datajuicer" title="Link to this heading">¶</a></h1>
 <p>基于 <a class="reference external" href="https://github.com/agentscope-ai/agentscope">AgentScope</a> 和 <a class="reference external" href="https://github.com/datajuicer/data-juicer">Data-Juicer (DJ)</a> 构建的数据处理多智能体系统。该项目展示了如何利用大模型的自然语言理解能力，让非专家用户也能轻松使用 Data-Juicer 的强大数据处理能力。</p>
-<section id="datajuicer-agent">
-<h2>🎯 为什么需要 DataJuicer Agent？<a class="headerlink" href="#datajuicer-agent" title="Link to this heading">¶</a></h2>
+<section id="datajuicer-agents">
+<h2>🎯 为什么需要 DataJuicer Agents？<a class="headerlink" href="#datajuicer-agents" title="Link to this heading">¶</a></h2>
 <p>在大模型研发和应用的实际工作中，<strong>数据处理仍然是一个高成本、低效率、难复现的环节</strong>。很多团队花在数据分析、清洗、合成等阶段的时间，往往超过模型训练、需求对齐、应用功能开发。</p>
 <p>我们希望通过智能体技术，把开发者从繁琐的脚本拼凑中解放出来，让数据研发更接近&quot;所想即所得&quot;的体验。</p>
 <p><strong>数据直接定义了模型能力的上限</strong>。真正决定模型表现的，是数据的<strong>质量、多样性、有害性控制、任务匹配度</strong>等多个维度。优化数据，本质上就是在优化模型本身。而要高效地做这件事，我们需要一套系统化的工具。</p>
-<p>DataJuicer Agent 正是为支撑<strong>数据与模型协同优化</strong>这一新范式而设计的智能协作系统。</p>
+<p>DataJuicer Agents 正是为支撑<strong>数据与模型协同优化</strong>这一新范式而设计的智能协作系统。</p>
 </section>
 <section id="id1">
 <h2>📋 目录<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="#datajuicer-agent">🎯 为什么需要 DataJuicer Agent？</a></p></li>
+<li><p><a class="reference internal" href="#datajuicer-agents">🎯 为什么需要 DataJuicer Agents？</a></p></li>
 <li><p><a class="reference internal" href="#id1">📋 目录</a></p></li>
 <li><p><a class="reference internal" href="#id2">这个智能体做了什么？</a></p></li>
 <li><p><a class="reference internal" href="#id3">架构</a></p>
@@ -437,7 +437,7 @@
 <li><p><strong>协同开发平台（DJ-Sandbox）</strong>：引入 A/B Test 与 Scaling Law 思想，用小规模实验驱动大规模优化</p></li>
 <li><p><strong>自然语言交互层（DJ-Agents）</strong>：通过 Agent 技术，让开发者用对话方式构建数据流水线</p></li>
 </ul>
-<p>DataJuicer Agent 不是一个简单的问答机器人，而是一个<strong>数据处理的智能协作者</strong>。具体来说，它能：</p>
+<p>DataJuicer Agents 不是一个简单的问答机器人，而是一个<strong>数据处理的智能协作者</strong>。具体来说，它能：</p>
 <ul class="simple">
 <li><p><strong>智能查询</strong>：根据自然语言描述，自动匹配最合适的算子（从近200个算子中精准定位）</p></li>
 <li><p><strong>自动化流程</strong>：描述数据处理需求，自动生成 Data-Juicer YAML 配置并执行</p></li>
@@ -449,7 +449,7 @@
 <h2>架构<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
 <section id="id4">
 <h3>多智能体路由架构<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
-<p>DataJuicer Agent 采用<strong>多智能体路由架构</strong>，当用户输入一个自然语言请求，首先由 <strong>Router Agent</strong> 进行任务分诊，判断这是标准的数据处理任务，还是需要开发新能力的定制需求。</p>
+<p>DataJuicer Agents 采用<strong>多智能体路由架构</strong>，当用户输入一个自然语言请求，首先由 <strong>Router Agent</strong> 进行任务分诊，判断这是标准的数据处理任务，还是需要开发新能力的定制需求。</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>用户查询
   ↓
 Router Agent (筛选&amp;决策) ← query_dj_operators （算子检索）
@@ -511,11 +511,11 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 </div>
 </li>
 <li><p>以可编辑模式安装：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>/path/to/data-juicer<span class="w"> </span>-e
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>/path/to/data-juicer
 </pre></div>
 </div>
 <p>或</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>/path/to/data-juicer<span class="w"> </span>-e
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>/path/to/data-juicer
 </pre></div>
 </div>
 </li>
@@ -547,9 +547,9 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 </section>
 <section id="id10">
 <h3>使用<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
-<p>通过 <code class="docutils literal notranslate"><span class="pre">-u</span></code> 或 <code class="docutils literal notranslate"><span class="pre">--use_studio</span></code> 参数选择运行方式：</p>
+<p>通过 <code class="docutils literal notranslate"><span class="pre">-u</span></code> 或 <code class="docutils literal notranslate"><span class="pre">--use-studio</span></code> 参数选择运行方式：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 使用 AgentScope Studio 的交互式界面（请先安装并启动 AgentScope Studio）</span>
-dj-agents<span class="w"> </span>--use_studio<span class="w"> </span>True
+dj-agents<span class="w"> </span>--use-studio
 
 <span class="c1"># 或直接使用命令行模式（默认）</span>
 dj-agents
@@ -589,7 +589,7 @@ dj-agents
 </ul>
 <details>
 <summary>查看完整示例日志（from AgentScope Studio）</summary>
-<img src="assets/dj_agent_image.png" width="100%">
+<img src="imgs/dj_agent_image.png" width="100%">
 </details>
 <p><strong>示例执行流程：</strong></p>
 <p>用户输入：&quot;The data in ./data/demo-dataset-images.jsonl, remove samples with text field length less than 5 and image size less than 100Kb...&quot;</p>
@@ -631,7 +631,7 @@ dj-agents
 </ul>
 <details>
 <summary>查看完整示例日志（from AgentScope Studio）</summary>
-<img src="assets/dj_dev_agent_image.png" width="100%">
+<img src="imgs/dj_dev_agent_image.png" width="100%">
 </details>
 </section>
 </section>
@@ -688,7 +688,7 @@ dj-agents
 <li><p>适合精细化控制，构建完全定制化的数据处理管道</p></li>
 </ul>
 <p>这意味着，在某些场景下，Agent 的调用路径可以比手动写 YAML <em>更短、更快、更直接</em>。</p>
-<p>详细信息请参考：<a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/DJ_service.html#mcp-server">Data-Juicer MCP 服务文档</a></p>
+<p>详细信息请参考：<a class="reference external" href="https://datajuicer.github.io/data-juicer/zh_CN/main/docs/DJ_service_ZH.html#mcp">Data-Juicer MCP 服务文档</a></p>
 <blockquote>
 <div><p><strong>注意</strong>：Data-Juicer MCP 服务器目前处于早期开发阶段，功能和工具可能会随着持续开发而变化。</p>
 </div></blockquote>
@@ -708,7 +708,7 @@ dj-agents
 </section>
 <section id="id20">
 <h4>使用方法<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h4>
-<p>启用 MCP 智能体替代 DJ 智能体：</p>
+<p>启用 MCP 智能体替代数据处理智能体：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 启用 MCP 智能体和开发智能体</span>
 dj-agents<span class="w"> </span>--agents<span class="w"> </span>dj_mcp<span class="w"> </span>dj_dev
 
@@ -736,7 +736,7 @@ dj-agents<span class="w"> </span>-a<span class="w"> </span>dj_mcp<span class="w"
 </section>
 <section id="id23">
 <h3>扩展新智能体<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
-<p>DataJuicer Agent 是一个开放框架。核心在于 <code class="docutils literal notranslate"><span class="pre">agents2toolkit</span></code> 函数——它能将任意 Agent 自动包装为 Router 可调用的工具。</p>
+<p>DataJuicer Agents 是一个开放框架。核心在于 <code class="docutils literal notranslate"><span class="pre">agents2toolkit</span></code> 函数——它能将任意 Agent 自动包装为 Router 可调用的工具。</p>
 <p>只需将你的 Agent 实例加入 <code class="docutils literal notranslate"><span class="pre">agents</span></code> 列表，Router 就会在运行时动态生成对应工具，并根据任务语义自动路由。</p>
 <p>这意味着，你可以基于此框架，快速构建领域专属的数据智能体。</p>
 <p><em>扩展性，是我们设计的重要原则</em>。</p>
@@ -815,7 +815,7 @@ A: 请检查是否在agentscope studio中上传了非文本信息（例如数据
 </ul>
 </li>
 </ul>
-<p><strong>贡献指南</strong>：欢迎提交 Issue 和 Pull Request 来改进 agentscope、DataJuicer Agent 及 DataJuicer。如果您在使用过程中遇到问题或有功能建议，请随时联系我们。</p>
+<p><strong>贡献指南</strong>：欢迎提交 Issue 和 Pull Request 来改进 agentscope、DataJuicer Agents 及 DataJuicer。如果您在使用过程中遇到问题或有功能建议，请随时联系我们。</p>
 </section>
 </section>
 
@@ -875,7 +875,7 @@ A: 请检查是否在agentscope studio中上传了非文本信息（例如数据
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">DataJuicer 智能体</a><ul>
-<li><a class="reference internal" href="#datajuicer-agent">🎯 为什么需要 DataJuicer Agent？</a></li>
+<li><a class="reference internal" href="#datajuicer-agents">🎯 为什么需要 DataJuicer Agents？</a></li>
 <li><a class="reference internal" href="#id1">📋 目录</a></li>
 <li><a class="reference internal" href="#id2">这个智能体做了什么？</a></li>
 <li><a class="reference internal" href="#id3">架构</a><ul>
