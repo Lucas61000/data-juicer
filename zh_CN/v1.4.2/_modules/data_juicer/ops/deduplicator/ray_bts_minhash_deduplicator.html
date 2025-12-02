@@ -1161,6 +1161,63 @@
         <span class="k">return</span> <span class="n">result</span></div>
 </div>
 
+
+
+<div class="viewcode-block" id="RayBTSMinhashDeduplicatorWithUid">
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_bts_minhash_deduplicator.html#data_juicer.ops.deduplicator.RayBTSMinhashDeduplicatorWithUid">[文档]</a>
+<span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OP_NAME</span><span class="si">}</span><span class="s2">_with_uid&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RayBTSMinhashDeduplicatorWithUid</span><span class="p">(</span><span class="n">RayBTSMinhashDeduplicator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A MinhashLSH deduplicator based on RAY.</span>
+
+<span class="sd">    Unlike `RayBTSMinhashDeduplicator`, this class requires the input dataset to contain an additional column</span>
+<span class="sd">    named &#39;__dj__uid&#39; of type int, where each value is unique across samples. This column serves two main purposes:</span>
+
+<span class="sd">    1. **Reduced I/O Overhead**: Compared to RayBTSMinhashDeduplicator, this class does not persist intermediate</span>
+<span class="sd">    results, thereby reducing disk read and write operations.</span>
+
+<span class="sd">    2. **Support for Incremental Deduplication**: The &#39;__dj__uid&#39; column enables the deduplicator to perform</span>
+<span class="sd">    incremental deduplication. This is particularly useful in scenarios where you already have a deduplicated dataset</span>
+<span class="sd">    (e.g., dataset A) and want to add a new dataset (e.g., dataset B) while ensuring that duplicates are resolved</span>
+<span class="sd">    in favor of the original data.</span>
+
+<span class="sd">        For example, consider a scenario where you have an already deduplicated dataset A and a new dataset B that</span>
+<span class="sd">        you wish to add. If you want to perform joint deduplication on both A and B while prioritizing the retention</span>
+<span class="sd">        of data from A, you can ensure that all &#39;__dj__uid&#39; values in B are greater than those in A. Then, by applying</span>
+<span class="sd">        this deduplicator to the combined dataset, duplicates will be resolved in favor of the entries from A.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RayBTSMinhashDeduplicatorWithUid.run">
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_bts_minhash_deduplicator.html#data_juicer.ops.deduplicator.RayBTSMinhashDeduplicatorWithUid.run">[文档]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Ignore additional parameters like exporter, tracer, etc.</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">minhash_with_uid</span><span class="p">(</span><span class="n">table</span><span class="p">:</span> <span class="n">pa</span><span class="o">.</span><span class="n">Table</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pa</span><span class="o">.</span><span class="n">Table</span><span class="p">:</span>
+            <span class="n">uid_list</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">HashKeys</span><span class="o">.</span><span class="n">uid</span><span class="p">]</span><span class="o">.</span><span class="n">to_pylist</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calc_minhash</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_key</span><span class="p">],</span> <span class="n">uid_list</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">table</span>
+
+        <span class="n">dataset</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
+            <span class="n">minhash_with_uid</span><span class="p">,</span>
+            <span class="n">batch_format</span><span class="o">=</span><span class="s2">&quot;pyarrow&quot;</span><span class="p">,</span>
+            <span class="n">zero_copy_batch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">materialize</span><span class="p">()</span>
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MinHash time = </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">merge</span><span class="p">()</span>
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;merge time = </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filter_with_union_find</span><span class="p">,</span>
+            <span class="n">batch_format</span><span class="o">=</span><span class="s2">&quot;pyarrow&quot;</span><span class="p">,</span>
+            <span class="n">zero_copy_batch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+</div>
+
 </pre></div>
         </article>
       </div>
