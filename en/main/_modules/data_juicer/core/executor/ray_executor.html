@@ -446,16 +446,16 @@
             <span class="c1"># The RayExporter will handle falling back to environment variables or other credential mechanisms.</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;export_aws_credentials&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">export_aws_credentials</span><span class="p">:</span>
                 <span class="n">export_aws_creds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">export_aws_credentials</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">export_aws_creds</span><span class="p">,</span> <span class="s2">&quot;aws_access_key_id&quot;</span><span class="p">):</span>
-                    <span class="n">export_extra_args</span><span class="p">[</span><span class="s2">&quot;aws_access_key_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">export_aws_creds</span><span class="o">.</span><span class="n">aws_access_key_id</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">export_aws_creds</span><span class="p">,</span> <span class="s2">&quot;aws_secret_access_key&quot;</span><span class="p">):</span>
-                    <span class="n">export_extra_args</span><span class="p">[</span><span class="s2">&quot;aws_secret_access_key&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">export_aws_creds</span><span class="o">.</span><span class="n">aws_secret_access_key</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">export_aws_creds</span><span class="p">,</span> <span class="s2">&quot;aws_session_token&quot;</span><span class="p">):</span>
-                    <span class="n">export_extra_args</span><span class="p">[</span><span class="s2">&quot;aws_session_token&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">export_aws_creds</span><span class="o">.</span><span class="n">aws_session_token</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">export_aws_creds</span><span class="p">,</span> <span class="s2">&quot;aws_region&quot;</span><span class="p">):</span>
-                    <span class="n">export_extra_args</span><span class="p">[</span><span class="s2">&quot;aws_region&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">export_aws_creds</span><span class="o">.</span><span class="n">aws_region</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">export_aws_creds</span><span class="p">,</span> <span class="s2">&quot;endpoint_url&quot;</span><span class="p">):</span>
-                    <span class="n">export_extra_args</span><span class="p">[</span><span class="s2">&quot;endpoint_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">export_aws_creds</span><span class="o">.</span><span class="n">endpoint_url</span>
+                <span class="c1"># Iterate through the required fields directly, and copy them to export_extra_args if they exist.</span>
+                <span class="n">credential_fields</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;aws_access_key_id&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;aws_secret_access_key&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;aws_session_token&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;aws_region&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;endpoint_url&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">credential_fields</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">export_aws_creds</span><span class="p">):</span>
+                    <span class="n">export_extra_args</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">export_aws_creds</span><span class="p">[</span><span class="n">field</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">exporter</span> <span class="o">=</span> <span class="n">RayExporter</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">export_path</span><span class="p">,</span>
