@@ -1337,6 +1337,87 @@
 
 
 
+<div class="viewcode-block" id="prepare_video_depth_anything">
+<a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_video_depth_anything">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_video_depth_anything</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.cache_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_JUICER_ASSETS_CACHE</span>
+
+    <span class="n">video_depth_anything_repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_JUICER_ASSETS_CACHE</span><span class="p">,</span> <span class="s2">&quot;Video-Depth-Anything&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">video_depth_anything_repo_path</span><span class="p">):</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;git&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;clone&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;https://github.com/DepthAnything/Video-Depth-Anything.git&quot;</span><span class="p">,</span>
+                <span class="n">video_depth_anything_repo_path</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">video_depth_anything_repo_path</span><span class="p">)</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">video_depth_anything.video_depth</span><span class="w"> </span><span class="kn">import</span> <span class="n">VideoDepthAnything</span>
+
+    <span class="n">device</span> <span class="o">=</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;device&quot;</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+
+    <span class="n">model_configs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;vits&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;encoder&quot;</span><span class="p">:</span> <span class="s2">&quot;vits&quot;</span><span class="p">,</span> <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s2">&quot;out_channels&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">48</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">384</span><span class="p">]},</span>
+        <span class="s2">&quot;vitb&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;encoder&quot;</span><span class="p">:</span> <span class="s2">&quot;vitb&quot;</span><span class="p">,</span> <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span> <span class="s2">&quot;out_channels&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">96</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">384</span><span class="p">,</span> <span class="mi">768</span><span class="p">]},</span>
+        <span class="s2">&quot;vitl&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;encoder&quot;</span><span class="p">:</span> <span class="s2">&quot;vitl&quot;</span><span class="p">,</span> <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span> <span class="s2">&quot;out_channels&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">1024</span><span class="p">]},</span>
+    <span class="p">}</span>
+
+    <span class="n">model_links</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;video_depth_anything_vits&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/depth-anything/Video-Depth-Anything-Small/resolve/main/video_depth_anything_vits.pth&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;video_depth_anything_vitb&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/depth-anything/Video-Depth-Anything-Base/resolve/main/video_depth_anything_vitb.pth&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;video_depth_anything_vitl&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/depth-anything/Video-Depth-Anything-Large/resolve/main/video_depth_anything_vitl.pth&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;metric_video_depth_anything_vits&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/depth-anything/Metric-Video-Depth-Anything-Small/resolve/main/metric_video_depth_anything_vits.pth&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;metric_video_depth_anything_vitb&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/depth-anything/Metric-Video-Depth-Anything-Base/resolve/main/metric_video_depth_anything_vitb.pth&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;metric_video_depth_anything_vitl&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/depth-anything/Metric-Video-Depth-Anything-Large/resolve/main/metric_video_depth_anything_vitl.pth&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="s2">&quot;vits&quot;</span> <span class="ow">in</span> <span class="n">model_path</span><span class="p">:</span>
+        <span class="n">encoder_type</span> <span class="o">=</span> <span class="s2">&quot;vits&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;vitb&quot;</span> <span class="ow">in</span> <span class="n">model_path</span><span class="p">:</span>
+        <span class="n">encoder_type</span> <span class="o">=</span> <span class="s2">&quot;vitb&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">encoder_type</span> <span class="o">=</span> <span class="s2">&quot;vitl&quot;</span>
+
+    <span class="k">if</span> <span class="s2">&quot;metric&quot;</span> <span class="ow">in</span> <span class="n">model_path</span><span class="p">:</span>
+        <span class="n">metric</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">metric</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="s2">&quot;metric_video_depth_anything_vitl&quot;</span> <span class="ow">in</span> <span class="n">model_path</span><span class="p">:</span>
+        <span class="n">model_type</span> <span class="o">=</span> <span class="s2">&quot;metric_video_depth_anything_vitl&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;metric_video_depth_anything_vitb&quot;</span> <span class="ow">in</span> <span class="n">model_path</span><span class="p">:</span>
+        <span class="n">model_type</span> <span class="o">=</span> <span class="s2">&quot;metric_video_depth_anything_vitb&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;metric_video_depth_anything_vits&quot;</span> <span class="ow">in</span> <span class="n">model_path</span><span class="p">:</span>
+        <span class="n">model_type</span> <span class="o">=</span> <span class="s2">&quot;metric_video_depth_anything_vits&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;video_depth_anything_vitb&quot;</span> <span class="ow">in</span> <span class="n">model_path</span><span class="p">:</span>
+        <span class="n">model_type</span> <span class="o">=</span> <span class="s2">&quot;video_depth_anything_vitb&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;video_depth_anything_vitl&quot;</span> <span class="ow">in</span> <span class="n">model_path</span><span class="p">:</span>
+        <span class="n">model_type</span> <span class="o">=</span> <span class="s2">&quot;video_depth_anything_vitl&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">model_type</span> <span class="o">=</span> <span class="s2">&quot;video_depth_anything_vits&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">model_path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">DJMC</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">DJMC</span><span class="p">)</span>
+
+        <span class="n">model_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DJMC</span><span class="p">,</span> <span class="n">model_type</span> <span class="o">+</span> <span class="s2">&quot;.pth&quot;</span><span class="p">)</span>
+        <span class="n">wget</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">model_links</span><span class="p">[</span><span class="n">model_type</span><span class="p">],</span> <span class="n">model_path</span><span class="p">)</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">VideoDepthAnything</span><span class="p">(</span><span class="o">**</span><span class="n">model_configs</span><span class="p">[</span><span class="n">encoder_type</span><span class="p">],</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">),</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">model</span></div>
+
+
+
 <div class="viewcode-block" id="prepare_yolo_model">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_yolo_model">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_yolo_model</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
@@ -1641,6 +1722,7 @@
     <span class="s2">&quot;spacy&quot;</span><span class="p">:</span> <span class="n">prepare_spacy_model</span><span class="p">,</span>
     <span class="s2">&quot;vggt&quot;</span><span class="p">:</span> <span class="n">prepare_vggt_model</span><span class="p">,</span>
     <span class="s2">&quot;video_blip&quot;</span><span class="p">:</span> <span class="n">prepare_video_blip_model</span><span class="p">,</span>
+    <span class="s2">&quot;video_depth_anything&quot;</span><span class="p">:</span> <span class="n">prepare_video_depth_anything</span><span class="p">,</span>
     <span class="s2">&quot;vllm&quot;</span><span class="p">:</span> <span class="n">prepare_vllm_model</span><span class="p">,</span>
     <span class="s2">&quot;wilor&quot;</span><span class="p">:</span> <span class="n">prepare_wilor_model</span><span class="p">,</span>
     <span class="s2">&quot;yolo&quot;</span><span class="p">:</span> <span class="n">prepare_yolo_model</span><span class="p">,</span>

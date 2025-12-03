@@ -418,7 +418,7 @@ Data-Juicer 中的算子分为以下 7 种类型。</p>
 <td><p>Group samples to batched samples. 将样本分组，每一组组成一个批量样本。</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../api/data_juicer.ops.mapper.html#module-data_juicer.ops.mapper" title="data_juicer.ops.mapper"><span class="xref myst py py-mod">mapper</span></a></p></td>
-<td class="text-center"><p>90</p></td>
+<td class="text-center"><p>92</p></td>
 <td><p>Edits and transforms samples. 对数据样本进行编辑和转换。</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="../api/data_juicer.ops.selector.html#module-data_juicer.ops.selector" title="data_juicer.ops.selector"><span class="xref myst py py-mod">selector</span></a></p></td>
@@ -1496,27 +1496,39 @@ Data-Juicer 中的算子分为以下 7 种类型。</p>
 <td><p>-</p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>video_extract_frames_mapper</p></td>
+<tr class="row-odd"><td><p>video_depth_estimation_mapper</p></td>
+<td><p>🎬Video 🚀GPU 🟡Beta</p></td>
+<td><p>Perform depth estimation on the video. 对视频进行深度估计。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>video_extract_frames_mapper</p></td>
 <td><p>🔮Multimodal 💻CPU 🟢Stable</p></td>
 <td><p>Mapper to extract frames from video files according to specified methods. 映射器根据指定的方法从视频文件中提取帧。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/video_extract_frames_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>video_face_blur_mapper</p></td>
+<tr class="row-odd"><td><p>video_face_blur_mapper</p></td>
 <td><p>🎬Video 💻CPU 🟢Stable</p></td>
 <td><p>Mapper to blur faces detected in videos. 映射器模糊在视频中检测到的人脸。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/video_face_blur_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>video_ffmpeg_wrapped_mapper</p></td>
+<tr class="row-even"><td><p>video_ffmpeg_wrapped_mapper</p></td>
 <td><p>🎬Video 💻CPU 🟢Stable</p></td>
 <td><p>Wraps FFmpeg video filters for processing video files in a dataset. 包装FFmpeg视频过滤器，用于处理数据集中的视频文件。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/video_ffmpeg_wrapped_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>video_hand_reconstruction_mapper</p></td>
+<tr class="row-odd"><td><p>video_hand_reconstruction_mapper</p></td>
 <td><p>🎬Video 🚀GPU 🟡Beta</p></td>
 <td><p>Use the WiLoR model for hand localization and reconstruction. 使用WiLoR模型进行手部定位和重建。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>video_object_segmenting_mapper</p></td>
+<td><p>🎬Video 🚀GPU 🧩HF 🟡Beta</p></td>
+<td><p>Text-guided semantic segmentation of valid objects throughout the video (YOLOE + SAM2). 在整个视频中对有效对象进行文本引导的语义分割 (YOLOE SAM2)。</p></td>
 <td><p>-</p></td>
 <td><p>-</p></td>
 </tr>
