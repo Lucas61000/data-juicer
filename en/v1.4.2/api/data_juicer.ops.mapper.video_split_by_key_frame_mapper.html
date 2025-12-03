@@ -177,7 +177,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -347,65 +347,13 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-data_juicer.ops.mapper.video_split_by_key_frame_mapper">
-<span id="data-juicer-ops-mapper-video-split-by-key-frame-mapper-module"></span><h1>data_juicer.ops.mapper.video_split_by_key_frame_mapper module<a class="headerlink" href="#module-data_juicer.ops.mapper.video_split_by_key_frame_mapper" title="Link to this heading">¶</a></h1>
-<dl class="py function">
-<dt class="sig sig-object py" id="data_juicer.ops.mapper.video_split_by_key_frame_mapper.create_replacer">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.video_split_by_key_frame_mapper.</span></span><span class="sig-name descname"><span class="pre">create_replacer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replacements</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/video_split_by_key_frame_mapper.html#create_replacer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.create_replacer" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.video_split_by_key_frame_mapper.</span></span><span class="sig-name descname"><span class="pre">VideoSplitByKeyFrameMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keep_original_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">video_backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ffmpeg'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/video_split_by_key_frame_mapper.html#VideoSplitByKeyFrameMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="data_juicer.ops.base_op.html#data_juicer.ops.base_op.Mapper" title="data_juicer.ops.base_op.Mapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapper</span></code></a></p>
-<p>Splits a video into segments based on key frames.</p>
-<p>This operator processes video data by splitting it into multiple segments at key frame
-boundaries. It uses the key frames to determine where to make the splits. The original
-sample can be kept or discarded based on the <cite>keep_original_sample</cite> parameter. If
-<cite>save_dir</cite> is specified, the split video files will be saved in that directory;
-otherwise, they will be saved in the same directory as the input files. The operator
-processes each video in the sample and updates the sample with the new video keys and
-text placeholders. The <cite>Fields.source_file</cite> field is updated to reflect the new video
-segments. This operator works in batch mode, processing multiple samples at once.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keep_original_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">video_backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ffmpeg'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/video_split_by_key_frame_mapper.html#VideoSplitByKeyFrameMapper.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.__init__" title="Link to this definition">¶</a></dt>
-<dd><p>Initialization method.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>keep_original_sample</strong> – whether to keep the original sample. If
-it’s set to False, there will be only split sample in the
-final datasets and the original sample will be removed. It’s True
-in default.</p></li>
-<li><p><strong>save_dir</strong> – The directory where generated video files will be stored.
-If not specified, outputs will be saved in the same directory as their corresponding input files.
-This path can alternatively be defined by setting the <cite>DJ_PRODUCED_DATA_DIR</cite> environment variable.</p></li>
-<li><p><strong>video_backend</strong> – video backend, can be <cite>ffmpeg</cite>, <cite>av</cite>.</p></li>
-<li><p><strong>args</strong> – extra args</p></li>
-<li><p><strong>kwargs</strong> – extra args</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.get_split_key_frame">
-<span class="sig-name descname"><span class="pre">get_split_key_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">video_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/video_split_by_key_frame_mapper.html#VideoSplitByKeyFrameMapper.get_split_key_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.get_split_key_frame" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.process_batched">
-<span class="sig-name descname"><span class="pre">process_batched</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/video_split_by_key_frame_mapper.html#VideoSplitByKeyFrameMapper.process_batched"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.process_batched" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+          <section id="data-juicer-ops-mapper-video-split-by-key-frame-mapper-module">
+<h1>data_juicer.ops.mapper.video_split_by_key_frame_mapper module<a class="headerlink" href="#data-juicer-ops-mapper-video-split-by-key-frame-mapper-module" title="Link to this heading">¶</a></h1>
 </section>
 
         </article>
@@ -433,33 +381,8 @@ This path can alternatively be defined by setting the <cite>DJ_PRODUCED_DATA_DIR
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">data_juicer.ops.mapper.video_split_by_key_frame_mapper module</a><ul>
-<li><a class="reference internal" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.create_replacer"><code class="docutils literal notranslate"><span class="pre">create_replacer()</span></code></a></li>
-<li><a class="reference internal" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper"><code class="docutils literal notranslate"><span class="pre">VideoSplitByKeyFrameMapper</span></code></a><ul>
-<li><a class="reference internal" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.__init__"><code class="docutils literal notranslate"><span class="pre">VideoSplitByKeyFrameMapper.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.get_split_key_frame"><code class="docutils literal notranslate"><span class="pre">VideoSplitByKeyFrameMapper.get_split_key_frame()</span></code></a></li>
-<li><a class="reference internal" href="#data_juicer.ops.mapper.video_split_by_key_frame_mapper.VideoSplitByKeyFrameMapper.process_batched"><code class="docutils literal notranslate"><span class="pre">VideoSplitByKeyFrameMapper.process_batched()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

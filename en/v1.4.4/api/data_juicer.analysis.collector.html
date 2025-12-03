@@ -177,7 +177,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -353,42 +353,13 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-data_juicer.analysis.collector">
-<span id="data-juicer-analysis-collector-module"></span><h1>data_juicer.analysis.collector module<a class="headerlink" href="#module-data_juicer.analysis.collector" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="data_juicer.analysis.collector.TextTokenDistCollector">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.analysis.collector.</span></span><span class="sig-name descname"><span class="pre">TextTokenDistCollector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/analysis/collector.html#TextTokenDistCollector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.analysis.collector.TextTokenDistCollector" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Tokenize and collect distribution of tokens for given
-dataset with a specified tokenizer.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.analysis.collector.TextTokenDistCollector.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/analysis/collector.html#TextTokenDistCollector.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.analysis.collector.TextTokenDistCollector.__init__" title="Link to this definition">¶</a></dt>
-<dd><p>Initialization method.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>tokenizer</strong> – tokenizer name on huggingface</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.analysis.collector.TextTokenDistCollector.collect">
-<span class="sig-name descname"><span class="pre">collect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Categorical</span></span></span><a class="reference internal" href="../_modules/data_juicer/analysis/collector.html#TextTokenDistCollector.collect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.analysis.collector.TextTokenDistCollector.collect" title="Link to this definition">¶</a></dt>
-<dd><p>Tokenize and collect tokens distribution of input dataset
-:param data_path: path to input dataset.
-:param text_key: field keys that will be considered into token counts.
-:param num_proc: number of processes to count tokens.
-:return: token distribution.</p>
-</dd></dl>
-
-</dd></dl>
-
+          <section id="data-juicer-analysis-collector-module">
+<h1>data_juicer.analysis.collector module<a class="headerlink" href="#data-juicer-analysis-collector-module" title="Link to this heading">¶</a></h1>
 </section>
 
         </article>
@@ -416,31 +387,8 @@ dataset with a specified tokenizer.</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">data_juicer.analysis.collector module</a><ul>
-<li><a class="reference internal" href="#data_juicer.analysis.collector.TextTokenDistCollector"><code class="docutils literal notranslate"><span class="pre">TextTokenDistCollector</span></code></a><ul>
-<li><a class="reference internal" href="#data_juicer.analysis.collector.TextTokenDistCollector.__init__"><code class="docutils literal notranslate"><span class="pre">TextTokenDistCollector.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#data_juicer.analysis.collector.TextTokenDistCollector.collect"><code class="docutils literal notranslate"><span class="pre">TextTokenDistCollector.collect()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

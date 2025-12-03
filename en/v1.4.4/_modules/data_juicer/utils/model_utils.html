@@ -388,12 +388,16 @@
 <span class="n">aes_pred</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;aesthetics_predictor&quot;</span><span class="p">,</span> <span class="s2">&quot;simple-aesthetics-predictor&quot;</span><span class="p">)</span>
 <span class="n">vllm</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span>
 <span class="n">diffusers</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;diffusers&quot;</span><span class="p">)</span>
-<span class="n">ram</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;ram&quot;</span><span class="p">,</span> <span class="s2">&quot;git+https://github.com/xinyu1205/recognize-anything.git&quot;</span><span class="p">)</span>
+<span class="n">ram</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;ram&quot;</span><span class="p">,</span> <span class="s2">&quot;git+https://github.com/HYLcool/recognize-anything.git&quot;</span><span class="p">)</span>
 <span class="n">cv2</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;cv2&quot;</span><span class="p">,</span> <span class="s2">&quot;opencv-python&quot;</span><span class="p">)</span>
 <span class="n">openai</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;openai&quot;</span><span class="p">)</span>
 <span class="n">ultralytics</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;ultralytics&quot;</span><span class="p">)</span>
 <span class="n">tiktoken</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;tiktoken&quot;</span><span class="p">)</span>
 <span class="n">dashscope</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;dashscope&quot;</span><span class="p">)</span>
+<span class="n">qwen_vl_utils</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;qwen_vl_utils&quot;</span><span class="p">,</span> <span class="s2">&quot;qwen-vl-utils&quot;</span><span class="p">)</span>
+<span class="n">transformers_stream_generator</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span>
+    <span class="s2">&quot;transformers_stream_generator&quot;</span><span class="p">,</span> <span class="s2">&quot;git+https://github.com/HYLcool/transformers-stream-generator.git&quot;</span>
+<span class="p">)</span>
 
 <span class="n">MODEL_ZOO</span> <span class="o">=</span> <span class="p">{}</span>
 
@@ -894,6 +898,7 @@
         <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">return_pipe</span><span class="p">:</span>
+            <span class="n">pipe_params</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">transformers</span><span class="o">.</span><span class="n">PreTrainedTokenizerBase</span><span class="p">):</span>
                 <span class="n">pipe_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tokenizer&quot;</span><span class="p">:</span> <span class="n">processor</span><span class="p">}</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">transformers</span><span class="o">.</span><span class="n">SequenceFeatureExtractor</span><span class="p">):</span>
@@ -1326,10 +1331,13 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">post_init</span><span class="p">()</span>
 
     <span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">check_model_home</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">)</span>
-    <span class="n">processor</span> <span class="o">=</span> <span class="n">transformers</span><span class="o">.</span><span class="n">AutoProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">)</span>
+    <span class="n">processor</span> <span class="o">=</span> <span class="n">transformers</span><span class="o">.</span><span class="n">AutoProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+        <span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="n">num_query_tokens</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">return_model</span><span class="p">:</span>
         <span class="n">model_class</span> <span class="o">=</span> <span class="n">VideoBlipForConditionalGeneration</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">image_token_index</span> <span class="o">=</span> <span class="mi">50265</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">processor</span><span class="p">)</span> <span class="k">if</span> <span class="n">return_model</span> <span class="k">else</span> <span class="n">processor</span></div>
 
 
@@ -1369,18 +1377,19 @@
 
 <div class="viewcode-block" id="prepare_vllm_model">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_vllm_model">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">prepare_vllm_model</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_vllm_model</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="n">return_processor</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Prepare and load a HuggingFace model with the corresponding processor.</span>
 
 <span class="sd">    :param pretrained_model_name_or_path: model name or path</span>
+<span class="sd">    :param return_processor: whether to return the processor instead of the tokenizer</span>
 <span class="sd">    :param model_params: LLM initialization parameters.</span>
 <span class="sd">    :return: a tuple of (model, tokenizer)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;VLLM_WORKER_MULTIPROC_METHOD&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;spawn&quot;</span>
 
-    <span class="k">if</span> <span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;device&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;cuda:&quot;</span><span class="p">):</span>
-        <span class="n">model_params</span><span class="p">[</span><span class="s2">&quot;device&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;device&quot;</span> <span class="ow">in</span> <span class="n">model_params</span><span class="p">:</span>
+        <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;device&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">is_ray_mode</span><span class="p">():</span>
         <span class="n">tensor_parallel_size</span> <span class="o">=</span> <span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tensor_parallel_size&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -1391,7 +1400,11 @@
     <span class="n">model</span> <span class="o">=</span> <span class="n">vllm</span><span class="o">.</span><span class="n">LLM</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">check_model_home</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">),</span> <span class="n">generation_config</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">)</span>
     <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_tokenizer</span><span class="p">()</span>
 
-    <span class="k">return</span> <span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="n">return_processor</span><span class="p">:</span>
+        <span class="n">processor</span> <span class="o">=</span> <span class="n">transformers</span><span class="o">.</span><span class="n">AutoProcessor</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">processor</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span></div>
 
 
 
@@ -1590,6 +1603,28 @@
         <span class="n">sampling_params</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">th</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Use the threshold </span><span class="si">{</span><span class="n">th</span><span class="si">}</span><span class="s2"> as the sampling param </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">sampling_params</span></div>
+
+
+
+<div class="viewcode-block" id="prepare_qwen_vl_inputs_for_vllm">
+<a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_qwen_vl_inputs_for_vllm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_qwen_vl_inputs_for_vllm</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">processor</span><span class="p">):</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># qwen_vl_utils 0.0.14+ required</span>
+    <span class="n">image_inputs</span><span class="p">,</span> <span class="n">video_inputs</span><span class="p">,</span> <span class="n">video_kwargs</span> <span class="o">=</span> <span class="n">qwen_vl_utils</span><span class="o">.</span><span class="n">process_vision_info</span><span class="p">(</span>
+        <span class="n">messages</span><span class="p">,</span>
+        <span class="n">image_patch_size</span><span class="o">=</span><span class="n">processor</span><span class="o">.</span><span class="n">image_processor</span><span class="o">.</span><span class="n">patch_size</span><span class="p">,</span>
+        <span class="n">return_video_kwargs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_video_metadata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">mm_data</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">image_inputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mm_data</span><span class="p">[</span><span class="s2">&quot;image&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">image_inputs</span>
+    <span class="k">if</span> <span class="n">video_inputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mm_data</span><span class="p">[</span><span class="s2">&quot;video&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">video_inputs</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span> <span class="s2">&quot;multi_modal_data&quot;</span><span class="p">:</span> <span class="n">mm_data</span><span class="p">,</span> <span class="s2">&quot;mm_processor_kwargs&quot;</span><span class="p">:</span> <span class="n">video_kwargs</span><span class="p">}</span></div>
 
 
 

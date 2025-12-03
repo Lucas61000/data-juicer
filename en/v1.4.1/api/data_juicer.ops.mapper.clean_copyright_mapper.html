@@ -177,7 +177,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -346,44 +346,13 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-data_juicer.ops.mapper.clean_copyright_mapper">
-<span id="data-juicer-ops-mapper-clean-copyright-mapper-module"></span><h1>data_juicer.ops.mapper.clean_copyright_mapper module<a class="headerlink" href="#module-data_juicer.ops.mapper.clean_copyright_mapper" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.clean_copyright_mapper.</span></span><span class="sig-name descname"><span class="pre">CleanCopyrightMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/clean_copyright_mapper.html#CleanCopyrightMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="data_juicer.ops.base_op.html#data_juicer.ops.base_op.Mapper" title="data_juicer.ops.base_op.Mapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapper</span></code></a></p>
-<p>Cleans copyright comments at the beginning of text samples.</p>
-<p>This operator removes copyright comments from the start of text samples. It identifies
-and strips multiline comments that contain the word “copyright” using a regular
-expression. It also greedily removes lines starting with comment markers like <cite>//</cite>, <cite>#</cite>,
-or <cite>–</cite> at the beginning of the text, as these are often part of copyright headers. The
-operator processes each sample individually but can handle batches for efficiency.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/clean_copyright_mapper.html#CleanCopyrightMapper.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper.__init__" title="Link to this definition">¶</a></dt>
-<dd><p>Initialization method.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>args</strong> – extra args</p></li>
-<li><p><strong>kwargs</strong> – extra args</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper.process_batched">
-<span class="sig-name descname"><span class="pre">process_batched</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/clean_copyright_mapper.html#CleanCopyrightMapper.process_batched"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper.process_batched" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+          <section id="data-juicer-ops-mapper-clean-copyright-mapper-module">
+<h1>data_juicer.ops.mapper.clean_copyright_mapper module<a class="headerlink" href="#data-juicer-ops-mapper-clean-copyright-mapper-module" title="Link to this heading">¶</a></h1>
 </section>
 
         </article>
@@ -411,31 +380,8 @@ operator processes each sample individually but can handle batches for efficienc
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">data_juicer.ops.mapper.clean_copyright_mapper module</a><ul>
-<li><a class="reference internal" href="#data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper"><code class="docutils literal notranslate"><span class="pre">CleanCopyrightMapper</span></code></a><ul>
-<li><a class="reference internal" href="#data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper.__init__"><code class="docutils literal notranslate"><span class="pre">CleanCopyrightMapper.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#data_juicer.ops.mapper.clean_copyright_mapper.CleanCopyrightMapper.process_batched"><code class="docutils literal notranslate"><span class="pre">CleanCopyrightMapper.process_batched()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

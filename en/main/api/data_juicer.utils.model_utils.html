@@ -729,12 +729,13 @@ otherwise, only the processor is returned.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_vllm_model">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_vllm_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_vllm_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_vllm_model" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_vllm_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_processor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_vllm_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_vllm_model" title="Link to this definition">¶</a></dt>
 <dd><p>Prepare and load a HuggingFace model with the corresponding processor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>pretrained_model_name_or_path</strong> – model name or path</p></li>
+<li><p><strong>return_processor</strong> – whether to return the processor instead of the tokenizer</p></li>
 <li><p><strong>model_params</strong> – LLM initialization parameters.</p></li>
 </ul>
 </dd>
@@ -769,6 +770,11 @@ otherwise, only the processor is returned.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.model_utils.update_sampling_params">
 <span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">update_sampling_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampling_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_vllm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#update_sampling_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.update_sampling_params" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_qwen_vl_inputs_for_vllm">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_qwen_vl_inputs_for_vllm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">messages</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_qwen_vl_inputs_for_vllm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_qwen_vl_inputs_for_vllm" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -861,6 +867,7 @@ otherwise, only the processor is returned.</p>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_wilor_model"><code class="docutils literal notranslate"><span class="pre">prepare_wilor_model()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_embedding_model"><code class="docutils literal notranslate"><span class="pre">prepare_embedding_model()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.update_sampling_params"><code class="docutils literal notranslate"><span class="pre">update_sampling_params()</span></code></a></li>
+<li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_qwen_vl_inputs_for_vllm"><code class="docutils literal notranslate"><span class="pre">prepare_qwen_vl_inputs_for_vllm()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_model"><code class="docutils literal notranslate"><span class="pre">prepare_model()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.get_model"><code class="docutils literal notranslate"><span class="pre">get_model()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.free_models"><code class="docutils literal notranslate"><span class="pre">free_models()</span></code></a></li>

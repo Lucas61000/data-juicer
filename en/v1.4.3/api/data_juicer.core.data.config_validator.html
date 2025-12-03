@@ -177,7 +177,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -348,46 +348,13 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-data_juicer.core.data.config_validator">
-<span id="data-juicer-core-data-config-validator-module"></span><h1>data_juicer.core.data.config_validator module<a class="headerlink" href="#module-data_juicer.core.data.config_validator" title="Link to this heading">¶</a></h1>
-<dl class="py exception">
-<dt class="sig sig-object py" id="data_juicer.core.data.config_validator.ConfigValidationError">
-<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.core.data.config_validator.</span></span><span class="sig-name descname"><span class="pre">ConfigValidationError</span></span><a class="reference internal" href="../_modules/data_juicer/core/data/config_validator.html#ConfigValidationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.data.config_validator.ConfigValidationError" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>Custom exception for validation errors</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="data_juicer.core.data.config_validator.ConfigValidator">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.core.data.config_validator.</span></span><span class="sig-name descname"><span class="pre">ConfigValidator</span></span><a class="reference internal" href="../_modules/data_juicer/core/data/config_validator.html#ConfigValidator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.data.config_validator.ConfigValidator" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Mixin class for configuration validation</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="data_juicer.core.data.config_validator.ConfigValidator.CONFIG_VALIDATION_RULES">
-<span class="sig-name descname"><span class="pre">CONFIG_VALIDATION_RULES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'custom_validators':</span> <span class="pre">{},</span> <span class="pre">'field_types':</span> <span class="pre">{},</span> <span class="pre">'optional_fields':</span> <span class="pre">[],</span> <span class="pre">'required_fields':</span> <span class="pre">[]}</span></em><a class="headerlink" href="#data_juicer.core.data.config_validator.ConfigValidator.CONFIG_VALIDATION_RULES" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.core.data.config_validator.ConfigValidator.validate_config">
-<span class="sig-name descname"><span class="pre">validate_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/data_juicer/core/data/config_validator.html#ConfigValidator.validate_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.data.config_validator.ConfigValidator.validate_config" title="Link to this definition">¶</a></dt>
-<dd><p>Validate the configuration dictionary.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ds_config</strong> – Configuration dictionary to validate</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValidationError</strong> – If validation fails</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
+          <section id="data-juicer-core-data-config-validator-module">
+<h1>data_juicer.core.data.config_validator module<a class="headerlink" href="#data-juicer-core-data-config-validator-module" title="Link to this heading">¶</a></h1>
 </section>
 
         </article>
@@ -415,32 +382,8 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">data_juicer.core.data.config_validator module</a><ul>
-<li><a class="reference internal" href="#data_juicer.core.data.config_validator.ConfigValidationError"><code class="docutils literal notranslate"><span class="pre">ConfigValidationError</span></code></a></li>
-<li><a class="reference internal" href="#data_juicer.core.data.config_validator.ConfigValidator"><code class="docutils literal notranslate"><span class="pre">ConfigValidator</span></code></a><ul>
-<li><a class="reference internal" href="#data_juicer.core.data.config_validator.ConfigValidator.CONFIG_VALIDATION_RULES"><code class="docutils literal notranslate"><span class="pre">ConfigValidator.CONFIG_VALIDATION_RULES</span></code></a></li>
-<li><a class="reference internal" href="#data_juicer.core.data.config_validator.ConfigValidator.validate_config"><code class="docutils literal notranslate"><span class="pre">ConfigValidator.validate_config()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
