@@ -4,15 +4,16 @@ import io
 import os
 import re
 import shutil
-from typing import List, Optional, Tuple, Union
+from typing import ClassVar, Dict, List, Optional, Tuple, Union
 
 import av
 import numpy as np
+import PIL
 from datasets import Audio, Image
 from loguru import logger
 from pydantic import PositiveInt
 
-from data_juicer.utils.constant import DEFAULT_PREFIX, Fields
+from data_juicer.utils.constant import DEFAULT_PREFIX, SPECIAL_TOKEN_ENV_PREFIX, Fields
 from data_juicer.utils.file_utils import add_suffix_to_filename
 from data_juicer.utils.lazy_loader import LazyLoader
 
@@ -22,16 +23,53 @@ cv2 = LazyLoader("cv2", "opencv-python")
 av.logging.set_level(av.logging.PANIC)
 
 
+_DEFAULT_TOKEN_FORMATS: Dict[str, str] = {
+    "image": f"<{DEFAULT_PREFIX}image>",
+    "audio": f"<{DEFAULT_PREFIX}audio>",
+    "video": f"<{DEFAULT_PREFIX}video>",
+    # others
+    "eoc": f"<|{DEFAULT_PREFIX}eoc|>",
+}
+
+
+class _MetaSpecialTokens(type):
+    def __new__(cls, name: str, bases: tuple, dct: dict):
+
+        for token_name in list(_DEFAULT_TOKEN_FORMATS.keys()):
+            env_var = f"{SPECIAL_TOKEN_ENV_PREFIX}{token_name.upper()}"
+            if env_var in os.environ:
+                dct[token_name] = os.environ[env_var]
+            else:
+                dct[token_name] = _DEFAULT_TOKEN_FORMATS[token_name]
+
+        return super().__new__(cls, name, bases, dct)
+
+    def __setattr__(cls, name: str, value: str) -> None:
+        if name in list(_DEFAULT_TOKEN_FORMATS.keys()):
+            env_var = f"{SPECIAL_TOKEN_ENV_PREFIX}{name.upper()}"
+            os.environ[env_var] = value
+            super().__setattr__(name, value)
+        elif name.startswith("__") and name.endswith("__"):
+            super().__setattr__(name, value)
+        else:
+            raise ValueError(
+                f"{name} is not a valid special token name, "
+                f"it should be one of {list(_DEFAULT_TOKEN_FORMATS.keys())}"
+            )
+
+
 # A class to keep special tokens for multimodal information in the texts
 # The tokens in this class can be updated by corresponding arguments in config
-class SpecialTokens(object):
+class SpecialTokens(metaclass=_MetaSpecialTokens):
+    """Special tokens for multimodal inputs, configurable via environment variables."""
+
     # modality
-    image = f"<{DEFAULT_PREFIX}image>"
-    audio = f"<{DEFAULT_PREFIX}audio>"
-    video = f"<{DEFAULT_PREFIX}video>"
+    image: ClassVar[str]
+    audio: ClassVar[str]
+    video: ClassVar[str]
 
     # others
-    eoc = f"<|{DEFAULT_PREFIX}eoc|>"
+    eoc: ClassVar[str]
 
 
 AV_STREAM_THREAD_TYPE = "AUTO"
@@ -68,23 +106,84 @@ def remove_non_special_tokens(text):
     return text_with_only_special_tokens
 
 
-def load_data_with_context(sample, context, loaded_data_keys, load_func):
+def load_mm_bytes_from_sample(sample, mm_idx, mm_bytes_key=None, sample_idx=None):
+    # if mm_bytes_key is not specified or there is no bytes_key, return None
+    if mm_bytes_key is None or mm_bytes_key not in sample:
+        return None
+
+    mm_bytes_data = sample[mm_bytes_key]
+    if not isinstance(mm_bytes_data, list) or len(mm_bytes_data) == 0:
+        # invalid bytes data or no bytes data stored
+        return None
+    # check if the sample_idx is specified
+    if sample_idx is not None:
+        # it should be a batched sample
+        if sample_idx >= len(mm_bytes_data):
+            # invalid sample_idx
+            return None
+        sample_mm_bytes_data = mm_bytes_data[sample_idx]
+        if not isinstance(sample_mm_bytes_data, list) or len(sample_mm_bytes_data) == 0:
+            # invalid sample_mm_bytes_data or no sample_mm_bytes_data stored
+            return None
+        if mm_idx >= len(sample_mm_bytes_data):
+            # invalid mm_idx
+            return None
+        bytes_data = sample[mm_bytes_key][sample_idx][mm_idx]
+        if not isinstance(bytes_data, bytes):
+            # invalid bytes data
+            return None
+    else:
+        # it should be a single sample
+        if mm_idx >= len(mm_bytes_data):
+            # invalid mm_idx
+            return None
+        bytes_data = sample[mm_bytes_key][mm_idx]
+        if not isinstance(bytes_data, bytes):
+            # invalid bytes data
+            return None
+    return bytes_data
+
+
+def load_data_with_context(sample, context, loaded_data_keys, load_func, mm_bytes_key=None, sample_idx=None):
     """
     The unified loading function with contexts for multimodal data.
+
+    :param sample: can be a single sample or a batch of samples.
+    :param context: whether the context fields is activated.
+    :param loaded_data_keys: the data keys (paths) to load.
+    :param load_func: the function used to load the data.
+    :param mm_bytes_key: the key to store the data bytes if it exists. It's None by default.
+    :param sample_idx: the index of the current sample. Used for batched samples.
     """
     data = {}
-    for loaded_data_key in loaded_data_keys:
-        if context and loaded_data_key in sample[Fields.context]:
+    if context:
+        context_content = sample[Fields.context]
+        if sample_idx is not None and isinstance(context_content, list) and sample_idx < len(context_content):
+            context_content = context_content[sample_idx]
+    for idx, loaded_data_key in enumerate(loaded_data_keys):
+        if context and loaded_data_key in context_content:
             # load from context
-            data[loaded_data_key] = sample[Fields.context][loaded_data_key]
+            data[loaded_data_key] = context_content[loaded_data_key]
         else:
             if loaded_data_key not in data:
+                # check if it's already in bytes key
+                data_item = None
+                bytes_data = load_mm_bytes_from_sample(sample, idx, mm_bytes_key, sample_idx)
+                if bytes_data is not None:
+                    # load data_item from bytes data
+                    data_item = load_func(bytes_data)
                 # avoid load the same data
-                data_item = load_func(loaded_data_key)
+                if data_item is None:
+                    data_item = load_func(loaded_data_key)
                 data[loaded_data_key] = data_item
                 if context:
                     # store the data into context
-                    sample[Fields.context][loaded_data_key] = data_item
+                    if sample_idx is not None and isinstance(sample[Fields.context], list):
+                        if sample_idx < len(sample[Fields.context]):
+                            sample[Fields.context][sample_idx][loaded_data_key] = data_item
+                    else:
+                        sample[Fields.context][loaded_data_key] = data_item
+
     return sample, data
 
 
@@ -97,9 +196,12 @@ def load_images_byte(paths):
     return [load_image_byte(path) for path in paths]
 
 
-def load_image(path):
-    img_feature = Image()
-    img = img_feature.decode_example(img_feature.encode_example(path))
+def load_image(path_or_bytes):
+    if isinstance(path_or_bytes, bytes):
+        img = PIL.Image.open(io.BytesIO(path_or_bytes))
+    else:
+        img_feature = Image()
+        img = img_feature.decode_example(img_feature.encode_example(path_or_bytes))
     img = img.convert("RGB")
     return img
 
@@ -297,6 +399,7 @@ def cut_video_by_seconds(
     output_video: str,
     start_seconds: float,
     end_seconds: Optional[float] = None,
+    video_stream_index: int = 0,
 ):
     """
     Cut a video into several segments by times in second.
@@ -306,6 +409,8 @@ def cut_video_by_seconds(
     :param start_seconds: the start time in second.
     :param end_seconds: the end time in second. If it's None, this function
         will cut the video from the start_seconds to the end of the video.
+    :param video_stream_index: the video stream index to decode,
+        default set to 0.
     :return: a boolean flag indicating whether the video was successfully
         cut or not.
     """
@@ -323,7 +428,7 @@ def cut_video_by_seconds(
         output_container = av.open(output_buffer, mode="w", format="mp4")
 
     # add the video stream into the output video according to input video
-    input_video_stream = container.streams.video[0]
+    input_video_stream = container.streams.video[video_stream_index]
     codec_name = input_video_stream.codec_context.name
     fps = input_video_stream.base_rate
     output_video_stream = output_container.add_stream(codec_name, rate=fps)
@@ -340,7 +445,6 @@ def cut_video_by_seconds(
 
     # seek to the start time, time must be in microsecond if no
     # stream is specified
-    container.seek(int(start_seconds * 1000000), any_frame=False, backward=True)
 
     # copy the video and audio streams until the end time
     # NOTICE: for different streams, the time have to be converted to be
@@ -349,6 +453,14 @@ def cut_video_by_seconds(
     # compute the start/end pts for video/audio streams
     video_start_pts = int(start_seconds / input_video_stream.time_base)
     video_end_pts = end_seconds / input_video_stream.time_base if end_seconds else input_video_stream.duration
+
+    container.seek(
+        video_start_pts,
+        stream=input_video_stream,
+        any_frame=False,  # only seek to the nearest keyframe
+        backward=True,  # select the nearest keyframe if no exact position is found
+    )
+
     if input_audio_stream is not None:
         audio_start_pts = int(start_seconds / input_audio_stream.time_base)
         audio_end_pts = end_seconds / input_audio_stream.time_base if end_seconds else input_audio_stream.duration
@@ -495,12 +607,14 @@ def extract_key_frames_by_seconds(input_video: Union[str, av.container.InputCont
     return all_key_frames
 
 
-def extract_key_frames(input_video: Union[str, av.container.InputContainer]):
+def extract_key_frames(input_video: Union[str, av.container.InputContainer], video_stream_index: int = 0):
     """
     Extract key frames from the input video. If there is no keyframes in the
     video, return the first frame.
 
     :param input_video: input video path or container.
+    :param video_stream_index: the video stream index to decode,
+        default set to 0.
     :return: a list of key frames.
     """
     # load the input video
@@ -516,7 +630,7 @@ def extract_key_frames(input_video: Union[str, av.container.InputContainer]):
         )
 
     key_frames = []
-    input_video_stream = container.streams.video[0]
+    input_video_stream = container.streams.video[video_stream_index]
     ori_skip_method = input_video_stream.codec_context.skip_frame
     input_video_stream.codec_context.skip_frame = "NONKEY"
     # restore to the beginning of the video

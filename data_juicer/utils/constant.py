@@ -7,6 +7,8 @@ from enum import Enum
 import zstandard as zstd
 from loguru import logger
 
+RAY_JOB_ENV_VAR = "RAY_JOB"
+SPECIAL_TOKEN_ENV_PREFIX = "_DJ_SPECIAL_TOKEN_"
 DEFAULT_PREFIX = "__dj__"
 
 
@@ -19,6 +21,9 @@ class Fields(object):
     batch_meta = DEFAULT_PREFIX + "batch_meta__"
     context = DEFAULT_PREFIX + "context__"
     suffix = DEFAULT_PREFIX + "suffix__"
+
+    # text_tags
+    text_tags = DEFAULT_PREFIX + "text_tags__"
 
     # the name of the original file from which this sample was derived.
     source_file = DEFAULT_PREFIX + "source_file__"
@@ -59,10 +64,22 @@ class MetaKeys(object):
     video_audio_tags = "video_audio_tags"
     # # video frames
     video_frames = "video_frames"
+    # # object segment info in video
+    video_object_segment_tags = "video_object_segment_tags"
+    # # depth info in video
+    video_depth_tags = "video_depth_tags"
+    # # info extracted by VGGT
+    vggt_tags = "vggt_tags"
     # # image tags
     image_tags = "image_tags"
-    # bounding box tag
+    # # hand reconstruction
+    hand_reconstruction_tags = "hand_reconstruction_tags"
+    # # bounding box tag
     bbox_tag = DEFAULT_PREFIX + "bbox__"
+    # # class label (from detection) tag
+    class_label_tag = DEFAULT_PREFIX + "class_label__"
+    # # 2D whole-body pose estimation
+    pose_estimation_tags = "pose_estimation_tags"
 
     # === info extraction related tags ===
     # # for event extraction
@@ -211,6 +228,8 @@ class StatsKeysConstant(object):
     avg_line_length = "avg_line_length"
     char_rep_ratio = "char_rep_ratio"
     flagged_words_ratio = "flagged_words_ratio"
+    in_context_influence = "in_context_influence"
+    ifd_score = "ifd_score"
     lang = "lang"
     lang_score = "lang_score"
     max_line_length = "max_line_length"
@@ -218,6 +237,7 @@ class StatsKeysConstant(object):
     special_char_ratio = "special_char_ratio"
     stopwords_ratio = "stopwords_ratio"
     text_len = "text_len"
+    text_embd_similarity = "text_embd_similarity"
     text_pair_similarity = "text_pair_similarity"
     num_action = "num_action"
     num_dependency_edges = "num_dependency_edges"
@@ -230,6 +250,9 @@ class StatsKeysConstant(object):
     llm_quality_record = "llm_quality_record"
     llm_difficulty_score = "llm_difficulty_score"
     llm_difficulty_record = "llm_difficulty_record"
+    llm_perplexity = "llm_perplexity"
+    llm_task_relevance = "llm_task_relevance"
+    llm_task_relevance_record = "llm_task_relevance_record"
 
     #  === image ===
     aspect_ratios = "aspect_ratios"

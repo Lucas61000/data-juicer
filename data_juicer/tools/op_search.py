@@ -6,6 +6,7 @@ import inspect
 import re
 from typing import Dict, List, Optional
 
+from data_juicer.format.formatter import FORMATTERS
 from data_juicer.ops import OPERATORS
 
 
@@ -24,9 +25,9 @@ class OPRecord:
         return {
             "type": self.type,
             "name": self.name,
-            "description": self.desc,
+            "desc": self.desc,
             "tags": self.tags,
-            "signature": self.sig,
+            "sig": self.sig,
             "param_desc": self.param_desc,
         }
 
@@ -145,28 +146,31 @@ def extract_param_docstring(docstring):
     param_docstring = ""
     if not docstring:
         return param_docstring
-    param_pattern = re.compile(r"(:param\s+(?!args|kwargs)\w+:\s+([^:]*))")
-    matches = param_pattern.findall(docstring)
-    for match in matches:
-        param_docstring += f"    {match[0]}\n"
+    param_docstring = ":param ".join(docstring.split(":param"))
+    if ":param" not in param_docstring:
+        return ""
     return param_docstring
 
 
 class OPSearcher:
     """Operator search engine"""
 
-    def __init__(self, specified_op_list: Optional[List[str]] = None):
+    def __init__(self, specified_op_list: Optional[List[str]] = None, include_formatter: bool = False):
         if specified_op_list:
             self.op_records = self._scan_specified_ops(specified_op_list)
         else:
-            self.op_records = self._scan_all_ops()
+            self.op_records = self._scan_all_ops(include_formatter)
 
     def _scan_specified_ops(self, specified_op_list: List[str]) -> List[OPRecord]:
         """Scan specified operators"""
         records = []
         for op_name in specified_op_list:
-            op_type = op_name.split("_")[-1]
-            op_cls = OPERATORS.modules[op_name]
+            if op_name in FORMATTERS.modules:
+                op_type = "formatter"
+                op_cls = FORMATTERS.modules[op_name]
+            else:
+                op_type = op_name.split("_")[-1]
+                op_cls = OPERATORS.modules[op_name]
             desc = op_cls.__doc__ or ""
             tags = analyze_tag_from_cls(op_cls, op_name)
             sig = inspect.signature(op_cls.__init__)
@@ -176,9 +180,11 @@ class OPSearcher:
             )
         return records
 
-    def _scan_all_ops(self) -> List[OPRecord]:
+    def _scan_all_ops(self, include_formatter: bool = False) -> List[OPRecord]:
         """Scan all operators"""
         all_ops_list = list(OPERATORS.modules.keys())
+        if include_formatter:
+            all_ops_list.extend(FORMATTERS.modules.keys())
         return self._scan_specified_ops(all_ops_list)
 
     def search(
@@ -210,9 +216,13 @@ class OPSearcher:
             results.append(record.to_dict())
         return results
 
+    @property
+    def records_map(self):
+        return {record.name: record for record in self.op_records}
+
 
 def main(tags, op_type):
-    searcher = OPSearcher()
+    searcher = OPSearcher(include_formatter=True)
 
     results = searcher.search(tags=tags, op_type=op_type)
 
@@ -220,9 +230,13 @@ def main(tags, op_type):
     for op in results:
         print(f"\n[{op['type'].upper()}] {op['name']}")
         print(f"Tags: {', '.join(op['tags'])}")
+        print(f"Description: {op['desc']}")
+        print(f"Parameters: {op['param_desc']}")
+        print(f"Signature: {op['sig']}")
+        print("-" * 50)
 
 
 if __name__ == "__main__":
     tags = []
-    op_type = "filter"
+    op_type = "formatter"
     main(tags, op_type=op_type)

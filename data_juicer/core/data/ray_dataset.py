@@ -1,23 +1,22 @@
 from __future__ import annotations
 
 import os
-from argparse import Namespace
 from functools import partial
 from typing import Any, Dict, List, Literal, Optional, Union
 
 import pyarrow
+from jsonargparse import Namespace
 from loguru import logger
 
-from data_juicer import cuda_device_count
 from data_juicer.core.data import DJDataset
 from data_juicer.core.data.schema import Schema
 from data_juicer.ops import Deduplicator, Filter, Mapper
-from data_juicer.ops.base_op import TAGGING_OPS
+from data_juicer.ops.base_op import DEFAULT_BATCH_SIZE, TAGGING_OPS
 from data_juicer.utils.constant import Fields
 from data_juicer.utils.file_utils import is_remote_path
 from data_juicer.utils.lazy_loader import LazyLoader
-from data_juicer.utils.mm_utils import SpecialTokens
-from data_juicer.utils.process_utils import calculate_np
+from data_juicer.utils.resource_utils import cuda_device_count
+from data_juicer.utils.webdataset_utils import _custom_default_decoder
 
 ray = LazyLoader("ray")
 
@@ -53,9 +52,9 @@ def set_dataset_to_absolute_path(dataset, dataset_path, cfg):
     path_keys = []
     columns = dataset.columns()
     for key in [
-        cfg.get("video_key", SpecialTokens.video),
-        cfg.get("image_key", SpecialTokens.image),
-        cfg.get("audio_key", SpecialTokens.audio),
+        cfg.get("video_key", "videos"),
+        cfg.get("image_key", "images"),
+        cfg.get("audio_key", "audios"),
     ]:
         if key in columns:
             path_keys.append(key)
@@ -66,6 +65,7 @@ def set_dataset_to_absolute_path(dataset, dataset_path, cfg):
             partial(convert_to_absolute_paths, dataset_dir=dataset_dir, path_keys=path_keys),
             batch_format="pyarrow",
             zero_copy_batch=True,
+            batch_size=DEFAULT_BATCH_SIZE,
         )
     return dataset
 
@@ -91,7 +91,6 @@ def filter_batch(batch, filter_func):
 class RayDataset(DJDataset):
     def __init__(self, dataset: ray.data.Dataset, dataset_path: str = None, cfg: Optional[Namespace] = None) -> None:
         self.data = preprocess_dataset(dataset, dataset_path, cfg)
-        self.num_proc = getattr(cfg, "np", getattr(cfg, "num_proc", None)) if cfg else None
 
     def schema(self) -> Schema:
         """Get dataset schema.
@@ -147,14 +146,16 @@ class RayDataset(DJDataset):
             return self
         if not isinstance(operators, list):
             operators = [operators]
+
+        from data_juicer.utils.process_utils import calculate_ray_np
+
+        calculate_ray_np(operators)
+
         for op in operators:
             self._run_single_op(op)
         return self
 
     def _run_single_op(self, op):
-        op_proc = calculate_np(op._name, op.mem_required, op.cpu_required, self.num_proc, op.use_cuda())
-        num_gpus = get_num_gpus(op, op_proc)
-
         if op._name in TAGGING_OPS.modules and Fields.meta not in self.data.columns():
 
             def process_batch_arrow(table: pyarrow.Table):
@@ -162,7 +163,9 @@ class RayDataset(DJDataset):
                 new_table = table.append_column(Fields.meta, [new_column_data])
                 return new_table
 
-            self.data = self.data.map_batches(process_batch_arrow, batch_format="pyarrow")
+            self.data = self.data.map_batches(
+                process_batch_arrow, batch_format="pyarrow", batch_size=DEFAULT_BATCH_SIZE
+            )
 
         try:
             batch_size = getattr(op, "batch_size", 1) if op.is_batched_op() else 1
@@ -176,13 +179,18 @@ class RayDataset(DJDataset):
                         fn_constructor_args=None,
                         fn_constructor_kwargs=op_kwargs,
                         batch_size=batch_size,
-                        num_gpus=num_gpus,
-                        concurrency=op_proc,
+                        num_cpus=op.cpu_required,
+                        num_gpus=op.gpu_required,
+                        concurrency=op.num_proc,
                         batch_format="pyarrow",
                     )
                 else:
                     self.data = self.data.map_batches(
-                        op.process, batch_size=batch_size, batch_format="pyarrow", num_gpus=num_gpus
+                        op.process,
+                        batch_size=batch_size,
+                        batch_format="pyarrow",
+                        num_cpus=op.cpu_required,
+                        concurrency=op.num_proc,
                     )
             elif isinstance(op, Filter):
                 columns = self.data.columns()
@@ -193,7 +201,9 @@ class RayDataset(DJDataset):
                         new_talbe = table.append_column(Fields.stats, [new_column_data])
                         return new_talbe
 
-                    self.data = self.data.map_batches(process_batch_arrow, batch_format="pyarrow")
+                    self.data = self.data.map_batches(
+                        process_batch_arrow, batch_format="pyarrow", batch_size=DEFAULT_BATCH_SIZE
+                    )
                 if op.use_cuda():
                     op_kwargs = op._op_cfg[op._name]
                     self.data = self.data.map_batches(
@@ -203,30 +213,37 @@ class RayDataset(DJDataset):
                         fn_constructor_args=None,
                         fn_constructor_kwargs=op_kwargs,
                         batch_size=batch_size,
-                        num_gpus=num_gpus,
-                        concurrency=op_proc,
+                        num_cpus=op.cpu_required,
+                        num_gpus=op.gpu_required,
+                        concurrency=op.num_proc,
                         batch_format="pyarrow",
                     )
                 else:
                     self.data = self.data.map_batches(
-                        op.compute_stats, batch_size=batch_size, batch_format="pyarrow", num_gpus=num_gpus
+                        op.compute_stats,
+                        batch_size=batch_size,
+                        batch_format="pyarrow",
+                        num_cpus=op.cpu_required,
+                        concurrency=op.num_proc,
                     )
                 if op.stats_export_path is not None:
                     self.data.write_json(op.stats_export_path, force_ascii=False)
                 if op.is_batched_op():
+                    # The core computation have been done in compute_stats,
+                    # and the filter process only performs simple filtering.
+                    # cpu and parallelism are not set here
                     self.data = self.data.map_batches(
                         partial(filter_batch, filter_func=op.process),
                         batch_format="pyarrow",
-                        batch_size=batch_size,
-                        num_gpus=num_gpus,
                         zero_copy_batch=True,
+                        batch_size=DEFAULT_BATCH_SIZE,
                     )
                 else:
                     self.data = self.data.filter(op.process)
             elif isinstance(op, Deduplicator):
                 self.data = op.run(self.data)
             else:
-                logger.error("Ray executor only support Filter and Mapper OPs for now")
+                logger.error("Ray executor only support Filter, Mapper and Deduplicator OPs for now")
                 raise NotImplementedError
         except:  # noqa: E722
             logger.error(f"An error occurred during Op [{op._name}].")
@@ -235,10 +252,15 @@ class RayDataset(DJDataset):
             traceback.print_exc()
             exit(1)
 
+    def count(self) -> int:
+        return self.data.count()
+
     @classmethod
     def read(cls, data_format: str, paths: Union[str, List[str]]) -> RayDataset:
         if data_format in {"json", "jsonl"}:
             return RayDataset.read_json(paths)
+        elif data_format == "webdataset":
+            return RayDataset.read_webdataset(paths)
         elif data_format in {
             "parquet",
             "images",
@@ -248,7 +270,6 @@ class RayDataset(DJDataset):
             "avro",
             "numpy",
             "tfrecords",
-            "webdataset",
             "binary_files",
             "lance",
         }:
@@ -266,11 +287,15 @@ class RayDataset(DJDataset):
         except AttributeError:
             return ray.data.read_json(paths)
 
+    @classmethod
+    def read_webdataset(cls, paths: Union[str, List[str]]) -> RayDataset:
+        return ray.data.read_webdataset(paths, decoder=partial(_custom_default_decoder, format="PIL"))
+
     def to_list(self) -> list:
         return self.data.to_pandas().to_dict(orient="records")
 
 
-class JSONStreamDatasource(ray.data.read_api.JSONDatasource):
+class JSONStreamDatasource(ray.data.read_api.ArrowJSONDatasource):
     """
     A temp Datasource for reading json stream.
 
@@ -280,7 +305,22 @@ class JSONStreamDatasource(ray.data.read_api.JSONDatasource):
     """
 
     def _read_stream(self, f: "pyarrow.NativeFile", path: str):
-        from pyarrow.json import open_json
+        # Check if open_json is available (PyArrow 20.0.0+)
+        try:
+            from pyarrow.json import open_json
+        except ImportError:
+            # Fall back to read_json for older PyArrow versions
+            # This will read the entire file into memory, but works with older PyArrow
+            import pyarrow.json as js
+
+            try:
+                # Read the entire file as a table
+                table = js.read_json(f, **self.arrow_json_args)
+                if table.num_rows > 0:
+                    yield table
+            except Exception as e:
+                raise ValueError(f"Failed to read JSON file: {path}. Error: {e}") from e
+            return
 
         try:
             reader = open_json(
@@ -320,6 +360,17 @@ def read_json_stream(
     override_num_blocks: Optional[int] = None,
     **arrow_json_args,
 ) -> ray.data.Dataset:
+    # Check if open_json is available (PyArrow 20.0.0+)
+    # If not, fall back to ray.data.read_json which works with older PyArrow
+    try:
+        import pyarrow.json as js
+
+        js.open_json  # Check if attribute exists
+    except (ImportError, AttributeError):
+        # Fall back to standard ray.data.read_json for older PyArrow versions
+        # This works with filesystem parameter for S3
+        return ray.data.read_json(paths, filesystem=filesystem)
+
     if meta_provider is None:
         meta_provider = ray.data.read_api.DefaultFileMetadataProvider()
 
