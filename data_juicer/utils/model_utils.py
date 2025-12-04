@@ -78,6 +78,8 @@ BACKUP_MODEL_LINKS = {
     # DWPose
     "dwpose_onnx_det_model": "https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx",
     "dwpose_onnx_pose_model": "https://huggingface.co/yzd-v/DWPose/resolve/main/dw-ll_ucoco_384.onnx",
+    # Cylinder3d
+    "cylinder3d": "https://download.openmmlab.com/mmdetection3d/v1.1.0_models/cylinder3d/cylinder3d_8xb2-amp-laser-polar-mix-3x_semantickitti_20230425_144950-372cdf69.pth",
 }
 
 
@@ -1294,20 +1296,22 @@ class MMLabInferencer(object):
 
 
 def prepare_mmlab_model(
-    model_cfg: str,
+    model_cfg: str = "",
     deploy_cfg: str = "",
     backend_files: List[str] = [],
-    model_path: str = "",
     device: str = "cpu",
     task: str = "LiDARDetection",
+    model_name: str = "",
+    model_path: str = "",
 ):
     """Prepare and load a model using mmdeploy.
-
     :param model_cfg: Path to the model config.
     :param deploy_cfg: Path to the deployment config.
     :param backend_files: Path to the backend model files.
     :param device: Device to use.
     :param task: Current task. Only support ["LiDARDetection", "LiDARSegmentation"] for now.
+    :param model_name: Name of the model used.
+    :param model_path: Path of the model weight.
     """
 
     if task == "LiDARDetection":
@@ -1318,6 +1322,41 @@ def prepare_mmlab_model(
             device,
         )
     elif task == "LiDARSegmentation":
+
+        import subprocess
+
+        from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
+
+        mmdetection3d_repo_path = os.path.join(DATA_JUICER_ASSETS_CACHE, "mmdetection3d")
+        if not os.path.exists(mmdetection3d_repo_path):
+            subprocess.run(
+                ["git", "clone", "https://github.com/open-mmlab/mmdetection3d.git", mmdetection3d_repo_path], check=True
+            )
+
+        original_model_cfg = model_cfg
+        model_cfg = os.path.splitext(os.path.basename(model_cfg))[0]
+        model_cfg = os.path.join(mmdetection3d_repo_path, "configs", model_name, model_cfg + ".py")
+
+        if not os.path.exists(model_cfg):
+            raise ValueError(f"{model_cfg} does not exist.")
+
+        if not os.path.exists(model_path):
+            if "cylinder3d_8xb2-laser-polar-mix-3x_semantickitti" in original_model_cfg:
+                logger.info(
+                    f'The model corresponding to "{original_model_cfg}" does not exist. Model weight is not found at {model_path}. Starting automatic download...'
+                )
+                if not os.path.exists(DJMC):
+                    os.makedirs(DJMC)
+                model_path = os.path.join(
+                    DJMC, "cylinder3d_8xb2-amp-laser-polar-mix-3x_semantickitti_20230425_144950-372cdf69.pth"
+                )
+                if not os.path.exists(model_path):
+                    wget.download(BACKUP_MODEL_LINKS["cylinder3d"], DJMC)
+            else:
+                raise ValueError(
+                    f'The model corresponding to "{original_model_cfg}" does not exist. Model weight is not found at {model_path}.'
+                )
+
         model = MMLabInferencer(
             model_cfg,
             model_path,
