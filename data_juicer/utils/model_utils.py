@@ -1277,7 +1277,7 @@ class MMLabModel(object):
 class MMLabInferencer(object):
     """
     A wrapper for mmdet3d Inferencer.
-    It is used to load a mmdet3d Inferencer and run inference on given images.
+    It is used to load a mmdet3d Inferencer and run inference on given LiDAR data.
     """
 
     def __init__(self, model_cfg_path, model_path, device):
@@ -1364,7 +1364,9 @@ def prepare_mmlab_model(
         )
 
     else:
-        NotImplementedError(f'Only support task name ["LiDARDetection", "LiDARSegmentation"] for now, but got {task}')
+        raise NotImplementedError(
+            f'Only support task name ["LiDARDetection", "LiDARSegmentation"] for now, but got {task}'
+        )
 
     return model
 

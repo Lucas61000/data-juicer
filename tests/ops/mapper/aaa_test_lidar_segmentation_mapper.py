@@ -1,6 +1,9 @@
 import unittest
 import os
 
+import sys
+sys.path.append("/home/daoyuan_lmm/codes/data-juicer/temp_dj_repo/data-juicer")
+
 from data_juicer.core import NestedDataset as Dataset
 from data_juicer.ops.mapper.lidar_segmentation_mapper import LiDARSegmentationMapper
 from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
