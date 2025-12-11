@@ -1,9 +1,0 @@
-Grouper
-=======
-
-.. toctree::
-    :maxdepth: 1
-    :glob:
-
-    ./*
-    ./**/*
