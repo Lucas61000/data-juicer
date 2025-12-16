@@ -771,6 +771,40 @@ otherwise, only the processor is returned.</p>
 <span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">update_sampling_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampling_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_vllm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#update_sampling_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.update_sampling_params" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="data_juicer.utils.model_utils.MMLabModel">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">MMLabModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_cfg_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deploy_cfg_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#MMLabModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.MMLabModel" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A wrapper for mmdeploy model.
+It is used to load a mmdeploy model and run inference on given images.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.model_utils.MMLabModel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_cfg_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deploy_cfg_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#MMLabModel.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.MMLabModel.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize the MMLabModel.
+:param model_cfg: Path to the model config.
+:param deploy_cfg: Path to the deployment config.
+:param model_files: Path to the model files.
+:param device: Device to use.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_mmlab_model">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_mmlab_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deploy_cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_mmlab_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_mmlab_model" title="Link to this definition">¶</a></dt>
+<dd><p>Prepare and load a model using mmdeploy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_cfg</strong> – Path to the model config.</p></li>
+<li><p><strong>deploy_cfg</strong> – Path to the deployment config.</p></li>
+<li><p><strong>model_files</strong> – Path to the model files.</p></li>
+<li><p><strong>device</strong> – Device to use.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_qwen_vl_inputs_for_vllm">
 <span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_qwen_vl_inputs_for_vllm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">messages</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_qwen_vl_inputs_for_vllm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_qwen_vl_inputs_for_vllm" title="Link to this definition">¶</a></dt>
@@ -867,6 +901,11 @@ otherwise, only the processor is returned.</p>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_wilor_model"><code class="docutils literal notranslate"><span class="pre">prepare_wilor_model()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_embedding_model"><code class="docutils literal notranslate"><span class="pre">prepare_embedding_model()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.update_sampling_params"><code class="docutils literal notranslate"><span class="pre">update_sampling_params()</span></code></a></li>
+<li><a class="reference internal" href="#data_juicer.utils.model_utils.MMLabModel"><code class="docutils literal notranslate"><span class="pre">MMLabModel</span></code></a><ul>
+<li><a class="reference internal" href="#data_juicer.utils.model_utils.MMLabModel.__init__"><code class="docutils literal notranslate"><span class="pre">MMLabModel.__init__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_mmlab_model"><code class="docutils literal notranslate"><span class="pre">prepare_mmlab_model()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_qwen_vl_inputs_for_vllm"><code class="docutils literal notranslate"><span class="pre">prepare_qwen_vl_inputs_for_vllm()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.prepare_model"><code class="docutils literal notranslate"><span class="pre">prepare_model()</span></code></a></li>
 <li><a class="reference internal" href="#data_juicer.utils.model_utils.get_model"><code class="docutils literal notranslate"><span class="pre">get_model()</span></code></a></li>

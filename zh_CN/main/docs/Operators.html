@@ -420,7 +420,7 @@ Data-Juicer 中的算子分为以下 7 种类型。</p>
 <td><p>Group samples to batched samples. 将样本分组，每一组组成一个批量样本。</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#mapper"><span class="xref myst">mapper</span></a></p></td>
-<td class="text-center"><p>92</p></td>
+<td class="text-center"><p>88</p></td>
 <td><p>Edits and transforms samples. 对数据样本进行编辑和转换。</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#selector"><span class="xref myst">selector</span></a></p></td>
@@ -1252,22 +1252,34 @@ Data-Juicer 中的算子分为以下 7 种类型。</p>
 <td><p><a class="reference internal" href="operators/mapper/image_face_blur_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>image_remove_background_mapper</p></td>
+<tr class="row-even"><td><p>image_mmpose_mapper</p></td>
+<td><p>🏞Image 🚀GPU 🟡Beta</p></td>
+<td><p>Mapper to perform human keypoint detection inference using MMPose models. Mapper使用MMPose模型执行人体关键点检测推断。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>image_remove_background_mapper</p></td>
 <td><p>🏞Image 💻CPU 🟢Stable</p></td>
 <td><p>Mapper to remove the background of images. 映射器删除图像的背景。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/image_remove_background_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>image_segment_mapper</p></td>
+<tr class="row-even"><td><p>image_segment_mapper</p></td>
 <td><p>🏞Image 🚀GPU 🟢Stable</p></td>
 <td><p>Perform segment-anything on images and return the bounding boxes. 对图像执行segment-任何操作并返回边界框。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/image_segment_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>image_tagging_mapper</p></td>
+<tr class="row-odd"><td><p>image_tagging_mapper</p></td>
 <td><p>🏞Image 🚀GPU 🟢Stable</p></td>
 <td><p>Generates image tags for each image in the sample. 为样本中的每个图像生成图像标记。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/image_tagging_mapper.html"><span class="std std-doc">info</span></a></p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>image_tagging_vlm_mapper</p></td>
+<td><p>🔮Multimodal 🚀GPU 🔗API 🌊vLLM 🟡Beta</p></td>
+<td><p>Mapper to generates image tags. 映射器生成图像标签。</p></td>
+<td><p>-</p></td>
 <td><p>-</p></td>
 </tr>
 <tr class="row-odd"><td><p>imgdiff_difference_area_generator_mapper</p></td>
