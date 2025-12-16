@@ -348,6 +348,7 @@
         <article role="main" id="furo-main-content">
           <h1>Source code for data_juicer.utils.model_utils</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">fnmatch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -372,6 +373,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.ray_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_ray_mode</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.resource_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda_device_count</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.cache_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_JUICER_ASSETS_CACHE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.cache_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_JUICER_EXTERNAL_MODELS_HOME</span> <span class="k">as</span> <span class="n">DJEMH</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.cache_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_JUICER_MODELS_CACHE</span> <span class="k">as</span> <span class="n">DJMC</span>
 
@@ -1342,8 +1344,6 @@
 <div class="viewcode-block" id="prepare_video_depth_anything">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_video_depth_anything">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_video_depth_anything</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.cache_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_JUICER_ASSETS_CACHE</span>
-
     <span class="n">video_depth_anything_repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_JUICER_ASSETS_CACHE</span><span class="p">,</span> <span class="s2">&quot;Video-Depth-Anything&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">video_depth_anything_repo_path</span><span class="p">):</span>
         <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -1355,7 +1355,6 @@
             <span class="p">],</span>
             <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
     <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">video_depth_anything_repo_path</span><span class="p">)</span>
 
@@ -1431,9 +1430,6 @@
 <a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_vggt_model">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_vggt_model</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
     <span class="n">device</span> <span class="o">=</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;device&quot;</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-
-    <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.cache_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_JUICER_ASSETS_CACHE</span>
-
     <span class="n">vggt_repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_JUICER_ASSETS_CACHE</span><span class="p">,</span> <span class="s2">&quot;vggt&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">vggt_repo_path</span><span class="p">):</span>
         <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;clone&quot;</span><span class="p">,</span> <span class="s2">&quot;https://github.com/facebookresearch/vggt.git&quot;</span><span class="p">,</span> <span class="n">vggt_repo_path</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -1491,14 +1487,9 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="s2">&quot;Users need to download &#39;MANO_RIGHT.pkl&#39; from https://mano.is.tue.mpg.de/ and comply with the MANO license.&quot;</span>
         <span class="p">)</span>
-
-    <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.cache_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_JUICER_ASSETS_CACHE</span>
-
     <span class="n">wilor_repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_JUICER_ASSETS_CACHE</span><span class="p">,</span> <span class="s2">&quot;WiLoR&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">wilor_repo_path</span><span class="p">):</span>
         <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;clone&quot;</span><span class="p">,</span> <span class="s2">&quot;https://github.com/rolpotamias/WiLoR.git&quot;</span><span class="p">,</span> <span class="n">wilor_repo_path</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
     <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wilor_repo_path</span><span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">wilor.configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_config</span>
@@ -1808,6 +1799,130 @@
 
 
 
+<div class="viewcode-block" id="prepare_sam_3d_body_model">
+<a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_sam_3d_body_model">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_sam_3d_body_model</span><span class="p">(</span>
+    <span class="n">checkpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">detector_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;vitdet&quot;</span><span class="p">,</span>
+    <span class="n">segmentor_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;sam2&quot;</span><span class="p">,</span>
+    <span class="n">fov_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;moge2&quot;</span><span class="p">,</span>
+    <span class="n">mhr_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">detector_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">segmentor_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">fov_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">model_params</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prepare the SAM-3D-Body model.</span>
+<span class="sd">    :param checkpoint_path: Path to SAM 3D Body model checkpoint.</span>
+<span class="sd">    :param mhr_path: Path to MoHR/assets folder (or set SAM3D_mhr_path).</span>
+<span class="sd">    :param detector_path: Path to human detection model folder (or set SAM3D_DETECTOR_PATH).</span>
+<span class="sd">    :param segmentor_path: Path to human segmentation model folder (or set SAM3D_SEGMENTOR_PATH).</span>
+<span class="sd">    :param fov_path: Path to fov estimation model folder (or set SAM3D_FOV_PATH).</span>
+<span class="sd">    :param detector_name: Human detection model for demo (Default `vitdet`, add your favorite detector if needed).</span>
+<span class="sd">    :param segmentor_name: Human segmentation model for demo (Default `sam2`, add your favorite segmentor if needed).</span>
+<span class="sd">    :param fov_name: FOV estimation model for demo (Default `moge2`, add your favorite fov estimator if needed).</span>
+<span class="sd">    :param model_params: Additional parameters for the model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sam_3d_body_repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_JUICER_ASSETS_CACHE</span><span class="p">,</span> <span class="s2">&quot;sam-3d-body&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">sam_3d_body_repo_path</span><span class="p">):</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;git&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;clone&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;https://github.com/facebookresearch/sam-3d-body.git&quot;</span><span class="p">,</span>
+                <span class="n">sam_3d_body_repo_path</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_model</span><span class="p">(</span><span class="n">local_dir</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">local_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;modelscope&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Installing modelscope...&quot;</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="s2">&quot;pip&quot;</span><span class="p">,</span> <span class="s2">&quot;install&quot;</span><span class="p">,</span> <span class="s2">&quot;modelscope&quot;</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Downloading model &#39;facebook/sam-3d-body-dinov3&#39;...&quot;</span><span class="p">)</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;modelscope&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;download&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;--model&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;facebook/sam-3d-body-dinov3&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;--local_dir&quot;</span><span class="p">,</span>
+                <span class="n">local_dir</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">checkpoint_path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">mhr_path</span><span class="p">:</span>
+        <span class="n">local_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DJMC</span><span class="p">,</span> <span class="s2">&quot;sam-3d-body-dinov3&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local_dir</span><span class="p">):</span>
+            <span class="n">_download_model</span><span class="p">(</span><span class="n">local_dir</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">checkpoint_path</span><span class="p">:</span>
+            <span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local_dir</span><span class="p">,</span> <span class="s2">&quot;model.ckpt&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mhr_path</span><span class="p">:</span>
+            <span class="n">mhr_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local_dir</span><span class="p">,</span> <span class="s2">&quot;assets/mhr_model.pt&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">sam_3d_body_repo_path</span><span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">sam_3d_body</span><span class="w"> </span><span class="kn">import</span> <span class="n">SAM3DBodyEstimator</span><span class="p">,</span> <span class="n">load_sam_3d_body</span>
+
+        <span class="n">device</span> <span class="o">=</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;device&quot;</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Initialize sam-3d-body model and other optional modules</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">model_cfg</span> <span class="o">=</span> <span class="n">load_sam_3d_body</span><span class="p">(</span><span class="n">checkpoint_path</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">mhr_path</span><span class="o">=</span><span class="n">mhr_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># double check, local_dir exists but files broken or missing</span>
+            <span class="n">_download_model</span><span class="p">(</span><span class="n">local_dir</span><span class="p">)</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">model_cfg</span> <span class="o">=</span> <span class="n">load_sam_3d_body</span><span class="p">(</span><span class="n">checkpoint_path</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">mhr_path</span><span class="o">=</span><span class="n">mhr_path</span><span class="p">)</span>
+
+        <span class="n">human_detector</span><span class="p">,</span> <span class="n">human_segmentor</span><span class="p">,</span> <span class="n">fov_estimator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">detector_name</span><span class="p">:</span>
+            <span class="n">module_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sam_3d_body_repo_path</span><span class="si">}</span><span class="s2">/tools/build_detector.py&quot;</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="s2">&quot;build_detector&quot;</span><span class="p">,</span> <span class="n">module_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not load spec from </span><span class="si">{</span><span class="n">module_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">build_detector</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+            <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">build_detector</span><span class="p">)</span>
+            <span class="n">human_detector</span> <span class="o">=</span> <span class="n">build_detector</span><span class="o">.</span><span class="n">HumanDetector</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">detector_name</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">detector_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">segmentor_path</span><span class="p">:</span>
+            <span class="n">module_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sam_3d_body_repo_path</span><span class="si">}</span><span class="s2">/tools/build_sam.py&quot;</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="s2">&quot;build_sam&quot;</span><span class="p">,</span> <span class="n">module_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not load spec from </span><span class="si">{</span><span class="n">module_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">build_sam</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+            <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">build_sam</span><span class="p">)</span>
+            <span class="n">human_segmentor</span> <span class="o">=</span> <span class="n">build_sam</span><span class="o">.</span><span class="n">HumanSegmentor</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">segmentor_name</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">segmentor_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fov_name</span><span class="p">:</span>
+            <span class="n">module_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sam_3d_body_repo_path</span><span class="si">}</span><span class="s2">/tools/build_fov_estimator.py&quot;</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="s2">&quot;build_fov_estimator&quot;</span><span class="p">,</span> <span class="n">module_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not load spec from </span><span class="si">{</span><span class="n">module_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">build_fov_estimator</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+            <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">build_fov_estimator</span><span class="p">)</span>
+            <span class="n">fov_estimator</span> <span class="o">=</span> <span class="n">build_fov_estimator</span><span class="o">.</span><span class="n">FOVEstimator</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">fov_name</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">fov_path</span><span class="p">)</span>
+
+        <span class="n">estimator</span> <span class="o">=</span> <span class="n">SAM3DBodyEstimator</span><span class="p">(</span>
+            <span class="n">sam_3d_body_model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">model_cfg</span><span class="o">=</span><span class="n">model_cfg</span><span class="p">,</span>
+            <span class="n">human_detector</span><span class="o">=</span><span class="n">human_detector</span><span class="p">,</span>
+            <span class="n">human_segmentor</span><span class="o">=</span><span class="n">human_segmentor</span><span class="p">,</span>
+            <span class="n">fov_estimator</span><span class="o">=</span><span class="n">fov_estimator</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sam_3d_body_repo_path</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">sam_3d_body_repo_path</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">estimator</span></div>
+
+
+
 <span class="n">MODEL_FUNCTION_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;api&quot;</span><span class="p">:</span> <span class="n">prepare_api_model</span><span class="p">,</span>
     <span class="s2">&quot;diffusion&quot;</span><span class="p">:</span> <span class="n">prepare_diffusion_model</span><span class="p">,</span>
@@ -1831,6 +1946,7 @@
     <span class="s2">&quot;wilor&quot;</span><span class="p">:</span> <span class="n">prepare_wilor_model</span><span class="p">,</span>
     <span class="s2">&quot;yolo&quot;</span><span class="p">:</span> <span class="n">prepare_yolo_model</span><span class="p">,</span>
     <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="n">prepare_embedding_model</span><span class="p">,</span>
+    <span class="s2">&quot;sam_3d_body&quot;</span><span class="p">:</span> <span class="n">prepare_sam_3d_body_model</span><span class="p">,</span>
     <span class="s2">&quot;mmlab&quot;</span><span class="p">:</span> <span class="n">prepare_mmlab_model</span><span class="p">,</span>
 <span class="p">}</span>
 
