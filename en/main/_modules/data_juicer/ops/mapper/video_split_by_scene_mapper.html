@@ -420,6 +420,7 @@
         <span class="n">min_scene_len</span><span class="p">:</span> <span class="n">NonNegativeInt</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
         <span class="n">show_progress</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">save_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ffmpeg_extra_args</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -434,6 +435,7 @@
 <span class="sd">        :param save_dir: The directory where generated video files will be stored.</span>
 <span class="sd">            If not specified, outputs will be saved in the same directory as their corresponding input files.</span>
 <span class="sd">            This path can alternatively be defined by setting the `DJ_PRODUCED_DATA_DIR` environment variable.</span>
+<span class="sd">        :param ffmpeg_extra_args: Extra ffmpeg args for splitting video.</span>
 <span class="sd">        :param args: extra args</span>
 <span class="sd">        :param kwargs: extra args</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -452,6 +454,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">min_scene_len</span> <span class="o">=</span> <span class="n">min_scene_len</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">show_progress</span> <span class="o">=</span> <span class="n">show_progress</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">=</span> <span class="n">save_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ffmpeg_extra_args</span> <span class="o">=</span> <span class="n">ffmpeg_extra_args</span>
 
         <span class="c1"># prepare detector args</span>
         <span class="n">available_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_detectors</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="p">]</span>
@@ -497,6 +500,7 @@
                     <span class="n">scene_list</span><span class="o">=</span><span class="n">scene_list</span><span class="p">,</span>
                     <span class="n">output_file_template</span><span class="o">=</span><span class="n">output_template</span><span class="p">,</span>
                     <span class="n">show_progress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">show_progress</span><span class="p">,</span>
+                    <span class="n">arg_override</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ffmpeg_extra_args</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">output_video_keys</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">video_key</span><span class="p">]</span>

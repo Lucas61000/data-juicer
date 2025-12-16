@@ -974,7 +974,7 @@
 
 <div class="viewcode-block" id="FFmpegReader.extract_clip">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.video_utils.html#data_juicer.utils.video_utils.FFmpegReader.extract_clip">[文档]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">extract_clip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">to_numpy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_clip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">to_numpy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extract a clip from the video based on the start and end time.</span>
 <span class="sd">        :param output_path: the path to output video.</span>
@@ -989,6 +989,11 @@
 <span class="sd">            If to_numpy is False, it will return clip data as bytes and save to Clip.encoded_data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_time_span</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">)</span>
+
+        <span class="c1"># allows adding extra arguments passed to ffmpeg</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
+
+        <span class="n">ffmpeg_extra_args</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ffmpeg_extra_args&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
 
         <span class="c1"># Build ffmpeg command</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
@@ -1015,6 +1020,7 @@
                 <span class="c1"># &quot;-movflags&quot;, &quot;frag_keyframe+empty_moov&quot;,  # opening when mounting oss storage may avoid unexpected errors.</span>
             <span class="p">]</span>
         <span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ffmpeg_extra_args</span><span class="p">)</span>
 
         <span class="n">encoded_data</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">frames</span> <span class="o">=</span> <span class="kc">None</span>
