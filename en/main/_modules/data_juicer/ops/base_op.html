@@ -1473,6 +1473,45 @@
         <span class="k">return</span> <span class="n">new_dataset</span></div>
 </div>
 
+
+
+<div class="viewcode-block" id="Pipeline">
+<a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.Pipeline">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pipeline</span><span class="p">(</span><span class="n">OP</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for Operators that represent a data processing pipeline.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Pipeline.__init__">
+<a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.Pipeline.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base class of operators.</span>
+
+<span class="sd">        :param text_key: the key name of field that stores sample texts</span>
+<span class="sd">            to be processed.</span>
+<span class="sd">        :param image_key: the key name of field that stores sample image list</span>
+<span class="sd">            to be processed</span>
+<span class="sd">        :param audio_key: the key name of field that stores sample audio list</span>
+<span class="sd">            to be processed</span>
+<span class="sd">        :param video_key: the key name of field that stores sample video list</span>
+<span class="sd">            to be processed</span>
+<span class="sd">        :param image_bytes_key: the key name of field that stores sample image bytes list</span>
+<span class="sd">            to be processed</span>
+<span class="sd">        :param query_key: the key name of field that stores sample queries</span>
+<span class="sd">        :param response_key: the key name of field that stores responses</span>
+<span class="sd">        :param history_key: the key name of field that stores history of</span>
+<span class="sd">            queries and responses</span>
+<span class="sd">        :param index_key: index the samples before process if not None</span>
+<span class="sd">        :param batch_size: the batch size for processing</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Pipeline</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Pipeline.run">
+<a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.Pipeline.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+</div>
+
 </pre></div>
 
                 </article>

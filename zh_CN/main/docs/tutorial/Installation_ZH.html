@@ -500,6 +500,17 @@
 <li class="toctree-l1"><a class="reference internal" href="../Distributed_ZH.html">Data-Juicer 分布式数据处理</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../awesome_llm_data.html">Awesome Data-Model Co-Development of MLLMs </a></li>
 </ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">算子</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../operators/aggregator/index.html">Aggregator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operators/deduplicator/index.html">Deduplicator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operators/filter/index.html">Filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operators/mapper/index.html">Mapper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operators/formatter/index.html">Formatter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operators/grouper/index.html">Grouper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operators/selector/index.html">Selector</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../operators/op/index.html">Op</a></li>
+</ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">demos</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../../demos/README_ZH.html">演示</a></li>
@@ -609,11 +620,11 @@ pip<span class="w"> </span>install<span class="w"> </span>uv
 </section>
 <section id="id3">
 <h2>基础安装<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
-<p>Data-Juicer 现已上架 PyPI。最小安装包含核心数据处理能力：</p>
+<p>Data-Juicer 已上架 PyPI：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>py-data-juicer
 </pre></div>
 </div>
-<p>这将提供：</p>
+<p>最小安装包含核心数据处理能力，这将提供：</p>
 <ul class="simple">
 <li><p>数据加载和操作</p></li>
 <li><p>文件系统操作</p></li>
@@ -675,19 +686,23 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;py-data-juicer[all]&quot;</span>
 </pre></div>
 </div>
-<p><strong>5. 开发模式</strong></p>
-<p>对于贡献者和开发者：</p>
+</section>
+<section id="id6">
+<h2>从源码安装<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<p>如果想要使用最新的特性与更新，也可以从源码安装 Data-Juicer：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 克隆仓库</span>
 git<span class="w"> </span>clone<span class="w"> </span>https://github.com/datajuicer/data-juicer.git
 <span class="nb">cd</span><span class="w"> </span>data-juicer
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 
-<span class="c1"># 安装开发依赖</span>
-uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
+<span class="c1"># 同样也可以安装指定的额外领域的依赖</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[vision]&quot;</span>
 </pre></div>
 </div>
+<p>**注意：**从源码安装时，建议使用 <code class="docutils literal notranslate"><span class="pre">-e</span></code> 模式打开开发模式。</p>
 </section>
-<section id="id6">
-<h2>特定算子安装<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<section id="id7">
+<h2>特定算子安装<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
 <p>除了基于场景的安装外，我们还提供基于算子和基于菜谱的安装方式。</p>
 <ul class="simple">
 <li><p>安装特定算子的依赖</p></li>
@@ -733,8 +748,8 @@ dj-install<span class="w"> </span>--config<span class="w"> </span>path_to_your_d
 </li>
 </ul>
 </section>
-<section id="id7">
-<h2>注意事项和故障排除<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
+<section id="id8">
+<h2>注意事项和故障排除<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
 <ol class="arabic simple" start="0">
 <li><p><strong>安装检查</strong></p></li>
 </ol>
@@ -825,9 +840,10 @@ dj-install<span class="w"> </span>--config<span class="w"> </span>path_to_your_d
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">基础安装</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">场景化安装</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">常见安装模式</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">特定算子安装</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">从源码安装</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">特定算子安装</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#docker">使用 Docker 安装</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">注意事项和故障排除</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">注意事项和故障排除</a></li>
 </ul>
   </nav></div>
 

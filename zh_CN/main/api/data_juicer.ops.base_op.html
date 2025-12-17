@@ -1044,6 +1044,46 @@ the input must be the output of some Grouper OP.</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="data_juicer.ops.base_op.Pipeline">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.base_op.</span></span><span class="sig-name descname"><span class="pre">Pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/base_op.html#Pipeline"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.ops.base_op.Pipeline" title="Link to this definition">#</a></dt>
+<dd><p>基类：<a class="reference internal" href="#data_juicer.ops.base_op.OP" title="data_juicer.ops.base_op.OP"><code class="xref py py-class docutils literal notranslate"><span class="pre">OP</span></code></a></p>
+<p>Base class for Operators that represent a data processing pipeline.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.ops.base_op.Pipeline.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/base_op.html#Pipeline.__init__"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.ops.base_op.Pipeline.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Base class of operators.</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text_key</strong> -- the key name of field that stores sample texts
+to be processed.</p></li>
+<li><p><strong>image_key</strong> -- the key name of field that stores sample image list
+to be processed</p></li>
+<li><p><strong>audio_key</strong> -- the key name of field that stores sample audio list
+to be processed</p></li>
+<li><p><strong>video_key</strong> -- the key name of field that stores sample video list
+to be processed</p></li>
+<li><p><strong>image_bytes_key</strong> -- the key name of field that stores sample image bytes list
+to be processed</p></li>
+<li><p><strong>query_key</strong> -- the key name of field that stores sample queries</p></li>
+<li><p><strong>response_key</strong> -- the key name of field that stores responses</p></li>
+<li><p><strong>history_key</strong> -- the key name of field that stores history of
+queries and responses</p></li>
+<li><p><strong>index_key</strong> -- index the samples before process if not None</p></li>
+<li><p><strong>batch_size</strong> -- the batch size for processing</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.ops.base_op.Pipeline.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/base_op.html#Pipeline.run"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.ops.base_op.Pipeline.run" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 
 
@@ -1134,6 +1174,11 @@ the input must be the output of some Grouper OP.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.ops.base_op.Aggregator.__init__"><code class="docutils literal notranslate"><span class="pre">Aggregator.__init__()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.ops.base_op.Aggregator.process_single"><code class="docutils literal notranslate"><span class="pre">Aggregator.process_single()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.ops.base_op.Aggregator.run"><code class="docutils literal notranslate"><span class="pre">Aggregator.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.ops.base_op.Pipeline"><code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.ops.base_op.Pipeline.__init__"><code class="docutils literal notranslate"><span class="pre">Pipeline.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.ops.base_op.Pipeline.run"><code class="docutils literal notranslate"><span class="pre">Pipeline.run()</span></code></a></li>
 </ul>
 </li>
 </ul>

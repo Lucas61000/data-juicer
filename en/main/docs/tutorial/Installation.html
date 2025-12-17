@@ -617,11 +617,11 @@ pip<span class="w"> </span>install<span class="w"> </span>uv
 </section>
 <section id="basic-dj-installation">
 <h2>Basic DJ Installation<a class="headerlink" href="#basic-dj-installation" title="Link to this heading">#</a></h2>
-<p>Data-Juicer is now available on PyPI. The minimal installation includes core data processing capabilities:</p>
+<p>Data-Juicer is now available on PyPI:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>py-data-juicer
 </pre></div>
 </div>
-<p>This provides:</p>
+<p>The minimal installation includes core data processing capabilities, which provides:</p>
 <ul class="simple">
 <li><p>Data loading and manipulation</p></li>
 <li><p>File system operations</p></li>
@@ -683,16 +683,20 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;py-data-juicer[all]&quot;</span>
 </pre></div>
 </div>
-<p><strong>5. For Development Mode</strong></p>
-<p>For contributors and developers:</p>
+</section>
+<section id="installation-from-source">
+<h2>Installation From Source<a class="headerlink" href="#installation-from-source" title="Link to this heading">#</a></h2>
+<p>If you want to use the latest features and updates, Data-Juicer can be installed from source as well:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone repository</span>
 git<span class="w"> </span>clone<span class="w"> </span>https://github.com/datajuicer/data-juicer.git
 <span class="nb">cd</span><span class="w"> </span>data-juicer
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 
-<span class="c1"># Install dev dependencies</span>
-uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev]&quot;</span>
+<span class="c1"># You can install specific domain as well</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[vision]&quot;</span>
 </pre></div>
 </div>
+<p><strong>Note</strong>: It’s suggested to used <code class="docutils literal notranslate"><span class="pre">-e</span></code> to enable editable mode when installing from source.</p>
 </section>
 <section id="installation-for-specific-ops">
 <h2>Installation for Specific OPs<a class="headerlink" href="#installation-for-specific-ops" title="Link to this heading">#</a></h2>
@@ -834,6 +838,7 @@ latest <code class="docutils literal notranslate"><span class="pre">data-juicer<
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-dj-installation">Basic DJ Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario-based-installation">Scenario-based Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-installation-patterns">Common Installation Patterns</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation-from-source">Installation From Source</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation-for-specific-ops">Installation for Specific OPs</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation-using-docker">Installation Using Docker</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-troubleshooting">Notes &amp; Troubleshooting</a></li>

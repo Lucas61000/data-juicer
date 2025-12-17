@@ -622,8 +622,8 @@ use agent to automatically route suitable OPs and call them. E.g., refer to
 <p>用户还可以查看、运行单元测试 (<code class="docutils literal notranslate"><span class="pre">tests/ops/...</span></code>)，来体验<a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/tests/ops">各OP的用法示例</a>以及每个OP作用于内置测试数据样本时的效果。例如，参考<a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/demos/api_service/react_data_filter_process.ipynb">Agentic Filters of DJ</a>, <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/demos/api_service/react_data_mapper_process.ipynb">Agentic Mappers of DJ</a></p>
 <section id="overview">
 <h2>Overview  概览<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
-<p>The operators in Data-Juicer are categorized into 7 types.
-Data-Juicer 中的算子分为以下 7 种类型。</p>
+<p>The operators in Data-Juicer are categorized into 8 types.
+Data-Juicer 中的算子分为以下 8 种类型。</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Type 类型</p></th>
@@ -656,7 +656,11 @@ Data-Juicer 中的算子分为以下 7 种类型。</p>
 <td class="text-center"><p>96</p></td>
 <td><p>Edits and transforms samples. 对数据样本进行编辑和转换。</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api/data_juicer.ops.selector.html#module-data_juicer.ops.selector" title="data_juicer.ops.selector"><span class="xref myst py py-mod">selector</span></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/data_juicer.ops.pipeline.html#module-data_juicer.ops.pipeline" title="data_juicer.ops.pipeline"><span class="xref myst py py-mod">pipeline</span></a></p></td>
+<td class="text-center"><p>3</p></td>
+<td><p>Combines multiple operators into a data processing pipeline. 将多个算子组合成数据处理流水线。</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/data_juicer.ops.selector.html#module-data_juicer.ops.selector" title="data_juicer.ops.selector"><span class="xref myst py py-mod">selector</span></a></p></td>
 <td class="text-center"><p>5</p></td>
 <td><p>Selects top samples based on ranking. 基于排序选取高质量样本。</p></td>
 </tr>
@@ -1843,6 +1847,40 @@ Data-Juicer 中的算子分为以下 7 种类型。</p>
 </table>
 </div>
 </section>
+<section id="pipeline">
+<h2>pipeline <a name="pipeline"/><a class="headerlink" href="#pipeline" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operator 算子</p></th>
+<th class="head"><p>Tags 标签</p></th>
+<th class="head"><p>Description 描述</p></th>
+<th class="head"><p>Details 详情</p></th>
+<th class="head"><p>Reference 参考</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>llm_inference_with_ray_vllm_pipeline</p></td>
+<td><p>🚀GPU 🟡Beta</p></td>
+<td><p>Pipeline to generate response using vLLM engine on Ray. 使用Ray上的vLLM引擎生成响应的管道。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>ray_vllm_pipeline</p></td>
+<td><p>🚀GPU 🟡Beta</p></td>
+<td><p>Pipeline for Ray vLLM engine. Ray vLLM引擎的管道。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>vlm_inference_with_ray_vllm_pipeline</p></td>
+<td><p>🏞Image 🚀GPU 🟡Beta</p></td>
+<td><p>Pipeline to generate response using vLLM engine on Ray. 使用Ray上的vLLM引擎生成响应的管道。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 <section id="selector">
 <h2>selector <a name="selector"/><a class="headerlink" href="#selector" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -1951,6 +1989,7 @@ for Developers</span></a>.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#formatter">formatter <a name="formatter"></a></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grouper">grouper <a name="grouper"></a></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mapper">mapper <a name="mapper"></a></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pipeline">pipeline <a name="pipeline"></a></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#selector">selector <a name="selector"></a></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#contributing">Contributing  贡献</a></li>
 </ul>
