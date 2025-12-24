@@ -759,13 +759,21 @@
 
         <span class="n">calculate_ray_np</span><span class="p">(</span><span class="n">operators</span><span class="p">)</span>
 
+        <span class="c1"># Cache columns once at start to avoid breaking pipeline with repeated columns() calls</span>
+        <span class="c1"># Ray&#39;s columns() internally does limit(1) which forces execution and breaks streaming</span>
+        <span class="n">cached_columns</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">())</span>
+
         <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">operators</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_run_single_op</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+            <span class="n">cached_columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_single_op</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">cached_columns</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_run_single_op</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">_name</span> <span class="ow">in</span> <span class="n">TAGGING_OPS</span><span class="o">.</span><span class="n">modules</span> <span class="ow">and</span> <span class="n">Fields</span><span class="o">.</span><span class="n">meta</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_single_op</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">cached_columns</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Use cached columns to avoid calling self.data.columns() which breaks pipeline</span>
+        <span class="k">if</span> <span class="n">cached_columns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cached_columns</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">_name</span> <span class="ow">in</span> <span class="n">TAGGING_OPS</span><span class="o">.</span><span class="n">modules</span> <span class="ow">and</span> <span class="n">Fields</span><span class="o">.</span><span class="n">meta</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cached_columns</span><span class="p">:</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">process_batch_arrow</span><span class="p">(</span><span class="n">table</span><span class="p">:</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">Table</span><span class="p">):</span>
                 <span class="n">new_column_data</span> <span class="o">=</span> <span class="p">[{}</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="p">))]</span>
@@ -775,6 +783,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
                 <span class="n">process_batch_arrow</span><span class="p">,</span> <span class="n">batch_format</span><span class="o">=</span><span class="s2">&quot;pyarrow&quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">DEFAULT_BATCH_SIZE</span>
             <span class="p">)</span>
+            <span class="n">cached_columns</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Fields</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">batch_size</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">is_batched_op</span><span class="p">()</span> <span class="k">else</span> <span class="mi">1</span>
@@ -807,8 +816,8 @@
                         <span class="n">runtime_env</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">runtime_env</span><span class="p">,</span>
                     <span class="p">)</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">Filter</span><span class="p">):</span>
-                <span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">Fields</span><span class="o">.</span><span class="n">stats</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+                <span class="c1"># Use cached_columns instead of self.data.columns() to avoid breaking pipeline</span>
+                <span class="k">if</span> <span class="n">Fields</span><span class="o">.</span><span class="n">stats</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cached_columns</span><span class="p">:</span>
 
                     <span class="k">def</span><span class="w"> </span><span class="nf">process_batch_arrow</span><span class="p">(</span><span class="n">table</span><span class="p">:</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">Table</span><span class="p">):</span>
                         <span class="n">new_column_data</span> <span class="o">=</span> <span class="p">[{}</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="p">))]</span>
@@ -818,6 +827,7 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
                         <span class="n">process_batch_arrow</span><span class="p">,</span> <span class="n">batch_format</span><span class="o">=</span><span class="s2">&quot;pyarrow&quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">DEFAULT_BATCH_SIZE</span>
                     <span class="p">)</span>
+                    <span class="n">cached_columns</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">use_ray_actor</span><span class="p">():</span>
                     <span class="n">op_kwargs</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">_op_cfg</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span><span class="p">]</span>
                     <span class="n">compute</span> <span class="o">=</span> <span class="n">get_compute_strategy</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">concurrency</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="p">)</span>
@@ -874,6 +884,8 @@
 
             <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
             <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cached_columns</span>
 
 <div class="viewcode-block" id="RayDataset.count">
 <a class="viewcode-back" href="../../../../api/data_juicer.core.data.ray_dataset.html#data_juicer.core.data.ray_dataset.RayDataset.count">[docs]</a>
