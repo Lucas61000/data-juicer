@@ -1225,6 +1225,7 @@
             <span class="s2">&quot;aws_session_token&quot;</span><span class="p">,</span>
             <span class="s2">&quot;aws_region&quot;</span><span class="p">,</span>
             <span class="s2">&quot;endpoint_url&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;format&quot;</span><span class="p">,</span>
         <span class="p">],</span>
         <span class="s2">&quot;field_types&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
         <span class="s2">&quot;custom_validators&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -1259,23 +1260,38 @@
         <span class="p">}</span>
 
         <span class="n">auto_detect</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">data_source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">data_source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;format&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">data_format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">auto_detect</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">suffix</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">data_source</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">suffix</span> <span class="ow">in</span> <span class="n">file_extension_map</span><span class="p">:</span>
-                <span class="n">data_format</span> <span class="o">=</span> <span class="n">file_extension_map</span><span class="p">[</span><span class="n">suffix</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">data_source</span> <span class="ow">in</span> <span class="n">file_extension_map</span><span class="p">:</span>
-                <span class="n">data_format</span> <span class="o">=</span> <span class="n">file_extension_map</span><span class="p">[</span><span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">data_source</span><span class="p">]</span>
+            <span class="c1"># First check if it&#39;s already a valid format name</span>
+            <span class="n">valid_formats</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">file_extension_map</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">data_format</span> <span class="ow">in</span> <span class="n">valid_formats</span><span class="p">:</span>
+                <span class="k">pass</span>  <span class="c1"># It&#39;s a valid format name, use it as is</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">auto_detect</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="c1"># Try to interpret as an extension or filename</span>
+                <span class="n">suffix</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">data_format</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">suffix</span> <span class="ow">in</span> <span class="n">file_extension_map</span><span class="p">:</span>
+                    <span class="n">data_format</span> <span class="o">=</span> <span class="n">file_extension_map</span><span class="p">[</span><span class="n">suffix</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">data_format</span> <span class="ow">in</span> <span class="n">file_extension_map</span><span class="p">:</span>
+                    <span class="n">data_format</span> <span class="o">=</span> <span class="n">file_extension_map</span><span class="p">[</span><span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">data_format</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">auto_detect</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="n">auto_detect</span><span class="p">:</span>
             <span class="c1"># Extract extension from path</span>
             <span class="n">file_extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">path</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">data_format</span> <span class="o">=</span> <span class="n">file_extension_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">file_extension</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">)</span>  <span class="c1"># Default to parquet for S3</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Auto-detected data format: </span><span class="si">{</span><span class="n">data_format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">file_extension</span> <span class="ow">in</span> <span class="n">file_extension_map</span><span class="p">:</span>
+                <span class="n">data_format</span> <span class="o">=</span> <span class="n">file_extension_map</span><span class="p">[</span><span class="n">file_extension</span><span class="p">]</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Auto-detected data format: </span><span class="si">{</span><span class="n">data_format</span><span class="si">}</span><span class="s2"> from extension: </span><span class="si">{</span><span class="n">file_extension</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data_format</span> <span class="o">=</span> <span class="s2">&quot;parquet&quot;</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not determine data format from path &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(extension: &#39;</span><span class="si">{</span><span class="n">file_extension</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;(none)&#39;</span><span class="si">}</span><span class="s2">&#39;), &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;defaulting to &#39;parquet&#39;. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Consider explicitly specifying &#39;format&#39; field in dataset config.&quot;</span>
+                <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using specified data format: </span><span class="si">{</span><span class="n">data_format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
