@@ -679,6 +679,30 @@ Defaults to ‘data.0.embedding’.</p></li>
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="data_juicer.utils.model_utils.ResponsesAPIModel">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">ResponsesAPIModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#ResponsesAPIModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.ResponsesAPIModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.model_utils.ResponsesAPIModel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#ResponsesAPIModel.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.ResponsesAPIModel.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initializes an instance specialized for OpenAI Responses API.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The model identifier for Responses API calls.
+If it’s None, use the first available model from the server.</p></li>
+<li><p><strong>endpoint</strong> – API endpoint URL. Defaults to ‘/responses’.</p></li>
+<li><p><strong>response_path</strong> – Path to extract content from response.
+Defaults to ‘output.0.content.0.text’.</p></li>
+<li><p><strong>kwargs</strong> – Configuration for the OpenAI client.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_api_model">
 <span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_api_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_processor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_api_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_api_model" title="Link to this definition">#</a></dt>
@@ -695,10 +719,12 @@ path, it will be appended to the base URL (defined by the
 <cite>base_url</cite> parameter). Supported endpoints include:
 - ‘/chat/completions’ for chat models
 - ‘/embeddings’ for embedding models
+- ‘/responses’ for OpenAI Responses API
 Defaults to <cite>/chat/completions</cite> for OpenAI compatibility.</p></li>
 <li><p><strong>response_path</strong> – The dot-separated  path to extract desired content
 from the API response. Defaults to ‘choices.0.message.content’
-for chat models and ‘data.0.embedding’ for embedding models.</p></li>
+for chat models, ‘data.0.embedding’ for embedding models, and
+‘output.0.content.0.text’ for responses models.</p></li>
 <li><p><strong>return_processor</strong> – A boolean flag indicating whether to return a
 processor along with the model. The processor can be used for tasks
 like tokenization or encoding. Defaults to False.</p></li>
@@ -1103,6 +1129,10 @@ It is used to load a mmdeploy model and run inference on given images.</p>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.EmbeddingAPIModel"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPIModel</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.EmbeddingAPIModel.__init__"><code class="docutils literal notranslate"><span class="pre">EmbeddingAPIModel.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.ResponsesAPIModel"><code class="docutils literal notranslate"><span class="pre">ResponsesAPIModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.ResponsesAPIModel.__init__"><code class="docutils literal notranslate"><span class="pre">ResponsesAPIModel.__init__()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_api_model"><code class="docutils literal notranslate"><span class="pre">prepare_api_model()</span></code></a></li>

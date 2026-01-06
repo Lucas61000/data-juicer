@@ -829,7 +829,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="n">httpx</span><span class="o">.</span><span class="n">Response</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span> <span class="n">stream_cls</span><span class="o">=</span><span class="n">stream_cls</span>
             <span class="p">)</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-            <span class="k">return</span> <span class="n">nested_access</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">response_path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">nested_access</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">response_path</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
             <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
@@ -889,6 +889,61 @@
 
 
 
+<div class="viewcode-block" id="ResponsesAPIModel">
+<a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.ResponsesAPIModel">[文档]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResponsesAPIModel</span><span class="p">:</span>
+<div class="viewcode-block" id="ResponsesAPIModel.__init__">
+<a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.ResponsesAPIModel.__init__">[文档]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">response_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes an instance specialized for OpenAI Responses API.</span>
+
+<span class="sd">        :param model: The model identifier for Responses API calls.</span>
+<span class="sd">            If it&#39;s None, use the first available model from the server.</span>
+<span class="sd">        :param endpoint: API endpoint URL. Defaults to &#39;/responses&#39;.</span>
+<span class="sd">        :param response_path: Path to extract content from response.</span>
+<span class="sd">            Defaults to &#39;output.0.content.0.text&#39;.</span>
+<span class="sd">        :param kwargs: Configuration for the OpenAI client.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoint</span> <span class="ow">or</span> <span class="s2">&quot;/responses&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response_path</span> <span class="o">=</span> <span class="n">response_path</span> <span class="ow">or</span> <span class="s2">&quot;output.0.content.0.text&quot;</span>
+
+        <span class="n">client_args</span> <span class="o">=</span> <span class="n">filter_arguments</span><span class="p">(</span><span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">(</span><span class="o">**</span><span class="n">client_args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No model specified. Using the first available model from the server.&quot;</span><span class="p">)</span>
+            <span class="n">models_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">list</span><span class="p">()</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">models_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No models available on the server.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">models_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">id</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sends input to the Responses API and returns the parsed response content.</span>
+
+<span class="sd">        :param input: The input text or content to send to the API.</span>
+<span class="sd">        :param kwargs: Additional parameters for the API call.</span>
+<span class="sd">        :return: The parsed response content from the API call, or an empty</span>
+<span class="sd">            string if an error occurs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">body</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="n">httpx</span><span class="o">.</span><span class="n">Response</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">nested_access</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">response_path</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Responses API error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+
 <div class="viewcode-block" id="prepare_api_model">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_api_model">[文档]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_api_model</span><span class="p">(</span>
@@ -905,10 +960,12 @@
 <span class="sd">        `base_url` parameter). Supported endpoints include:</span>
 <span class="sd">        - &#39;/chat/completions&#39; for chat models</span>
 <span class="sd">        - &#39;/embeddings&#39; for embedding models</span>
+<span class="sd">        - &#39;/responses&#39; for OpenAI Responses API</span>
 <span class="sd">        Defaults to `/chat/completions` for OpenAI compatibility.</span>
 <span class="sd">    :param response_path: The dot-separated  path to extract desired content</span>
 <span class="sd">        from the API response. Defaults to &#39;choices.0.message.content&#39;</span>
-<span class="sd">        for chat models and &#39;data.0.embedding&#39; for embedding models.</span>
+<span class="sd">        for chat models, &#39;data.0.embedding&#39; for embedding models, and</span>
+<span class="sd">        &#39;output.0.content.0.text&#39; for responses models.</span>
 <span class="sd">    :param return_processor: A boolean flag indicating whether to return a</span>
 <span class="sd">        processor along with the model. The processor can be used for tasks</span>
 <span class="sd">        like tokenization or encoding. Defaults to False.</span>
@@ -924,6 +981,7 @@
     <span class="n">ENDPOINT_CLASS_MAP</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;chat&quot;</span><span class="p">:</span> <span class="n">ChatAPIModel</span><span class="p">,</span>
         <span class="s2">&quot;embeddings&quot;</span><span class="p">:</span> <span class="n">EmbeddingAPIModel</span><span class="p">,</span>
+        <span class="s2">&quot;responses&quot;</span><span class="p">:</span> <span class="n">ResponsesAPIModel</span><span class="p">,</span>
     <span class="p">}</span>
 
     <span class="n">API_Class</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="bp">cls</span> <span class="k">for</span> <span class="n">keyword</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">ENDPOINT_CLASS_MAP</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">lower</span><span class="p">()),</span> <span class="kc">None</span><span class="p">)</span>
