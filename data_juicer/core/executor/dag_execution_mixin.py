@@ -56,9 +56,7 @@ class DAGExecutionMixin:
         use_dag = getattr(cfg, "use_dag", None)
         if use_dag is None:
             # Default: enable for partitioned executors, disable for standalone (default executor)
-            use_dag = self._is_partitioned_executor() or (
-                hasattr(self, "executor_type") and self.executor_type != "default"
-            )
+            use_dag = self._is_partitioned_executor() or getattr(self, "executor_type", "default") != "default"
 
         if not use_dag:
             logger.info("DAG execution disabled for standalone mode")
@@ -89,15 +87,14 @@ class DAGExecutionMixin:
 
     def _is_partitioned_executor(self) -> bool:
         """Determine if this is a partitioned executor."""
-        return hasattr(self, "executor_type") and self.executor_type == "ray_partitioned"
+        return getattr(self, "executor_type", None) == "ray_partitioned"
 
     def _create_partitioned_strategy(self, cfg) -> DAGExecutionStrategy:
         """Create partitioned execution strategy."""
         # Partition count should be determined by the executor, not the DAG mixin
         # Get it from the executor's attribute if available, otherwise use a default
-        if hasattr(self, "num_partitions"):
-            num_partitions = self.num_partitions
-        else:
+        num_partitions = getattr(self, "num_partitions", None)
+        if num_partitions is None:
             # Last resort: use a default (shouldn't happen in practice)
             logger.error("Partition count not found in executor")
             raise ValueError("Partition count not found in executor")
@@ -127,7 +124,7 @@ class DAGExecutionMixin:
         self.pipeline_dag.nodes = nodes
 
         # Log DAG initialization
-        if hasattr(self, "log_dag_build_start"):
+        if log_method := getattr(self, "log_dag_build_start", None):
             ast_info = {
                 "config_source": "process_config",
                 "build_start_time": time.time(),
@@ -135,9 +132,9 @@ class DAGExecutionMixin:
                 "depth": len(operations),  # AST is linear, so depth equals number of operations
                 "operation_types": self._extract_operation_types_from_ops(operations),
             }
-            self.log_dag_build_start(ast_info)
+            log_method(ast_info)
 
-        if hasattr(self, "log_dag_build_complete"):
+        if log_method := getattr(self, "log_dag_build_complete", None):
             dag_info = {
                 "node_count": len(self.pipeline_dag.nodes),
                 "edge_count": len(self.pipeline_dag.edges),
@@ -145,18 +142,18 @@ class DAGExecutionMixin:
                 "execution_plan_length": len(self.pipeline_dag.execution_plan),
                 "build_duration": time.time() - (self.dag_execution_start_time or time.time()),
             }
-            self.log_dag_build_complete(dag_info)
+            log_method(dag_info)
 
         # Save execution plan
         if self.pipeline_dag:
             plan_path = self.pipeline_dag.save_execution_plan()
-            if hasattr(self, "log_dag_execution_plan_saved"):
+            if log_method := getattr(self, "log_dag_execution_plan_saved", None):
                 dag_info = {
                     "node_count": len(self.pipeline_dag.nodes),
                     "edge_count": len(self.pipeline_dag.edges),
                     "parallel_groups_count": len(self.pipeline_dag.parallel_groups),
                 }
-                self.log_dag_execution_plan_saved(plan_path, dag_info)
+                log_method(plan_path, dag_info)
 
     def _get_operations_from_config(self, cfg) -> List:
         """Get operations from configuration - can be overridden by executors."""
@@ -207,7 +204,7 @@ class DAGExecutionMixin:
                 convergence_points.append(op_idx)
 
             # Detect manual convergence points
-            if hasattr(op, "converge_after") and op.converge_after:
+            if getattr(op, "converge_after", False):
                 convergence_points.append(op_idx)
 
         return convergence_points
@@ -229,13 +226,13 @@ class DAGExecutionMixin:
         self.current_dag_node = node_id
 
         # Log DAG node start
-        if hasattr(self, "log_dag_node_start"):
+        if log_method := getattr(self, "log_dag_node_start", None):
             node_info = {
                 "op_name": node.get("op_name") or node.get("operation_name", ""),
                 "op_type": node.get("op_type") or node.get("node_type", "operation"),
                 "execution_order": node.get("execution_order", 0),
             }
-            self.log_dag_node_start(node_id, node_info)
+            log_method(node_id, node_info)
 
     def _mark_dag_node_completed(self, node_id: str, duration: float = None) -> None:
         """Mark a DAG node as completed."""
@@ -246,13 +243,13 @@ class DAGExecutionMixin:
         self.pipeline_dag.mark_node_completed(node_id, duration)
 
         # Log DAG node completion
-        if hasattr(self, "log_dag_node_complete"):
+        if log_method := getattr(self, "log_dag_node_complete", None):
             node_info = {
                 "op_name": node.get("op_name") or node.get("operation_name", ""),
                 "op_type": node.get("op_type") or node.get("node_type", "operation"),
                 "execution_order": node.get("execution_order", 0),
             }
-            self.log_dag_node_complete(node_id, node_info, duration or 0)
+            log_method(node_id, node_info, duration or 0)
 
         self.current_dag_node = None
 
@@ -265,13 +262,13 @@ class DAGExecutionMixin:
         self.pipeline_dag.mark_node_failed(node_id, error_message)
 
         # Log DAG node failure
-        if hasattr(self, "log_dag_node_failed"):
+        if log_method := getattr(self, "log_dag_node_failed", None):
             node_info = {
                 "op_name": node.get("op_name") or node.get("operation_name", ""),
                 "op_type": node.get("op_type") or node.get("node_type", "operation"),
                 "execution_order": node.get("execution_order", 0),
             }
-            self.log_dag_node_failed(node_id, node_info, error_message, duration)
+            log_method(node_id, node_info, error_message, duration)
 
         self.current_dag_node = None
 
@@ -301,10 +298,10 @@ class DAGExecutionMixin:
             logger.warning(f"DAG node not found for operation {op_name} (idx {op_idx})")
 
         # Call the original logging method with correct parameters
-        if event_type == "op_start" and hasattr(self, "log_op_start"):
-            self.log_op_start(partition_id, op_name, op_idx, kwargs.get("metadata", {}))
-        elif event_type == "op_complete" and hasattr(self, "log_op_complete"):
-            self.log_op_complete(
+        if event_type == "op_start" and (log_method := getattr(self, "log_op_start", None)):
+            log_method(partition_id, op_name, op_idx, kwargs.get("metadata", {}))
+        elif event_type == "op_complete" and (log_method := getattr(self, "log_op_complete", None)):
+            log_method(
                 partition_id,
                 op_name,
                 op_idx,
@@ -313,8 +310,8 @@ class DAGExecutionMixin:
                 kwargs.get("input_rows", 0),
                 kwargs.get("output_rows", 0),
             )
-        elif event_type == "op_failed" and hasattr(self, "log_op_failed"):
-            self.log_op_failed(
+        elif event_type == "op_failed" and (log_method := getattr(self, "log_op_failed", None)):
+            log_method(
                 partition_id, op_name, op_idx, kwargs.get("error", "Unknown error"), kwargs.get("retry_count", 0)
             )
 
@@ -345,8 +342,8 @@ class DAGExecutionMixin:
             else:
                 # Log operation start without DAG context
                 logger.warning(f"DAG node not found for operation {op_name}, logging without DAG context")
-                if hasattr(self, "log_op_start"):
-                    self.log_op_start(partition_id, op_name, op_idx, {})
+                if log_method := getattr(self, "log_op_start", None):
+                    log_method(partition_id, op_name, op_idx, {})
 
     def _post_execute_operations_with_dag_monitoring(self, ops: List, partition_id: int = 0) -> None:
         """Log operation completion events with DAG monitoring after execution.
@@ -381,8 +378,8 @@ class DAGExecutionMixin:
                 )
             else:
                 # Log operation completion without DAG context
-                if hasattr(self, "log_op_complete"):
-                    self.log_op_complete(partition_id, op_name, op_idx, 0.0, None, 0, 0)
+                if log_method := getattr(self, "log_op_complete", None):
+                    log_method(partition_id, op_name, op_idx, 0.0, None, 0, 0)
 
     def _extract_operation_types_from_ops(self, operations: List) -> List[str]:
         """Extract operation types from operations list."""
@@ -438,8 +435,9 @@ class DAGExecutionMixin:
         """Get the path to the saved DAG execution plan."""
         if not self.pipeline_dag:
             # If pipeline_dag is not initialized, try to construct the path from work_dir
-            if hasattr(self, "cfg") and hasattr(self.cfg, "work_dir"):
-                return str(Path(self.cfg.work_dir) / "dag_execution_plan.json")
+            work_dir = getattr(getattr(self, "cfg", None), "work_dir", None)
+            if work_dir:
+                return str(Path(work_dir) / "dag_execution_plan.json")
             return ""
 
         # DAG execution plan is now saved directly in the work directory
@@ -458,7 +456,7 @@ class DAGExecutionMixin:
             Dictionary containing reconstructed DAG state and resumption information
         """
         # Step 1: Validate event logger availability
-        if not hasattr(self, "event_logger") or not self.event_logger:
+        if not getattr(self, "event_logger", None):
             logger.warning("Event logger not available for DAG state reconstruction")
             return None
 
@@ -563,7 +561,7 @@ class DAGExecutionMixin:
             dag_events: List of DAG-related events
         """
         for event in dag_events:
-            event_data = event.__dict__ if hasattr(event, "__dict__") else event
+            event_data = getattr(event, "__dict__", event)
 
             # Handle DAG node events
             if event_data.get("event_type") == EventType.DAG_NODE_START.value:

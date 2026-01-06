@@ -327,11 +327,11 @@ class PartitionedDAGStrategy(DAGExecutionStrategy):
 def is_global_operation(operation) -> bool:
     """Check if an operation is a global operation that requires convergence."""
     # Deduplicators are typically global operations
-    if hasattr(operation, "_name") and "deduplicator" in operation._name:
+    if "deduplicator" in getattr(operation, "_name", ""):
         return True
 
     # Check for explicit global operation flag
-    if hasattr(operation, "is_global_operation") and operation.is_global_operation:
+    if getattr(operation, "is_global_operation", False):
         return True
 
     return False
