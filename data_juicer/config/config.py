@@ -1320,39 +1320,134 @@ def validate_config_for_resumption(cfg: Namespace, work_dir: str, original_args:
 
 
 def _parse_cli_to_config(cli_args: list) -> dict:
-    """Parse CLI arguments into config dictionary format."""
-    config = {}
+    """
+    Parse CLI arguments into config dictionary format using the global parser.
 
+    This ensures proper handling of:
+    - --key=value syntax
+    - Arguments with spaces
+    - Multiple values (nargs='+')
+    - Complex type conversions
+
+    Args:
+        cli_args: List of CLI arguments to parse
+
+    Returns:
+        Dictionary of parsed configuration values
+    """
+    global global_parser
+
+    if not cli_args:
+        return {}
+
+    # If global_parser is available, use it for robust parsing
+    if global_parser:
+        try:
+            # For comparison purposes, we only care about override arguments, not the config file
+            # Filter out --config and --auto since they're handled separately
+            filtered_args = []
+            i = 0
+            while i < len(cli_args):
+                arg = cli_args[i]
+                if arg == "--config" or arg == "--auto":
+                    # Skip --config/--auto and its value (if any)
+                    if i + 1 < len(cli_args) and not cli_args[i + 1].startswith("--"):
+                        i += 2
+                    else:
+                        i += 1
+                elif arg.startswith("--"):
+                    # Keep other flags
+                    filtered_args.append(arg)
+                    i += 1
+                elif filtered_args:
+                    # Keep values that follow flags
+                    filtered_args.append(arg)
+                    i += 1
+                else:
+                    # Skip positional arguments (e.g., pytest test names)
+                    i += 1
+
+            # If no override args, return empty dict
+            if not filtered_args:
+                return {}
+
+            # Add --auto to satisfy the required argument (we'll filter it out later)
+            temp_cli_args = ["--auto"] + filtered_args
+
+            # Use parse_known_args to handle unrecognized arguments gracefully
+            parsed_cfg, unknown = global_parser.parse_known_args(temp_cli_args)
+            # Convert to dict for comparison
+            config_dict = namespace_to_dict(parsed_cfg)
+
+            # Remove arguments we don't want to compare
+            config_dict.pop("config", None)
+            config_dict.pop("auto", None)
+
+            return config_dict
+        except (Exception, SystemExit) as e:
+            logger.debug(f"Failed to parse CLI args with global_parser: {e}. Falling back to manual parsing.")
+
+    # Fallback to improved manual parsing if parser not available
+    config = {}
     i = 0
+
     while i < len(cli_args):
         arg = cli_args[i]
 
         if arg.startswith("--"):
-            key = arg[2:]  # Remove '--'
-
-            # Check if next arg is a value (not another flag)
-            if i + 1 < len(cli_args) and not cli_args[i + 1].startswith("--"):
-                value = cli_args[i + 1]
-
-                # Try to parse as different types
-                if value.lower() in ["true", "false"]:
-                    config[key] = value.lower() == "true"
-                elif value.isdigit():
-                    config[key] = int(value)
-                elif value.replace(".", "").isdigit():
-                    config[key] = float(value)
-                else:
-                    config[key] = value
-
-                i += 2  # Skip both key and value
-            else:
-                # Boolean flag (no value)
-                config[key] = True
+            # Handle --key=value syntax
+            if "=" in arg:
+                key, value = arg[2:].split("=", 1)
+                config[key] = _parse_value(value)
                 i += 1
+            else:
+                key = arg[2:]
+
+                # Collect all values until next flag
+                values = []
+                j = i + 1
+                while j < len(cli_args) and not cli_args[j].startswith("--"):
+                    values.append(cli_args[j])
+                    j += 1
+
+                if values:
+                    # If multiple values, keep as list; otherwise, single value
+                    if len(values) == 1:
+                        config[key] = _parse_value(values[0])
+                    else:
+                        config[key] = [_parse_value(v) for v in values]
+                    i = j
+                else:
+                    # Boolean flag (no value)
+                    config[key] = True
+                    i += 1
         else:
             i += 1
 
     return config
+
+
+def _parse_value(value: str):
+    """Parse a string value to its appropriate type."""
+    # Try to parse as different types
+    if value.lower() in ["true", "false"]:
+        return value.lower() == "true"
+
+    try:
+        # Try int first
+        if "." not in value and "e" not in value.lower():
+            return int(value)
+    except ValueError:
+        pass
+
+    try:
+        # Try float
+        return float(value)
+    except ValueError:
+        pass
+
+    # Return as string
+    return value
 
 
 def config_backup(cfg: Namespace):

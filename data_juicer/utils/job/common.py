@@ -72,12 +72,24 @@ class JobUtils:
                 logger.warning(f"Failed to load dataset mapping: {e}")
         return {}
 
+    def _find_latest_events_file(self) -> Optional[Path]:
+        """Find the latest events file in the work directory."""
+        # Look for events files with timestamp pattern (events_*.jsonl)
+        events_files = list(self.work_dir.glob("events_*.jsonl"))
+        if events_files:
+            # Sort by modification time and return the latest
+            return max(events_files, key=lambda f: f.stat().st_mtime)
+
+        # Fallback to old naming convention for backward compatibility
+        fallback_file = self.work_dir / "events.jsonl"
+        return fallback_file if fallback_file.exists() else None
+
     def load_event_logs(self) -> List[Dict[str, Any]]:
         """Load and parse event logs."""
-        events_file = self.work_dir / "events.jsonl"
+        events_file = self._find_latest_events_file()
         events = []
 
-        if events_file.exists():
+        if events_file and events_file.exists():
             try:
                 with open(events_file, "r") as f:
                     for line in f:
@@ -299,6 +311,19 @@ class JobUtils:
             return []
 
 
+def _find_latest_events_file_in_dir(job_dir: Path) -> Optional[Path]:
+    """Helper function to find the latest events file in a directory."""
+    # Look for events files with timestamp pattern (events_*.jsonl)
+    events_files = list(job_dir.glob("events_*.jsonl"))
+    if events_files:
+        # Sort by modification time and return the latest
+        return max(events_files, key=lambda f: f.stat().st_mtime)
+
+    # Fallback to old naming convention for backward compatibility
+    fallback_file = job_dir / "events.jsonl"
+    return fallback_file if fallback_file.exists() else None
+
+
 def list_running_jobs(base_dir: str = "outputs/partition-checkpoint-eventlog") -> List[Dict[str, Any]]:
     """List all DataJuicer jobs and their status."""
     base_path = Path(base_dir)
@@ -315,9 +340,9 @@ def list_running_jobs(base_dir: str = "outputs/partition-checkpoint-eventlog") -
                         job_summary = json.load(f)
 
                     # Check if processes are still running
-                    events_file = job_dir / "events.jsonl"
+                    events_file = _find_latest_events_file_in_dir(job_dir)
                     process_ids = set()
-                    if events_file.exists():
+                    if events_file and events_file.exists():
                         try:
                             with open(events_file, "r") as f:
                                 for line in f:

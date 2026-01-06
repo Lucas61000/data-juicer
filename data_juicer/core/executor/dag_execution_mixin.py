@@ -341,12 +341,7 @@ class DAGExecutionMixin:
                 self._mark_dag_node_started(node_id)
 
                 # Log operation start with DAG context
-                if partition_id != 0:
-                    # Partitioned executor - pass partition_id
-                    self._log_operation_with_dag_context(op_name, op_idx, "op_start", partition_id=partition_id)
-                else:
-                    # Non-partitioned executor
-                    self._log_operation_with_dag_context(op_name, op_idx, "op_start")
+                self._log_operation_with_dag_context(op_name, op_idx, "op_start", partition_id=partition_id)
             else:
                 # Log operation start without DAG context
                 logger.warning(f"DAG node not found for operation {op_name}, logging without DAG context")
@@ -375,22 +370,15 @@ class DAGExecutionMixin:
                 self._mark_dag_node_completed(node_id, 0.0)  # Duration will be updated from events
 
                 # Log operation completion with DAG context
-                if partition_id != 0:
-                    # Partitioned executor - pass partition_id
-                    self._log_operation_with_dag_context(
-                        op_name,
-                        op_idx,
-                        "op_complete",
-                        partition_id=partition_id,
-                        duration=0.0,
-                        input_rows=0,
-                        output_rows=0,
-                    )
-                else:
-                    # Non-partitioned executor
-                    self._log_operation_with_dag_context(
-                        op_name, op_idx, "op_complete", duration=0.0, input_rows=0, output_rows=0
-                    )
+                self._log_operation_with_dag_context(
+                    op_name,
+                    op_idx,
+                    "op_complete",
+                    partition_id=partition_id,
+                    duration=0.0,
+                    input_rows=0,
+                    output_rows=0,
+                )
             else:
                 # Log operation completion without DAG context
                 if hasattr(self, "log_op_complete"):

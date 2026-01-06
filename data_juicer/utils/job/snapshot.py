@@ -101,9 +101,20 @@ class ProcessingSnapshotAnalyzer:
     def __init__(self, work_dir: str):
         """Initialize the analyzer with work directory."""
         self.work_dir = Path(work_dir)
-        self.events_file = self.work_dir / "events.jsonl"
+        self.events_file = self._find_latest_events_file()
         self.dag_file = self.work_dir / "dag_execution_plan.json"
         self.job_summary_file = self.work_dir / "job_summary.json"
+
+    def _find_latest_events_file(self) -> Path:
+        """Find the latest events file in the work directory."""
+        # Look for events files with timestamp pattern (events_*.jsonl)
+        events_files = list(self.work_dir.glob("events_*.jsonl"))
+        if events_files:
+            # Sort by modification time and return the latest
+            return max(events_files, key=lambda f: f.stat().st_mtime)
+
+        # Fallback to old naming convention for backward compatibility
+        return self.work_dir / "events.jsonl"
 
     def load_events(self) -> List[Dict]:
         """Load events from events.jsonl file."""
@@ -145,27 +156,6 @@ class ProcessingSnapshotAnalyzer:
             except Exception as e:
                 logger.error(f"Failed to load job summary: {e}")
         return summary
-
-    def extract_operation_pipeline(self, dag_plan: Dict) -> List[Dict]:
-        """Extract operation pipeline from DAG plan."""
-        operations = []
-        try:
-            if "process" in dag_plan:
-                operations = dag_plan["process"]
-            elif "operations" in dag_plan:
-                operations = dag_plan["operations"]
-            else:
-                # Try to find operations in nested structure
-                for key, value in dag_plan.items():
-                    if isinstance(value, list) and value:
-                        # Check if this looks like an operation list
-                        if isinstance(value[0], dict) and any("name" in op or "type" in op for op in value):
-                            operations = value
-                            break
-        except Exception as e:
-            logger.error(f"Failed to extract operation pipeline: {e}")
-
-        return operations
 
     def analyze_events(self, events: List[Dict]) -> Tuple[Dict[int, PartitionStatus], Dict[str, OperationStatus]]:
         """Analyze events to determine processing status."""

@@ -34,8 +34,8 @@ This directory contains the implementation of fault-tolerant, resumable DataJuic
 ```
 {work_dir}/
 ├── {job_id}/                    # Job-specific directory
-│   ├── job_summary.json         # Job metadata and resumption info
-│   ├── events.jsonl             # Machine-readable events (JSONL format)
+│   ├── job_summary.json         # Job metadata and resumption info (created on job completion)
+│   ├── events_{timestamp}.jsonl # Machine-readable events (JSONL format with timestamp)
 │   ├── dag_execution_plan.json  # DAG execution plan
 │   ├── partition-checkpoint-eventlog.yaml  # Backed up config file
 │   ├── metadata/                # Job metadata files
@@ -286,11 +286,11 @@ python demos/partition_and_checkpoint/run_demo.py
 
 ### View Job Information
 ```bash
-# Check job summary
+# Check job summary (created on job completion)
 cat ./outputs/partition-checkpoint-eventlog/{job_id}/job_summary.json
 
-# View event logs
-cat ./outputs/partition-checkpoint-eventlog/{job_id}/events.jsonl
+# View event logs (use the latest events file with timestamp)
+cat ./outputs/partition-checkpoint-eventlog/{job_id}/events_*.jsonl
 
 # View human-readable logs
 cat ./outputs/partition-checkpoint-eventlog/{job_id}/logs/export_processed.jsonl_time_*.txt

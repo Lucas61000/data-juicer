@@ -35,8 +35,8 @@
 ```
 {work_dir}/
 ├── {job_id}/                    # 作业特定目录
-│   ├── job_summary.json         # 作业元数据和恢复信息
-│   ├── events.jsonl             # 机器可读事件（JSONL 格式）
+│   ├── job_summary.json         # 作业元数据和恢复信息（作业完成时创建）
+│   ├── events_{timestamp}.jsonl # 机器可读事件（带时间戳的 JSONL 格式）
 │   ├── dag_execution_plan.json  # DAG 执行计划
 │   ├── partition-checkpoint-eventlog.yaml  # 备份的配置文件
 │   ├── metadata/                # 作业元数据文件
@@ -223,11 +223,11 @@ python demos/partition_and_checkpoint/run_demo.py
 
 ### 查看作业信息
 ```bash
-# 检查作业摘要
+# 检查作业摘要（作业完成时创建）
 cat ./outputs/partition-checkpoint-eventlog/{job_id}/job_summary.json
 
-# 查看事件日志
-cat ./outputs/partition-checkpoint-eventlog/{job_id}/events.jsonl
+# 查看事件日志（使用带时间戳的最新事件文件）
+cat ./outputs/partition-checkpoint-eventlog/{job_id}/events_*.jsonl
 
 # 查看人类可读日志
 cat ./outputs/partition-checkpoint-eventlog/{job_id}/logs/export_processed.jsonl_time_*.txt

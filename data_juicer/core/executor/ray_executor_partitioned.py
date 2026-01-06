@@ -28,6 +28,7 @@ from data_juicer.core.ray_exporter import RayExporter
 from data_juicer.ops import load_ops
 from data_juicer.ops.op_fusion import fuse_operators
 from data_juicer.utils.ckpt_utils import CheckpointStrategy, RayCheckpointManager
+from data_juicer.utils.config_utils import ConfigAccessor
 from data_juicer.utils.lazy_loader import LazyLoader
 
 ray = LazyLoader("ray")
@@ -105,17 +106,11 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         checkpoint_dir = getattr(self.cfg, "checkpoint_dir", os.path.join(self.work_dir, "checkpoints"))
 
         if checkpoint_cfg:
-            # Handle both dict and object configurations
-            if isinstance(checkpoint_cfg, dict):
-                checkpoint_enabled = checkpoint_cfg.get("enabled", True)
-                strategy_str = checkpoint_cfg.get("strategy", "every_op")
-                checkpoint_n_ops = checkpoint_cfg.get("n_ops", 1)
-                checkpoint_op_names = checkpoint_cfg.get("op_names", [])
-            else:
-                checkpoint_enabled = getattr(checkpoint_cfg, "enabled", True)
-                strategy_str = getattr(checkpoint_cfg, "strategy", "every_op")
-                checkpoint_n_ops = getattr(checkpoint_cfg, "n_ops", 1)
-                checkpoint_op_names = getattr(checkpoint_cfg, "op_names", [])
+            # Use ConfigAccessor to handle both dict and object configurations
+            checkpoint_enabled = ConfigAccessor.get(checkpoint_cfg, "enabled", True)
+            strategy_str = ConfigAccessor.get(checkpoint_cfg, "strategy", "every_op")
+            checkpoint_n_ops = ConfigAccessor.get(checkpoint_cfg, "n_ops", 1)
+            checkpoint_op_names = ConfigAccessor.get(checkpoint_cfg, "op_names", [])
 
             # Parse checkpoint strategy with validation
             try:
@@ -183,17 +178,11 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         # Get partition configuration
         partition_cfg = getattr(self.cfg, "partition", {})
 
-        # Handle both dict and object configurations
-        if isinstance(partition_cfg, dict):
-            mode = partition_cfg.get("mode", "auto")
-            num_of_partitions = partition_cfg.get("num_of_partitions", 4)
-            partition_size = partition_cfg.get("size", 5000)
-            max_size_mb = partition_cfg.get("max_size_mb", 64)
-        else:
-            mode = getattr(partition_cfg, "mode", "auto")
-            num_of_partitions = getattr(partition_cfg, "num_of_partitions", 4)
-            partition_size = getattr(partition_cfg, "size", 5000)
-            max_size_mb = getattr(partition_cfg, "max_size_mb", 64)
+        # Use ConfigAccessor to handle both dict and object configurations
+        mode = ConfigAccessor.get(partition_cfg, "mode", "auto")
+        num_of_partitions = ConfigAccessor.get(partition_cfg, "num_of_partitions", 4)
+        partition_size = ConfigAccessor.get(partition_cfg, "size", 5000)
+        max_size_mb = ConfigAccessor.get(partition_cfg, "max_size_mb", 64)
 
         # Fallback to legacy configuration if partition config is not available
         # or if legacy num_partitions is explicitly set
@@ -233,16 +222,11 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
             recommendations = auto_configure_resources(self.cfg, dataset, ops)
 
             # Update partition configuration based on recommendations
-            if hasattr(recommendations, "get"):
-                # Handle dict-like recommendations
-                recommended_size = recommendations.get("recommended_partition_size", self.partition_size)
-                recommended_max_size_mb = recommendations.get("recommended_max_size_mb", self.max_size_mb)
-                recommended_workers = recommendations.get("recommended_worker_count", getattr(self.cfg, "np", 4))
-            else:
-                # Handle object-like recommendations
-                recommended_size = getattr(recommendations, "recommended_partition_size", self.partition_size)
-                recommended_max_size_mb = getattr(recommendations, "recommended_max_size_mb", self.max_size_mb)
-                recommended_workers = getattr(recommendations, "recommended_worker_count", getattr(self.cfg, "np", 4))
+            recommended_size = ConfigAccessor.get(recommendations, "recommended_partition_size", self.partition_size)
+            recommended_max_size_mb = ConfigAccessor.get(recommendations, "recommended_max_size_mb", self.max_size_mb)
+            recommended_workers = ConfigAccessor.get(
+                recommendations, "recommended_worker_count", getattr(self.cfg, "np", 4)
+            )
 
             # Calculate optimal number of partitions based on dataset size and recommended partition size
             try:
@@ -605,33 +589,13 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
                 # Pre-execute DAG monitoring (log operation start events)
                 if self.pipeline_dag:
                     self._pre_execute_operations_with_dag_monitoring(group_ops, partition_id=partition_id)
-                else:
-                    # Fallback to manual logging without DAG
-                    for op_idx, op in enumerate(group_ops):
-                        self._log_event(
-                            event_type=EventType.OP_START,
-                            message=f"Starting operation: {op._name}",
-                            operation_name=op._name,
-                            operation_idx=start_idx + op_idx,
-                            partition_id=partition_id,
-                        )
 
-                    # Execute operations
-                    current_dataset = current_dataset.process(group_ops)
+                # Execute operations
+                current_dataset = current_dataset.process(group_ops)
 
-                    # Post-execute DAG monitoring (log operation completion events)
-                    if self.pipeline_dag:
-                        self._post_execute_operations_with_dag_monitoring(group_ops, partition_id=partition_id)
-                    else:
-                        # Fallback to manual logging without DAG
-                        for op_idx, op in enumerate(group_ops):
-                            self._log_event(
-                                event_type=EventType.OP_COMPLETE,
-                                message=f"Completed operation: {op._name}",
-                                operation_name=op._name,
-                                operation_idx=start_idx + op_idx,
-                                partition_id=partition_id,
-                            )
+                # Post-execute DAG monitoring (log operation completion events)
+                if self.pipeline_dag:
+                    self._post_execute_operations_with_dag_monitoring(group_ops, partition_id=partition_id)
 
             # Checkpoint after the last operation in the group
             if group_ops:
@@ -662,8 +626,8 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
             if latest_events_file:
                 logger.info(f"Found events file in current work_dir: {latest_events_file}")
                 return str(current_work_dir)
-            else:
-                logger.warning(f"No events file found in current work_dir: {current_work_dir}")
+
+            logger.warning(f"No events file found in current work_dir: {current_work_dir}")
 
         logger.warning(f"No directory found containing job_id '{job_id}' with events files")
         return None

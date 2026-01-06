@@ -558,126 +558,123 @@ class PartitionSizeOptimizer:
         cluster_resources: Optional[ClusterResources],
         complexity_multiplier: float,
     ) -> int:
-        """Calculate partition size based on data characteristics and available resources."""
+        """
+        Calculate partition size based on data characteristics and available resources.
 
-        # Set total samples for CPU constraints calculation
-        self.estimated_total_samples = characteristics.total_samples
+        Primary goal: Target 64MB per partition for optimal memory usage.
+        Secondary goals: Ensure sufficient parallelism and respect resource constraints.
+        """
 
         # Get base configuration for the modality
         base_config = self.MODALITY_CONFIGS[characteristics.primary_modality]
 
-        # Start with modality-based size
+        # Step 1: Calculate ideal size for 64MB target
         if characteristics.primary_modality == ModalityType.TEXT:
-            base_size = self.calculate_text_partition_size(
-                characteristics.avg_text_length, characteristics.total_samples, complexity_multiplier
+            target_size = self.calculate_text_partition_size_simple(
+                characteristics.avg_text_length, complexity_multiplier
             )
         else:
-            base_size = int(base_config.default_partition_size / complexity_multiplier)
-            base_size = max(10, min(base_size, base_config.max_partition_size))
+            # For media, use memory-per-sample to calculate 64MB target
+            target_memory_mb = 64.0
+            if characteristics.memory_per_sample_mb > 0:
+                target_size = int(target_memory_mb / (characteristics.memory_per_sample_mb * complexity_multiplier))
+            else:
+                target_size = base_config.default_partition_size
+            target_size = max(10, min(target_size, base_config.max_partition_size))
 
-        # Adjust for memory constraints
-        memory_constrained_size = self.adjust_for_memory_constraints(
-            base_size, characteristics, local_resources, cluster_resources
+        # Step 2: Check if this fits in available memory
+        available_memory_gb = self._get_available_memory(local_resources, cluster_resources)
+        max_partition_memory_mb = (available_memory_gb * 1024 * 0.8) / 4  # Allow 4 concurrent partitions
+
+        if target_size * characteristics.memory_per_sample_mb * 2 > max_partition_memory_mb:
+            # Doesn't fit - scale down
+            safe_size = int(max_partition_memory_mb / (characteristics.memory_per_sample_mb * 2))
+            logger.warning(f"Memory constraint: reducing partition size from {target_size} to {safe_size} samples")
+            target_size = max(10, safe_size)
+
+        # Step 3: Ensure sufficient parallelism for large datasets
+        min_partitions_needed = self._calculate_min_partitions(
+            characteristics.total_samples, local_resources, cluster_resources
         )
 
-        # Adjust for CPU constraints
-        cpu_constrained_size = self.adjust_for_cpu_constraints(
-            memory_constrained_size, local_resources, cluster_resources
-        )
+        if characteristics.total_samples / target_size < min_partitions_needed:
+            # Too few partitions - reduce size for better parallelism
+            parallelism_size = int(characteristics.total_samples / min_partitions_needed)
+            logger.info(
+                f"Parallelism optimization: reducing partition size from {target_size} to {parallelism_size} "
+                f"to create {min_partitions_needed} partitions"
+            )
+            target_size = max(10, parallelism_size)
 
-        # Adjust for data skew
+        # Step 4: Adjust for data skew
         if characteristics.data_skew_factor > 0.7:
             # High variance - use smaller partitions for better load balancing
-            final_size = int(cpu_constrained_size * 0.7)
-        else:
-            final_size = cpu_constrained_size
+            skew_adjusted_size = int(target_size * 0.8)
+            logger.info(f"Data skew adjustment: reducing partition size from {target_size} to {skew_adjusted_size}")
+            target_size = skew_adjusted_size
 
-        # Apply bounds
-        final_size = max(10, min(final_size, base_config.max_partition_size))
+        # Step 5: Apply final bounds
+        final_size = max(10, min(target_size, base_config.max_partition_size))
+
+        logger.info(f"Final partition size: {final_size} samples")
+        logger.info(f"  Estimated memory per partition: {final_size * characteristics.memory_per_sample_mb:.1f} MB")
+        logger.info(f"  Estimated total partitions: {characteristics.total_samples / final_size:.0f}")
 
         return final_size
 
-    def adjust_for_memory_constraints(
+    def _get_available_memory(
+        self, local_resources: LocalResources, cluster_resources: Optional[ClusterResources]
+    ) -> float:
+        """Get available memory in GB."""
+        if cluster_resources:
+            return min(local_resources.available_memory_gb, cluster_resources.available_memory_gb)
+        return local_resources.available_memory_gb
+
+    def _calculate_min_partitions(
         self,
-        base_size: int,
-        characteristics: DataCharacteristics,
+        total_samples: int,
         local_resources: LocalResources,
         cluster_resources: Optional[ClusterResources],
     ) -> int:
-        """Adjust partition size based on available memory."""
+        """Calculate minimum number of partitions needed for good parallelism."""
+        # Only enforce minimum partitions for large datasets (>10k samples)
+        if total_samples <= 10000:
+            return 1  # Small datasets - prioritize 64MB target over parallelism
 
-        # Calculate memory needed per partition
-        memory_per_partition_mb = base_size * characteristics.memory_per_sample_mb * 2  # 2x buffer
-
-        # Check local memory constraints
-        available_memory_gb = local_resources.available_memory_gb
-        if cluster_resources:
-            # Use cluster memory if available
-            available_memory_gb = min(available_memory_gb, cluster_resources.available_memory_gb)
-
-        # Reserve 20% of memory for system and other processes
-        usable_memory_gb = available_memory_gb * 0.8
-
-        # Calculate how many partitions we can fit
-        max_partitions_by_memory = int((usable_memory_gb * 1024) / memory_per_partition_mb)
-
-        if max_partitions_by_memory < 1:
-            # Not enough memory - reduce partition size
-            memory_constrained_size = int(base_size * 0.5)
-            logger.warning(f"Memory constrained: reducing partition size to {memory_constrained_size}")
-        else:
-            memory_constrained_size = base_size
-
-        return memory_constrained_size
-
-    def adjust_for_cpu_constraints(
-        self, base_size: int, local_resources: LocalResources, cluster_resources: Optional[ClusterResources]
-    ) -> int:
-        """
-        Adjust partition size based on available CPU cores.
-        Prioritize 64MB target over excessive parallelism for small datasets.
-        """
-
-        # Get available CPU cores
+        # For large datasets, aim for at least 1.5x CPU cores in partitions
         available_cores = local_resources.cpu_cores
         if cluster_resources:
             available_cores = min(available_cores, cluster_resources.available_cpu_cores)
 
-        # Estimate total partitions needed
-        if hasattr(self, "estimated_total_samples"):
-            total_samples = self.estimated_total_samples
+        return max(1, int(available_cores * 1.5))
+
+    def calculate_text_partition_size_simple(self, avg_text_length: float, complexity_score: float) -> int:
+        """
+        Simplified text partition size calculation targeting 64MB.
+
+        Formula: samples = 64MB / (bytes_per_sample * complexity)
+        """
+        target_memory_mb = 64.0
+
+        # Estimate bytes per sample (conservative: 2 bytes per char + overhead)
+        bytes_per_sample = avg_text_length * 2.0
+        mb_per_sample = bytes_per_sample / (1024 * 1024)
+
+        # Calculate samples for 64MB, adjusted for complexity
+        if mb_per_sample > 0:
+            target_samples = int(target_memory_mb / (mb_per_sample * complexity_score))
         else:
-            total_samples = 10000  # Default estimate
+            target_samples = 5000  # Fallback for very small text
 
-        estimated_partitions = total_samples / base_size
+        # Apply reasonable bounds
+        target_samples = max(1000, min(target_samples, 20000))
 
-        # Only adjust if we have too few partitions AND the dataset is large enough
-        # For small datasets, prioritize 64MB target over parallelism
-        min_partitions_for_large_datasets = available_cores * 1.5  # Reduced from 2x
+        logger.info(f"Text partition calculation:")
+        logger.info(f"  Target: 64MB, Avg text: {avg_text_length:.0f} chars")
+        logger.info(f"  Estimated: {mb_per_sample:.3f} MB/sample")
+        logger.info(f"  Result: {target_samples} samples (~{target_samples * mb_per_sample:.1f} MB)")
 
-        if estimated_partitions < min_partitions_for_large_datasets and total_samples > 10000:
-            # Only reduce size for large datasets with too few partitions
-            cpu_constrained_size = int(base_size * (estimated_partitions / min_partitions_for_large_datasets))
-
-            # Don't reduce below reasonable minimum for 64MB target
-            min_reasonable_size = 1000
-            if cpu_constrained_size < min_reasonable_size:
-                cpu_constrained_size = min_reasonable_size
-
-            logger.info(
-                f"CPU optimization: reducing partition size to {cpu_constrained_size} for better parallelism (large dataset)"
-            )
-        else:
-            # Keep the base size (prioritize 64MB target)
-            cpu_constrained_size = base_size
-            if total_samples <= 10000:
-                logger.info(
-                    f"CPU optimization: keeping partition size {cpu_constrained_size} (prioritizing 64MB target for small dataset)"
-                )
-            else:
-                logger.info(f"CPU optimization: keeping partition size {cpu_constrained_size} (sufficient parallelism)")
-
-        return cpu_constrained_size
+        return target_samples
 
     def calculate_optimal_max_size_mb(
         self,
@@ -722,89 +719,6 @@ class PartitionSizeOptimizer:
         logger.info(f"  Optimal max size: {optimal_max_size_mb} MB")
 
         return optimal_max_size_mb
-
-    def calculate_text_partition_size(self, avg_text_length: float, total_samples: int, complexity_score: float) -> int:
-        """
-        Calculate optimal text partition size based on actual data characteristics.
-        Target: ~64MB per partition for optimal memory usage and processing efficiency.
-
-        Factors considered:
-        1. Text length (longer text = smaller partitions)
-        2. Dataset size (larger datasets can use larger partitions)
-        3. Processing complexity (complex operations = smaller partitions)
-        4. Memory constraints (target ~64MB per partition)
-        """
-        # Target 64MB per partition
-        target_memory_mb = 64.0
-
-        # Estimate memory per sample based on text length
-        # Rough estimate: 1 character ≈ 1-2 bytes, plus overhead
-        estimated_bytes_per_char = 2.0  # Conservative estimate
-        estimated_sample_size_mb = (avg_text_length * estimated_bytes_per_char) / (1024 * 1024)
-
-        # Calculate samples needed for 64MB
-        if estimated_sample_size_mb > 0:
-            target_samples = int(target_memory_mb / estimated_sample_size_mb)
-        else:
-            target_samples = 5000  # Fallback for very small text
-
-        # Base partition size targeting 64MB
-        base_size = target_samples
-
-        # Adjust for text length (fine-tuning)
-        if avg_text_length > 10000:
-            # Very long text (articles, documents) - reduce slightly
-            length_factor = 0.8
-        elif avg_text_length > 5000:
-            # Long text (paragraphs) - slight reduction
-            length_factor = 0.9
-        elif avg_text_length > 1000:
-            # Medium text (sentences) - no adjustment
-            length_factor = 1.0
-        elif avg_text_length < 100:
-            # Very short text (tweets, labels) - can use more samples
-            length_factor = 1.2
-        else:
-            # Normal text length
-            length_factor = 1.0
-
-        # Adjust for dataset size
-        if total_samples > 1000000:
-            # Very large dataset - can use larger partitions
-            size_factor = 1.3
-        elif total_samples > 100000:
-            # Large dataset - moderate increase
-            size_factor = 1.1
-        elif total_samples < 1000:
-            # Small dataset - use smaller partitions for better granularity
-            size_factor = 0.8
-        else:
-            # Medium dataset
-            size_factor = 1.0
-
-        # Adjust for processing complexity
-        complexity_factor = 1.0 / complexity_score
-
-        # Calculate optimal size
-        optimal_size = int(base_size * length_factor * size_factor * complexity_factor)
-
-        # Apply bounds (much more reasonable for 64MB target)
-        min_size = 1000  # Minimum 1000 samples
-        max_size = 20000  # Maximum 20000 samples
-
-        optimal_size = max(min_size, min(optimal_size, max_size))
-
-        logger.info(f"Text partition size calculation (targeting 64MB):")
-        logger.info(f"  Target memory: {target_memory_mb} MB")
-        logger.info(f"  Estimated sample size: {estimated_sample_size_mb:.3f} MB")
-        logger.info(f"  Base size (64MB target): {base_size} samples")
-        logger.info(f"  Avg text length: {avg_text_length:.0f} chars (factor: {length_factor:.2f})")
-        logger.info(f"  Dataset size: {total_samples} samples (factor: {size_factor:.2f})")
-        logger.info(f"  Complexity score: {complexity_score:.2f} (factor: {complexity_factor:.2f})")
-        logger.info(f"  Optimal size: {optimal_size} samples")
-        logger.info(f"  Estimated partition size: {optimal_size * estimated_sample_size_mb:.1f} MB")
-
-        return optimal_size
 
     def get_partition_recommendations(self, dataset, process_pipeline: List) -> Dict:
         """Get comprehensive partition recommendations."""

@@ -13,7 +13,7 @@ The job management system includes:
 
 ## Processing Snapshot Utility
 
-The Processing Snapshot Utility provides comprehensive analysis of Data-Juicer job processing status based on `events.jsonl` and DAG structure.
+The Processing Snapshot Utility provides comprehensive analysis of Data-Juicer job processing status based on `events_{timestamp}.jsonl` (timestamped event logs) and DAG structure.
 
 ### Features
 
@@ -202,7 +202,7 @@ setup_logger(
 ```
 outputs/
 ├── job_20250809_040053_a001de/
-│   ├── events.jsonl          # Event log (JSONL format)
+│   ├── events_{timestamp}.jsonl  # Event log (JSONL format with timestamp)
 │   ├── logs/                 # Log directory
 │   │   ├── events.log        # Event log (human-readable)
 │   │   ├── log.txt           # Main log file
@@ -211,7 +211,7 @@ outputs/
 │   │   └── log_WARNING.txt   # Warning level logs
 │   ├── checkpoints/          # Checkpoint directory
 │   ├── partitions/           # Partition directory
-│   └── job_summary.json      # Job summary
+│   └── job_summary.json      # Job summary (created on job completion)
 ```
 
 ## Job Management Tools
@@ -371,8 +371,8 @@ def get_job_metrics(job_dir: str):
 # Check job status
 python -m data_juicer.utils.job.snapshot /path/to/job
 
-# Analyze events
-python -c "import json; events = [json.loads(line) for line in open('/path/to/job/events.jsonl')]; print(f'Total events: {len(events)}')"
+# Analyze events (finds the latest timestamped event file)
+python -c "from pathlib import Path; import json; job_dir = Path('/path/to/job'); events_file = max(job_dir.glob('events_*.jsonl'), key=lambda f: f.stat().st_mtime); events = [json.loads(line) for line in open(events_file)]; print(f'Total events: {len(events)}')"
 
 # Check resource usage
 python -c "from data_juicer.core.executor.partition_size_optimizer import ResourceDetector; print(ResourceDetector.detect_local_resources())"

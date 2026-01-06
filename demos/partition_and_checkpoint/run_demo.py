@@ -9,9 +9,14 @@ This script demonstrates all the implemented job management features:
 4. Job-specific directory isolation
 5. Flexible storage paths for event logs and checkpoints
 6. Configurable checkpointing strategies
-7. Event logging with JSONL format
+7. Event logging with JSONL format (events_{timestamp}.jsonl)
 8. Job resumption capabilities
 9. Comprehensive job management
+
+Important Notes:
+- Event logs (events_{timestamp}.jsonl) are created immediately when a job starts
+- Job summary (job_summary.json) is only created when a job completes successfully
+- For running/incomplete jobs, use event logs and the monitor tool to track progress
 
 Usage:
     # IMPORTANT: This script must be run from the Data-Juicer root directory
@@ -61,13 +66,29 @@ def run_snapshot_analysis(job_id, work_dir="./outputs/partition-checkpoint-event
     """Run the processing snapshot utility to analyze job status."""
     print(f"\n📊 Processing Snapshot Analysis for {job_id}:")
     print("=" * 60)
-    
-    # Run the snapshot utility
+
+    # Check if job directory exists and has events
     job_dir = os.path.join(work_dir, job_id)
+    from pathlib import Path
+    job_path = Path(job_dir)
+
+    if not job_path.exists():
+        print(f"❌ Job directory not found: {job_dir}")
+        print("=" * 60)
+        return
+
+    event_files = list(job_path.glob("events_*.jsonl"))
+    if not event_files and not (job_path / "events.jsonl").exists():
+        print(f"ℹ️  No event logs found for this job yet.")
+        print(f"   The job may still be initializing.")
+        print("=" * 60)
+        return
+
+    # Run the snapshot utility
     cmd = ["python", "-m", "data_juicer.utils.job.snapshot", job_dir]
-    
+
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
             snapshot_data = json.loads(result.stdout)
             print("✅ Snapshot Analysis Results:")
@@ -78,10 +99,21 @@ def run_snapshot_analysis(job_id, work_dir="./outputs/partition-checkpoint-event
             print(f"   Operations: {snapshot_data.get('progress_summary', {}).get('completed_operations', 0)}/{snapshot_data.get('progress_summary', {}).get('total_operations', 0)}")
             print(f"   Resumable: {snapshot_data.get('checkpointing', {}).get('resumable', False)}")
         else:
-            print(f"❌ Snapshot analysis failed: {result.stderr}")
+            print(f"⚠️  Snapshot analysis completed with warnings:")
+            if result.stderr:
+                # Only show first few lines of error
+                error_lines = result.stderr.strip().split('\n')[:3]
+                for line in error_lines:
+                    if line.strip():
+                        print(f"   {line}")
+            print(f"   Tip: This is normal for jobs that haven't completed yet.")
+    except subprocess.TimeoutExpired:
+        print(f"⚠️  Snapshot analysis timed out (job may be too large)")
+    except json.JSONDecodeError:
+        print(f"⚠️  Could not parse snapshot output (job may be incomplete)")
     except Exception as e:
-        print(f"❌ Error running snapshot analysis: {e}")
-    
+        print(f"⚠️  Error running snapshot analysis: {e}")
+
     print("=" * 60)
 
 
@@ -110,14 +142,25 @@ def check_flexible_storage(job_id):
     """Check job storage directories."""
     print(f"\n💾 Job Storage for {job_id}:")
     print("=" * 60)
-    
-    # Check event logs in job directory
-    event_log_file = f"./outputs/partition-checkpoint-eventlog/{job_id}/events.jsonl"
-    if os.path.exists(event_log_file):
+
+    # Check event logs in job directory (find latest events file with timestamp)
+    from pathlib import Path
+    job_dir = Path(f"./outputs/partition-checkpoint-eventlog/{job_id}")
+    event_files = list(job_dir.glob("events_*.jsonl"))
+
+    if event_files:
+        # Find the latest events file
+        event_log_file = max(event_files, key=lambda f: f.stat().st_mtime)
         size = os.path.getsize(event_log_file)
         print(f"✅ Event Logs: {event_log_file} ({size} bytes)")
     else:
-        print(f"❌ Event Logs: {event_log_file} not found")
+        # Try old naming convention for backward compatibility
+        event_log_file = job_dir / "events.jsonl"
+        if event_log_file.exists():
+            size = os.path.getsize(event_log_file)
+            print(f"✅ Event Logs: {event_log_file} ({size} bytes)")
+        else:
+            print(f"❌ Event Logs: No events files found in {job_dir}")
     
     # Check logs directory
     logs_dir = f"./outputs/partition-checkpoint-eventlog/{job_id}/logs"
@@ -151,24 +194,36 @@ def check_job_summary(job_id, work_dir="./outputs/partition-checkpoint-eventlog"
     """Check and display job summary."""
     job_dir = os.path.join(work_dir, job_id)
     summary_file = os.path.join(job_dir, "job_summary.json")
-    
+
     print(f"\n📋 Job Summary for {job_id}:")
     print("=" * 60)
-    
+
     if os.path.exists(summary_file):
         with open(summary_file, 'r') as f:
             summary = json.load(f)
-        
-        print(f"Job ID: {summary.get('job_id')}")
-        print(f"Status: {summary.get('status')}")
-        print(f"Start Time: {summary.get('start_time')}")
-        print(f"Job Directory: {summary.get('job_dir')}")
-        print(f"Event Log File: {summary.get('event_log_file')}")
-        print(f"Checkpoint Directory: {summary.get('checkpoint_dir')}")
-        print(f"Resumption Command: {summary.get('resumption_command')}")
+
+        print(f"✅ Job Summary Available (job completed)")
+        print(f"   Job ID: {summary.get('job_id')}")
+        print(f"   Status: {summary.get('status')}")
+        print(f"   Start Time: {summary.get('start_time')}")
+        print(f"   Job Directory: {summary.get('job_dir')}")
+        print(f"   Event Log File: {summary.get('event_log_file')}")
+        print(f"   Checkpoint Directory: {summary.get('checkpoint_dir')}")
+        print(f"   Resumption Command: {summary.get('resumption_command')}")
     else:
-        print(f"Job summary file {summary_file} not found")
-    
+        print(f"ℹ️  Job summary not yet available")
+        print(f"   Note: job_summary.json is created when the job completes.")
+        print(f"   For running jobs, use the snapshot analysis or monitor tools instead.")
+
+        # Try to get basic info from event logs
+        from pathlib import Path
+        job_path = Path(job_dir)
+        event_files = list(job_path.glob("events_*.jsonl"))
+        if event_files:
+            latest_event_file = max(event_files, key=lambda f: f.stat().st_mtime)
+            print(f"   Event logs available: {latest_event_file.name}")
+            print(f"   Use: python -m data_juicer.utils.job.monitor {job_id}")
+
     print("=" * 60)
 
 
@@ -283,10 +338,19 @@ def main():
     print("=" * 80)
     if os.path.exists(work_dir):
         print("Available job directories:")
+        from pathlib import Path
         for item in os.listdir(work_dir):
             item_path = os.path.join(work_dir, item)
-            if os.path.isdir(item_path) and os.path.exists(os.path.join(item_path, "job_summary.json")):
-                print(f"  📁 {item}")
+            if os.path.isdir(item_path):
+                # Check for event logs or job summary to confirm it's a job directory
+                job_path = Path(item_path)
+                has_events = list(job_path.glob("events_*.jsonl")) or (job_path / "events.jsonl").exists()
+                has_summary = (job_path / "job_summary.json").exists()
+
+                if has_events or has_summary:
+                    status_indicator = "✅" if has_summary else "🔄"
+                    status_text = "Completed" if has_summary else "Running/Incomplete"
+                    print(f"  {status_indicator} {item} ({status_text})")
     else:
         print(f"Work directory {work_dir} not found")
     
