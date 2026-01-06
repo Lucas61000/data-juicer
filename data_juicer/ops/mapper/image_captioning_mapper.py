@@ -96,7 +96,7 @@ class ImageCaptioningMapper(Mapper):
         :param args: extra args
         :param kwargs: extra args
         """
-        kwargs["mem_required"] = "16GB" if kwargs.get("mem_required", 0) == 0 else kwargs["mem_required"]
+        kwargs["memory"] = "16GB" if kwargs.get("memory", 0) == 0 else kwargs["memory"]
 
         super().__init__(*args, **kwargs)
 
@@ -163,6 +163,7 @@ class ImageCaptioningMapper(Mapper):
         # and the original special tokens are kept in an order-preserving way.
 
         model, processor = get_model(self.model_key, rank, self.use_cuda())
+        model.config.image_token_index = 50265
 
         # do generation for each image chunk by chunk
         for chunk in ori_sample[self.text_key].split(SpecialTokens.eoc):

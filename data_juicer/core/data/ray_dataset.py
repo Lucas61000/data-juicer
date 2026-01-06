@@ -5,20 +5,19 @@ from functools import partial
 from typing import Any, Dict, List, Literal, Optional, Union
 
 import pyarrow
+import ray
 from jsonargparse import Namespace
 from loguru import logger
+from ray.data._internal.util import get_compute_strategy
 
 from data_juicer.core.data import DJDataset
 from data_juicer.core.data.schema import Schema
-from data_juicer.ops import Deduplicator, Filter, Mapper
+from data_juicer.ops import Deduplicator, Filter, Mapper, Pipeline
 from data_juicer.ops.base_op import DEFAULT_BATCH_SIZE, TAGGING_OPS
 from data_juicer.utils.constant import Fields
 from data_juicer.utils.file_utils import is_remote_path
-from data_juicer.utils.lazy_loader import LazyLoader
 from data_juicer.utils.resource_utils import cuda_device_count
 from data_juicer.utils.webdataset_utils import _custom_default_decoder
-
-ray = LazyLoader("ray")
 
 
 def get_abs_path(path, dataset_dir):
@@ -151,12 +150,20 @@ class RayDataset(DJDataset):
 
         calculate_ray_np(operators)
 
+        # Cache columns once at start to avoid breaking pipeline with repeated columns() calls
+        # Ray's columns() internally does limit(1) which forces execution and breaks streaming
+        cached_columns = set(self.data.columns())
+
         for op in operators:
-            self._run_single_op(op)
+            cached_columns = self._run_single_op(op, cached_columns)
         return self
 
-    def _run_single_op(self, op):
-        if op._name in TAGGING_OPS.modules and Fields.meta not in self.data.columns():
+    def _run_single_op(self, op, cached_columns=None):
+        # Use cached columns to avoid calling self.data.columns() which breaks pipeline
+        if cached_columns is None:
+            cached_columns = set(self.data.columns())
+
+        if op._name in TAGGING_OPS.modules and Fields.meta not in cached_columns:
 
             def process_batch_arrow(table: pyarrow.Table):
                 new_column_data = [{} for _ in range(len(table))]
@@ -166,12 +173,14 @@ class RayDataset(DJDataset):
             self.data = self.data.map_batches(
                 process_batch_arrow, batch_format="pyarrow", batch_size=DEFAULT_BATCH_SIZE
             )
+            cached_columns.add(Fields.meta)
 
         try:
             batch_size = getattr(op, "batch_size", 1) if op.is_batched_op() else 1
             if isinstance(op, Mapper):
-                if op.use_cuda():
+                if op.use_ray_actor():
                     op_kwargs = op._op_cfg[op._name]
+                    compute = get_compute_strategy(op.__class__, concurrency=op.num_proc)
                     self.data = self.data.map_batches(
                         op.__class__,
                         fn_args=None,
@@ -179,22 +188,26 @@ class RayDataset(DJDataset):
                         fn_constructor_args=None,
                         fn_constructor_kwargs=op_kwargs,
                         batch_size=batch_size,
-                        num_cpus=op.cpu_required,
-                        num_gpus=op.gpu_required,
-                        concurrency=op.num_proc,
+                        num_cpus=op.num_cpus,
+                        num_gpus=op.num_gpus,
+                        compute=compute,
                         batch_format="pyarrow",
+                        runtime_env=op.runtime_env,
                     )
                 else:
+                    compute = get_compute_strategy(op.process, concurrency=op.num_proc)
                     self.data = self.data.map_batches(
                         op.process,
                         batch_size=batch_size,
                         batch_format="pyarrow",
-                        num_cpus=op.cpu_required,
-                        concurrency=op.num_proc,
+                        num_cpus=op.num_cpus,
+                        num_gpus=op.num_gpus,
+                        compute=compute,
+                        runtime_env=op.runtime_env,
                     )
             elif isinstance(op, Filter):
-                columns = self.data.columns()
-                if Fields.stats not in columns:
+                # Use cached_columns instead of self.data.columns() to avoid breaking pipeline
+                if Fields.stats not in cached_columns:
 
                     def process_batch_arrow(table: pyarrow.Table):
                         new_column_data = [{} for _ in range(len(table))]
@@ -204,8 +217,10 @@ class RayDataset(DJDataset):
                     self.data = self.data.map_batches(
                         process_batch_arrow, batch_format="pyarrow", batch_size=DEFAULT_BATCH_SIZE
                     )
-                if op.use_cuda():
+                    cached_columns.add(Fields.stats)
+                if op.use_ray_actor():
                     op_kwargs = op._op_cfg[op._name]
+                    compute = get_compute_strategy(op.__class__, concurrency=op.num_proc)
                     self.data = self.data.map_batches(
                         op.__class__,
                         fn_args=None,
@@ -213,18 +228,22 @@ class RayDataset(DJDataset):
                         fn_constructor_args=None,
                         fn_constructor_kwargs=op_kwargs,
                         batch_size=batch_size,
-                        num_cpus=op.cpu_required,
-                        num_gpus=op.gpu_required,
-                        concurrency=op.num_proc,
+                        num_cpus=op.num_cpus,
+                        num_gpus=op.num_gpus,
+                        compute=compute,
                         batch_format="pyarrow",
+                        runtime_env=op.runtime_env,
                     )
                 else:
+                    compute = get_compute_strategy(op.compute_stats, concurrency=op.num_proc)
                     self.data = self.data.map_batches(
                         op.compute_stats,
                         batch_size=batch_size,
                         batch_format="pyarrow",
-                        num_cpus=op.cpu_required,
-                        concurrency=op.num_proc,
+                        num_cpus=op.num_cpus,
+                        num_gpus=op.num_gpus,
+                        compute=compute,
+                        runtime_env=op.runtime_env,
                     )
                 if op.stats_export_path is not None:
                     self.data.write_json(op.stats_export_path, force_ascii=False)
@@ -237,13 +256,17 @@ class RayDataset(DJDataset):
                         batch_format="pyarrow",
                         zero_copy_batch=True,
                         batch_size=DEFAULT_BATCH_SIZE,
+                        runtime_env=op.runtime_env,
                     )
                 else:
-                    self.data = self.data.filter(op.process)
-            elif isinstance(op, Deduplicator):
+                    self.data = self.data.filter(
+                        op.process,
+                        runtime_env=op.runtime_env,
+                    )
+            elif isinstance(op, (Deduplicator, Pipeline)):
                 self.data = op.run(self.data)
             else:
-                logger.error("Ray executor only support Filter, Mapper and Deduplicator OPs for now")
+                logger.error("Ray executor only support Filter, Mapper Deduplicator and Pipeline OPs for now")
                 raise NotImplementedError
         except:  # noqa: E722
             logger.error(f"An error occurred during Op [{op._name}].")
@@ -251,6 +274,8 @@ class RayDataset(DJDataset):
 
             traceback.print_exc()
             exit(1)
+
+        return cached_columns
 
     def count(self) -> int:
         return self.data.count()

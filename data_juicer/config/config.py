@@ -192,7 +192,8 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
                 type=Union[List[Dict], Dict],
                 default=[],
                 help="Dataset setting to define local/remote datasets; could be a "  # noqa: E251
-                "dict or a list of dicts; refer to configs/datasets for more "
+                "dict or a list of dicts; refer to "
+                "https://datajuicer.github.io/data-juicer/en/main/docs/DatasetCfg.html for more "
                 "detailed examples",
             )
             parser.add_argument(
@@ -1563,12 +1564,12 @@ def get_init_configs(cfg: Union[Namespace, Dict], load_configs_only: bool = True
 
 
 def get_default_cfg():
-    """Get default config values from config_all.yaml"""
+    """Get default config values from config_min.yaml"""
     cfg = Namespace()
 
-    # Get path to config_all.yaml
+    # Get path to config_min.yaml
     config_dir = os.path.dirname(os.path.abspath(__file__))
-    default_config_path = os.path.join(config_dir, "../../configs/config_min.yaml")
+    default_config_path = os.path.join(config_dir, "config_min.yaml")
 
     # Load default values from yaml
     with open(default_config_path, "r", encoding="utf-8") as f:
@@ -1692,11 +1693,11 @@ def resolve_job_directories(cfg):
         cfg.work_dir = os.path.join(cfg.work_dir, job_id)
 
     # All job-specific directories are under work_dir
-    if getattr(cfg, 'event_log_dir', None) is None:
+    if getattr(cfg, "event_log_dir", None) is None:
         cfg.event_log_dir = os.path.join(cfg.work_dir, "logs")
-    if getattr(cfg, 'checkpoint_dir', None) is None:
+    if getattr(cfg, "checkpoint_dir", None) is None:
         cfg.checkpoint_dir = os.path.join(cfg.work_dir, "checkpoints")
-    if getattr(cfg, 'partition_dir', None) is None:
+    if getattr(cfg, "partition_dir", None) is None:
         cfg.partition_dir = os.path.join(cfg.work_dir, "partitions")
     cfg.metadata_dir = os.path.join(cfg.work_dir, "metadata")
     cfg.results_dir = os.path.join(cfg.work_dir, "results")

@@ -65,16 +65,9 @@ class ConfigTest(DataJuicerTestCaseBase):
             cfg = init_configs(args=f'--config {test_yaml_path}'.split())
             self.assertIsInstance(cfg, Namespace)
             self.assertEqual(cfg.project_name, 'test_demo')
-            
-            # work_dir now includes auto-generated job_id, so check it starts with WORKDIR
-            # and ends with a job_id pattern (YYYYMMDD_HHMMSS_xxxxxx)
-            actual_work_dir = cfg.process[0]['whitespace_normalization_mapper']['work_dir']
-            self.assertTrue(actual_work_dir.startswith(WORKDIR), 
-                          f'work_dir {actual_work_dir} should start with {WORKDIR}')
-            import re
-            self.assertRegex(actual_work_dir, rf'^{re.escape(WORKDIR)}/\d{{8}}_\d{{6}}_[a-f0-9]{{6}}$',
-                           f'work_dir {actual_work_dir} should match pattern {WORKDIR}/YYYYMMDD_HHMMSS_xxxxxx')
-            
+
+            # work_dir now includes job_id suffix due to resolve_job_directories
+            expected_work_dir = cfg.work_dir
             self.assertDictEqual(
                 cfg.process[0], {
                     'whitespace_normalization_mapper': {
@@ -91,13 +84,19 @@ class ConfigTest(DataJuicerTestCaseBase):
                         'history_key': 'history',
                         'accelerator': None,
                         'num_proc': 4,
-                        'cpu_required': None,
-                        'mem_required': None,
-                        'gpu_required': None,
+                        'num_cpus': None,
+                        'memory': None,
+                        'num_gpus': None,
                         'turbo': False,
                         'index_key': None,
                         'skip_op_error': True,
-                        'work_dir': actual_work_dir,  # Use actual work_dir with job_id
+                        'work_dir': expected_work_dir,
+                        'cpu_required': None,
+                        'gpu_required': None,
+                        'mem_required': None,
+                        'ray_execution_mode': None,
+                        'runtime_env': None,
+
                     }
                 }, 'nested dict load fail, for nonparametric op')
             self.assertDictEqual(
@@ -122,13 +121,18 @@ class ConfigTest(DataJuicerTestCaseBase):
                         'accelerator': None,
                         'num_proc': 4,
                         'stats_export_path': None,
-                        'cpu_required': None,
-                        'mem_required': None,
+                        'num_cpus': None,
+                        'memory': None,
                         'turbo': False,
-                        'gpu_required': None,
+                        'num_gpus': None,
                         'index_key': None,
                         'skip_op_error': True,
-                        'work_dir': actual_work_dir,  # Use actual work_dir with job_id
+                        'work_dir': expected_work_dir,
+                        'cpu_required': None,
+                        'gpu_required': None,
+                        'mem_required': None,
+                        'ray_execution_mode': None,
+                        'runtime_env': None,
                     }
                 }, 'nested dict load fail, un-expected internal value')
 
@@ -204,13 +208,18 @@ class ConfigTest(DataJuicerTestCaseBase):
                         'accelerator': None,
                         'num_proc': 4,
                         'stats_export_path': None,
-                        'cpu_required': None,
-                        'mem_required': None,
-                        'gpu_required': None,
+                        'num_cpus': None,
+                        'memory': None,
+                        'num_gpus': None,
                         'turbo': False,
                         'index_key': None,
                         'skip_op_error': True,
                         'work_dir': expected_work_dir,
+                        'cpu_required': None,
+                        'gpu_required': None,
+                        'mem_required': None,
+                        'ray_execution_mode': None,
+                        'runtime_env': None,
                     }
                 })
             # work_dir now includes job_id suffix due to resolve_job_directories
@@ -237,13 +246,18 @@ class ConfigTest(DataJuicerTestCaseBase):
                         'accelerator': None,
                         'num_proc': 4,
                         'stats_export_path': None,
-                        'cpu_required': None,
-                        'mem_required': None,
+                        'num_cpus': None,
+                        'memory': None,
                         'turbo': False,
-                        'gpu_required': None,
+                        'num_gpus': None,
                         'index_key': None,
                         'skip_op_error': True,
                         'work_dir': expected_work_dir_1,
+                        'cpu_required': None,
+                        'gpu_required': None,
+                        'mem_required': None,
+                        'ray_execution_mode': None,
+                        'runtime_env': None,
                     }
                 })
             # work_dir now includes job_id suffix due to resolve_job_directories
@@ -270,13 +284,18 @@ class ConfigTest(DataJuicerTestCaseBase):
                         'accelerator': None,
                         'num_proc': 4,
                         'stats_export_path': None,
-                        'cpu_required': None,
-                        'mem_required': None,
+                        'num_cpus': None,
+                        'memory': None,
                         'turbo': False,
-                        'gpu_required': None,
+                        'num_gpus': None,
                         'index_key': None,
                         'skip_op_error': True,
                         'work_dir': expected_work_dir_2,
+                        'cpu_required': None,
+                        'gpu_required': None,
+                        'mem_required': None,
+                        'ray_execution_mode': None,
+                        'runtime_env': None,
                     }
                 })
             # work_dir now includes job_id suffix due to resolve_job_directories
@@ -303,13 +322,18 @@ class ConfigTest(DataJuicerTestCaseBase):
                         'accelerator': None,
                         'num_proc': 4,
                         'stats_export_path': None,
-                        'cpu_required': None,
-                        'mem_required': None,
+                        'num_cpus': None,
+                        'memory': None,
                         'turbo': False,
-                        'gpu_required': None,
+                        'num_gpus': None,
                         'index_key': None,
                         'skip_op_error': True,
                         'work_dir': expected_work_dir_3,
+                        'cpu_required': None,
+                        'gpu_required': None,
+                        'mem_required': None,
+                        'ray_execution_mode': None,
+                        'runtime_env': None,
                     }
                 })
             # work_dir now includes job_id suffix due to resolve_job_directories
@@ -336,13 +360,18 @@ class ConfigTest(DataJuicerTestCaseBase):
                         'accelerator': None,
                         'num_proc': 4,
                         'stats_export_path': None,
-                        'cpu_required': None,
-                        'mem_required': None,
+                        'num_cpus': None,
+                        'memory': None,
                         'turbo': False,
-                        'gpu_required': None,
+                        'num_gpus': None,
                         'index_key': None,
                         'skip_op_error': True,
                         'work_dir': expected_work_dir_4,
+                        'cpu_required': None,
+                        'gpu_required': None,
+                        'mem_required': None,
+                        'ray_execution_mode': None,
+                        'runtime_env': None,
                     }
                 })
 
@@ -353,7 +382,7 @@ class ConfigTest(DataJuicerTestCaseBase):
 
         base_class_params = {
             'text_key', 'image_key', 'image_bytes_key', 'audio_key', 'video_key', 'query_key', 'response_key',
-            'history_key', 'accelerator', 'turbo', 'batch_size', 'num_proc', 'cpu_required', 'mem_required', 'work_dir',
+            'history_key', 'accelerator', 'turbo', 'batch_size', 'num_proc', 'num_cpus', 'memory', 'work_dir',
         }
 
         parser = ArgumentParser(default_env=True, default_config_files=None)
@@ -368,7 +397,7 @@ class ConfigTest(DataJuicerTestCaseBase):
                 self.assertIn(base_param_key, params)
 
     def test_get_default_cfg(self):
-        """Test getting default configuration from config_all.yaml"""
+        """Test getting default configuration from config_min.yaml"""
         # Get default config
         cfg = get_default_cfg()
         

@@ -69,6 +69,7 @@ OP_TYPE_DESC = {
     "grouper": "Group samples to batched samples. 将样本分组，每一组组成一个批量样本。",
     "aggregator": "Aggregate for batched samples, such as summary or conclusion. "
     "对批量样本进行汇总，如得出总结或结论。",
+    "pipeline": "Applies dataset-level processing; both input and output are datasets. 执行数据集级别的操作，输入和输出均为完整数据集。",
 }
 # <<<
 
@@ -315,6 +316,8 @@ def get_op_list_from_code_for_formatter():
             test_path = os.path.join(FORMATTER_TEST_PREFIX, f"test_{formatter}")
             if os.path.isdir(code_path):
                 continue
+            if "_cpp" in code_path:
+                continue
             docstrings = get_class_and_docstring(code_path)
             _, doc = docstrings[0]
             op_record_list.append(
@@ -349,6 +352,8 @@ def get_op_list_from_code():
             code_path = os.path.join(type_dir, op)
             test_path = os.path.join(OP_TEST_PREFIX, type, f"test_{op}")
             if os.path.isdir(code_path):
+                continue
+            if not code_path.endswith(".py") or "_cpp" in code_path:
                 continue
             docstrings = get_class_and_docstring(code_path)
             _, doc = docstrings[0]

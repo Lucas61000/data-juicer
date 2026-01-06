@@ -36,18 +36,19 @@ use agent to automatically route suitable OPs and call them. E.g., refer to
 
 ## Overview  概览
 
-The operators in Data-Juicer are categorized into 7 types.
-Data-Juicer 中的算子分为以下 7 种类型。
+The operators in Data-Juicer are categorized into 8 types.
+Data-Juicer 中的算子分为以下 8 种类型。
 
 | Type 类型 | Number 数量 | Description 描述 |
-|------|:------:|-------------|
-| [aggregator](#aggregator) | 4 | Aggregate for batched samples, such as summary or conclusion. 对批量样本进行汇总，如得出总结或结论。 |
-| [deduplicator](#deduplicator) | 10 | Detects and removes duplicate samples. 识别、删除重复样本。 |
-| [filter](#filter) | 54 | Filters out low-quality samples. 过滤低质量样本。 |
-| [formatter](#formatter) | 8 | Discovers, loads, and canonicalizes source data. 发现、加载、规范化原始数据。 |
-| [grouper](#grouper) | 3 | Group samples to batched samples. 将样本分组，每一组组成一个批量样本。 |
-| [mapper](#mapper) | 88 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
-| [selector](#selector) | 5 | Selects top samples based on ranking. 基于排序选取高质量样本。 |
+|------|:---------:|-------------|
+| [aggregator](#aggregator) |     4     | Aggregate for batched samples, such as summary or conclusion. 对批量样本进行汇总，如得出总结或结论。 |
+| [deduplicator](#deduplicator) |    10     | Detects and removes duplicate samples. 识别、删除重复样本。 |
+| [filter](#filter) |    54     | Filters out low-quality samples. 过滤低质量样本。 |
+| [formatter](#formatter) |     8     | Discovers, loads, and canonicalizes source data. 发现、加载、规范化原始数据。 |
+| [grouper](#grouper) |     3     | Group samples to batched samples. 将样本分组，每一组组成一个批量样本。 |
+| [mapper](#mapper) |    96     | Edits and transforms samples. 对数据样本进行编辑和转换。 |
+| [pipeline](#pipeline) | 3 | Combines multiple operators into a data processing pipeline. 将多个算子组合成数据处理流水线。 |
+| [selector](#selector) |     5     | Selects top samples based on ranking. 基于排序选取高质量样本。 |
 
 All the specific operators are listed below, each featured with several capability tags. 
 下面列出所有具体算子，每种算子都通过多个标签来注明其主要功能。
@@ -188,9 +189,9 @@ All the specific operators are listed below, each featured with several capabili
 | clean_html_mapper | 🔤Text 💻CPU 🟢Stable | Cleans HTML code from text samples, converting HTML to plain text. 从文本示例中清除HTML代码，将HTML转换为纯文本。 | [info](operators/mapper/clean_html_mapper.md) | - |
 | clean_ip_mapper | 🔤Text 💻CPU 🟢Stable | Cleans IPv4 and IPv6 addresses from text samples. 从文本示例中清除IPv4和IPv6地址。 | [info](operators/mapper/clean_ip_mapper.md) | - |
 | clean_links_mapper | 🔤Text 💻CPU 🟢Stable | Mapper to clean links like http/https/ftp in text samples. 映射器来清理链接，如文本示例中的http/https/ftp。 | [info](operators/mapper/clean_links_mapper.md) | - |
-| detect_character_attributes_mapper | 🚀GPU 🟡Beta | Takes an image, a caption, and main character names as input to extract the characters' attributes. 根据给定的图像、图像描述信息和（多个）角色名称，提取图像中主要角色的属性。 | - | [DetailMaster](https://arxiv.org/abs/2505.16915) |
-| detect_character_locations_mapper | 🚀GPU 🟡Beta | Given an image and a list of main character names, extract the bounding boxes for each present character. 给定一张图像和主要角色的名称列表，提取每个在场角色的边界框。(YOLOE + MLLM) | - | [DetailMaster](https://arxiv.org/abs/2505.16915) |
-| detect_main_character_mapper | 🚀GPU 🟡Beta | Extract all main character names based on the given image and its caption. 根据给定的图像及其图像描述，提取所有主要角色的名字。 | - | [DetailMaster](https://arxiv.org/abs/2505.16915) |
+| detect_character_attributes_mapper | 🚀GPU 🟡Beta | Takes an image, a caption, and main character names as input to extract the characters' attributes. 根据给定的图像、图像描述信息和（多个）角色名称，提取图像中主要角色的属性。 | [info](operators/mapper/detect_character_attributes_mapper.md) | [DetailMaster](https://arxiv.org/abs/2505.16915) |
+| detect_character_locations_mapper | 🚀GPU 🟡Beta | Given an image and a list of main character names, extract the bounding boxes for each present character. 给定一张图像和主要角色的名称列表，提取每个在场角色的边界框。(YOLOE + MLLM) | [info](operators/mapper/detect_character_locations_mapper.md) | [DetailMaster](https://arxiv.org/abs/2505.16915) |
+| detect_main_character_mapper | 🚀GPU 🟡Beta | Extract all main character names based on the given image and its caption. 根据给定的图像及其图像描述，提取所有主要角色的名字。 | [info](operators/mapper/detect_main_character_mapper.md) | [DetailMaster](https://arxiv.org/abs/2505.16915) |
 | dialog_intent_detection_mapper | 💻CPU 🔗API 🟢Stable | Generates user's intent labels in a dialog by analyzing the history, query, and response. 通过分析历史记录、查询和响应，在对话框中生成用户的意图标签。 | [info](operators/mapper/dialog_intent_detection_mapper.md) | - |
 | dialog_sentiment_detection_mapper | 💻CPU 🔗API 🟢Stable | Generates sentiment labels and analysis for user queries in a dialog. 在对话框中为用户查询生成情绪标签和分析。 | [info](operators/mapper/dialog_sentiment_detection_mapper.md) | - |
 | dialog_sentiment_intensity_mapper | 💻CPU 🔗API 🟢Stable | Mapper to predict user's sentiment intensity in a dialog, ranging from -5 to 5. Mapper预测用户在对话框中的情绪强度，范围从-5到5。 | [info](operators/mapper/dialog_sentiment_intensity_mapper.md) | - |
@@ -213,9 +214,12 @@ All the specific operators are listed below, each featured with several capabili
 | image_detection_yolo_mapper | 🏞Image 🚀GPU 🟡Beta | Perform object detection using YOLO on images and return bounding boxes and class labels. 使用YOLO对图像执行对象检测，并返回边界框和类标签。 | [info](operators/mapper/image_detection_yolo_mapper.md) | - |
 | image_diffusion_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Generate images using a diffusion model based on provided captions. 使用基于提供的字幕的扩散模型生成图像。 | [info](operators/mapper/image_diffusion_mapper.md) | - |
 | image_face_blur_mapper | 🏞Image 💻CPU 🟢Stable | Mapper to blur faces detected in images. 映射器模糊图像中检测到的人脸。 | [info](operators/mapper/image_face_blur_mapper.md) | - |
+| image_mmpose_mapper | 🏞Image 🚀GPU 🟡Beta | Mapper to perform human keypoint detection inference using MMPose models. Mapper使用MMPose模型执行人体关键点检测推断。 | - | - |
 | image_remove_background_mapper | 🏞Image 💻CPU 🟢Stable | Mapper to remove the background of images. 映射器删除图像的背景。 | [info](operators/mapper/image_remove_background_mapper.md) | - |
+| image_sam_3d_body_mapper | 🏞Image 🚀GPU 🟡Beta | SAM 3D Body (3DB) is a promptable model for single-image full-body 3D human mesh recovery (HMR). SAM 3D Body (3DB) 是用于单图像全身3D人体网格恢复 (HMR) 的可提示模型。 | - | - |
 | image_segment_mapper | 🏞Image 🚀GPU 🟢Stable | Perform segment-anything on images and return the bounding boxes. 对图像执行segment-任何操作并返回边界框。 | [info](operators/mapper/image_segment_mapper.md) | - |
 | image_tagging_mapper | 🏞Image 🚀GPU 🟢Stable | Generates image tags for each image in the sample. 为样本中的每个图像生成图像标记。 | [info](operators/mapper/image_tagging_mapper.md) | - |
+| image_tagging_vlm_mapper | 🔮Multimodal 🚀GPU 🔗API 🌊vLLM 🟡Beta | Mapper to generates image tags. 映射器生成图像标签。 | - | - |
 | imgdiff_difference_area_generator_mapper | 🚀GPU 🟡Beta | Generates and filters bounding boxes for image pairs based on similarity, segmentation, and text matching. 根据相似性、分割和文本匹配生成和过滤图像对的边界框。 | [info](operators/mapper/imgdiff_difference_area_generator_mapper.md) | [ImgDiff](https://arxiv.org/abs/2408.04594) |
 | imgdiff_difference_caption_generator_mapper | 🚀GPU 🟡Beta | Generates difference captions for bounding box regions in two images. 为两个图像中的边界框区域生成差异字幕。 | [info](operators/mapper/imgdiff_difference_caption_generator_mapper.md) | [ImgDiff](https://arxiv.org/abs/2408.04594) |
 | mllm_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Mapper to use MLLMs for visual question answering tasks. Mapper使用MLLMs进行视觉问答任务。 | [info](operators/mapper/mllm_mapper.md) | - |
@@ -247,14 +251,19 @@ All the specific operators are listed below, each featured with several capabili
 | sentence_augmentation_mapper | 🔤Text 🚀GPU 🧩HF 🟢Stable | Augments sentences by generating enhanced versions using a Hugging Face model. 通过使用拥抱面部模型生成增强版本来增强句子。 | [info](operators/mapper/sentence_augmentation_mapper.md) | - |
 | sentence_split_mapper | 🔤Text 💻CPU 🟢Stable | Splits text samples into individual sentences based on the specified language. 根据指定的语言将文本样本拆分为单个句子。 | [info](operators/mapper/sentence_split_mapper.md) | - |
 | text_chunk_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Split input text into chunks based on specified criteria. 根据指定的条件将输入文本拆分为块。 | [info](operators/mapper/text_chunk_mapper.md) | - |
-| vggt_mapper | 🎬Video 🚀GPU 🟡Beta | Input a video of a single scene, and use VGGT to extract information including Camera Pose, Depth Maps, Point Maps, and 3D Point Tracks (if outputting point tracks is required, the user needs to provide query points). 输入单个场景的视频，并使用VGGT提取包括相机姿态，深度图，点图和3D点轨迹的信息 (如果需要输出点轨迹，则用户需要提供查询点)。 | - | - |
+| text_tagging_by_prompt_mapper | 🔤Text 🚀GPU 🌊vLLM 🧩HF 🟡Beta | Mapper to generate text tags using prompt with LLM. Mapper使用带有LLM的prompt生成文本标记。 | - | - |
+| vggt_mapper | 🎬Video 🚀GPU 🟡Beta | Input a video of a single scene, and use VGGT to extract information including Camera Pose, Depth Maps, Point Maps, and 3D Point Tracks. 输入单个场景的视频，并使用VGGT提取包括相机姿态、深度图、点图和3D点轨迹的信息。 | [info](operators/mapper/vggt_mapper.md) | - |
 | video_captioning_from_audio_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Mapper to caption a video according to its audio streams based on Qwen-Audio model. 映射器根据基于qwen-audio模型的音频流为视频添加字幕。 | [info](operators/mapper/video_captioning_from_audio_mapper.md) | - |
 | video_captioning_from_frames_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Generates video captions from sampled frames using an image-to-text model. 使用图像到文本模型从采样帧生成视频字幕。 | [info](operators/mapper/video_captioning_from_frames_mapper.md) | - |
 | video_captioning_from_summarizer_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Mapper to generate video captions by summarizing several kinds of generated texts (captions from video/audio/frames, tags from audio/frames, ...). 映射器通过总结几种生成的文本 (来自视频/音频/帧的字幕，来自音频/帧的标签，...) 来生成视频字幕。 | [info](operators/mapper/video_captioning_from_summarizer_mapper.md) | - |
 | video_captioning_from_video_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Generates video captions using a Hugging Face video-to-text model and sampled video frames. 使用拥抱面部视频到文本模型和采样视频帧生成视频字幕。 | [info](operators/mapper/video_captioning_from_video_mapper.md) | - |
+| video_captioning_from_vlm_mapper | 🔮Multimodal 🚀GPU 🌊vLLM 🧩HF 🟡Beta | Generates video captions using a VLM that accepts videos as inputs. 使用接受视频作为输入的VLM生成视频字幕。 | - | - |
+| video_depth_estimation_mapper | 🎬Video 🚀GPU 🟡Beta | Perform depth estimation on the video. 对视频进行深度估计。 | - | - |
 | video_extract_frames_mapper | 🔮Multimodal 💻CPU 🟢Stable | Mapper to extract frames from video files according to specified methods. 映射器根据指定的方法从视频文件中提取帧。 | [info](operators/mapper/video_extract_frames_mapper.md) | - |
 | video_face_blur_mapper | 🎬Video 💻CPU 🟢Stable | Mapper to blur faces detected in videos. 映射器模糊在视频中检测到的人脸。 | [info](operators/mapper/video_face_blur_mapper.md) | - |
 | video_ffmpeg_wrapped_mapper | 🎬Video 💻CPU 🟢Stable | Wraps FFmpeg video filters for processing video files in a dataset. 包装FFmpeg视频过滤器，用于处理数据集中的视频文件。 | [info](operators/mapper/video_ffmpeg_wrapped_mapper.md) | - |
+| video_hand_reconstruction_mapper | 🎬Video 🚀GPU 🟡Beta | Use the WiLoR model for hand localization and reconstruction. 使用WiLoR模型进行手部定位和重建。 | - | - |
+| video_object_segmenting_mapper | 🎬Video 🚀GPU 🧩HF 🟡Beta | Text-guided semantic segmentation of valid objects throughout the video (YOLOE + SAM2). 在整个视频中对有效对象进行文本引导的语义分割 (YOLOE SAM2)。 | - | - |
 | video_remove_watermark_mapper | 🎬Video 💻CPU 🟢Stable | Remove watermarks from videos based on specified regions. 根据指定区域从视频中删除水印。 | [info](operators/mapper/video_remove_watermark_mapper.md) | - |
 | video_resize_aspect_ratio_mapper | 🎬Video 💻CPU 🟢Stable | Resizes videos to fit within a specified aspect ratio range. 调整视频大小以适应指定的宽高比范围。 | [info](operators/mapper/video_resize_aspect_ratio_mapper.md) | - |
 | video_resize_resolution_mapper | 🎬Video 💻CPU 🟢Stable | Resizes video resolution based on specified width and height constraints. 根据指定的宽度和高度限制调整视频分辨率。 | [info](operators/mapper/video_resize_resolution_mapper.md) | - |
@@ -265,6 +274,14 @@ All the specific operators are listed below, each featured with several capabili
 | video_tagging_from_frames_mapper | 🎬Video 🚀GPU 🟢Stable | Generates video tags from frames extracted from videos. 从视频中提取的帧生成视频标签。 | [info](operators/mapper/video_tagging_from_frames_mapper.md) | - |
 | video_whole_body_pose_estimation_mapper | 🎬Video 🚀GPU 🟡Beta | Input a video containing people, and use the DWPose model to extract the body, hand, feet, and face keypoints of the human subjects in the video, i.e., 2D Whole-body Pose Estimation. 输入包含人的视频，并使用DWPose模型来提取视频中人类主体的身体、手、脚和面部关键点，即2D全身姿态估计。 | - | - |
 | whitespace_normalization_mapper | 🔤Text 💻CPU 🟢Stable | Normalizes various types of whitespace characters to standard spaces in text samples. 将文本样本中各种类型的空白字符规范化为标准空格。 | [info](operators/mapper/whitespace_normalization_mapper.md) | - |
+
+## pipeline <a name="pipeline"/>
+
+| Operator 算子 | Tags 标签 | Description 描述 | Details 详情 | Reference 参考 |
+|----------|------|-------------|-------------|-------------|
+| llm_inference_with_ray_vllm_pipeline | 🚀GPU 🟡Beta | Pipeline to generate response using vLLM engine on Ray. 使用Ray上的vLLM引擎生成响应的管道。 | - | - |
+| ray_vllm_pipeline | 🚀GPU 🟡Beta | Pipeline for Ray vLLM engine. Ray vLLM引擎的管道。 | - | - |
+| vlm_inference_with_ray_vllm_pipeline | 🏞Image 🚀GPU 🟡Beta | Pipeline to generate response using vLLM engine on Ray. 使用Ray上的vLLM引擎生成响应的管道。 | - | - |
 
 ## selector <a name="selector"/>
 

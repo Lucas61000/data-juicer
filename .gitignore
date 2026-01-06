@@ -38,3 +38,6 @@ perf_bench_data/
 
 # env file
 .env
+
+# claude
+.claude/
