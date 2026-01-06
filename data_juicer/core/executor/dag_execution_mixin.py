@@ -446,8 +446,10 @@ class DAGExecutionMixin:
         return str(self.pipeline_dag.dag_dir / "dag_execution_plan.json")
 
     def reconstruct_dag_state_from_events(self, job_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Reconstruct DAG execution state from event logs.
+        """Reconstruct DAG execution state from event logs.
+
+        This method has been decomposed into smaller, focused methods for better
+        maintainability and testability.
 
         Args:
             job_id: The job ID to analyze
@@ -455,12 +457,47 @@ class DAGExecutionMixin:
         Returns:
             Dictionary containing reconstructed DAG state and resumption information
         """
+        # Step 1: Validate event logger availability
         if not hasattr(self, "event_logger") or not self.event_logger:
             logger.warning("Event logger not available for DAG state reconstruction")
             return None
 
-        # Get DAG-related events
-        dag_events = self.event_logger.get_events(
+        # Step 2: Load DAG events and execution plan
+        dag_events = self._load_dag_events()
+        dag_plan = self._load_dag_execution_plan()
+        if not dag_plan:
+            return None
+
+        # Step 3: Reconstruct node states from plan and events
+        node_states = self._initialize_node_states_from_plan(dag_plan)
+        self._update_node_states_from_events(node_states, dag_events)
+
+        # Step 4: Calculate statistics
+        statistics = self._calculate_dag_statistics(node_states)
+
+        # Step 5: Determine ready nodes
+        ready_nodes = self._find_ready_nodes(node_states)
+
+        # Step 6: Determine resumption strategy
+        resumption_info = self._determine_resumption_strategy(node_states, ready_nodes, statistics)
+
+        return {
+            "job_id": job_id,
+            "dag_plan_path": self.get_dag_execution_plan_path(),
+            "node_states": node_states,
+            "statistics": statistics,
+            "resumption": resumption_info,
+            "execution_plan": dag_plan.get("execution_plan", []),
+            "parallel_groups": dag_plan.get("parallel_groups", []),
+        }
+
+    def _load_dag_events(self) -> List[Any]:
+        """Load DAG-related events from the event logger.
+
+        Returns:
+            List of DAG-related events
+        """
+        return self.event_logger.get_events(
             event_type=[
                 EventType.DAG_BUILD_START,
                 EventType.DAG_BUILD_COMPLETE,
@@ -474,7 +511,12 @@ class DAGExecutionMixin:
             ]
         )
 
-        # Load the saved DAG execution plan
+    def _load_dag_execution_plan(self) -> Optional[Dict[str, Any]]:
+        """Load the saved DAG execution plan.
+
+        Returns:
+            DAG execution plan dictionary, or None if loading fails
+        """
         dag_plan_path = self.get_dag_execution_plan_path()
         if not os.path.exists(dag_plan_path):
             logger.warning(f"DAG execution plan not found: {dag_plan_path}")
@@ -482,12 +524,20 @@ class DAGExecutionMixin:
 
         try:
             with open(dag_plan_path, "r") as f:
-                dag_plan = json.load(f)
+                return json.load(f)
         except Exception as e:
             logger.error(f"Failed to load DAG execution plan: {e}")
             return None
 
-        # Reconstruct DAG node states from events
+    def _initialize_node_states_from_plan(self, dag_plan: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        """Initialize node states from the DAG execution plan.
+
+        Args:
+            dag_plan: The loaded DAG execution plan
+
+        Returns:
+            Dictionary mapping node_id to initial node state
+        """
         node_states = {}
         for node_id, node_data in dag_plan.get("nodes", {}).items():
             node_states[node_id] = {
@@ -503,63 +553,114 @@ class DAGExecutionMixin:
                 "actual_duration": 0.0,
                 "error_message": None,
             }
+        return node_states
 
-        # Update node states based on events
+    def _update_node_states_from_events(self, node_states: Dict[str, Dict[str, Any]], dag_events: List[Any]) -> None:
+        """Update node states based on events.
+
+        Args:
+            node_states: Dictionary of node states to update (modified in-place)
+            dag_events: List of DAG-related events
+        """
         for event in dag_events:
             event_data = event.__dict__ if hasattr(event, "__dict__") else event
 
             # Handle DAG node events
             if event_data.get("event_type") == EventType.DAG_NODE_START.value:
-                node_id = event_data.get("metadata", {}).get("dag_node_id")
-                if node_id and node_id in node_states:
-                    node_states[node_id]["status"] = DAGNodeStatus.RUNNING.value
-                    node_states[node_id]["start_time"] = event_data.get("timestamp")
-
+                self._handle_dag_node_start_event(event_data, node_states)
             elif event_data.get("event_type") == EventType.DAG_NODE_COMPLETE.value:
-                node_id = event_data.get("metadata", {}).get("dag_node_id")
-                if node_id and node_id in node_states:
-                    node_states[node_id]["status"] = DAGNodeStatus.COMPLETED.value
-                    node_states[node_id]["end_time"] = event_data.get("timestamp")
-                    node_states[node_id]["actual_duration"] = event_data.get("duration", 0.0)
-
+                self._handle_dag_node_complete_event(event_data, node_states)
             elif event_data.get("event_type") == EventType.DAG_NODE_FAILED.value:
-                node_id = event_data.get("metadata", {}).get("dag_node_id")
-                if node_id and node_id in node_states:
-                    node_states[node_id]["status"] = DAGNodeStatus.FAILED.value
-                    node_states[node_id]["end_time"] = event_data.get("timestamp")
-                    node_states[node_id]["actual_duration"] = event_data.get("duration", 0.0)
-                    node_states[node_id]["error_message"] = event_data.get("error_message")
-
+                self._handle_dag_node_failed_event(event_data, node_states)
             # Handle operation events with DAG context
             elif event_data.get("event_type") in [
                 EventType.OP_START.value,
                 EventType.OP_COMPLETE.value,
                 EventType.OP_FAILED.value,
             ]:
-                dag_context = event_data.get("metadata", {}).get("dag_context", {})
-                node_id = dag_context.get("dag_node_id")
-                if node_id and node_id in node_states:
-                    if event_data.get("event_type") == EventType.OP_START.value:
-                        node_states[node_id]["status"] = DAGNodeStatus.RUNNING.value
-                        node_states[node_id]["start_time"] = event_data.get("timestamp")
-                    elif event_data.get("event_type") == EventType.OP_COMPLETE.value:
-                        node_states[node_id]["status"] = DAGNodeStatus.COMPLETED.value
-                        node_states[node_id]["end_time"] = event_data.get("timestamp")
-                        node_states[node_id]["actual_duration"] = event_data.get("duration", 0.0)
-                    elif event_data.get("event_type") == EventType.OP_FAILED.value:
-                        node_states[node_id]["status"] = DAGNodeStatus.FAILED.value
-                        node_states[node_id]["end_time"] = event_data.get("timestamp")
-                        node_states[node_id]["actual_duration"] = event_data.get("duration", 0.0)
-                        node_states[node_id]["error_message"] = event_data.get("error_message")
+                self._handle_operation_event(event_data, node_states)
 
-        # Calculate completion statistics
+    def _handle_dag_node_start_event(self, event_data: Dict[str, Any], node_states: Dict[str, Dict[str, Any]]) -> None:
+        """Handle DAG_NODE_START event."""
+        node_id = event_data.get("metadata", {}).get("dag_node_id")
+        if node_id and node_id in node_states:
+            node_states[node_id]["status"] = DAGNodeStatus.RUNNING.value
+            node_states[node_id]["start_time"] = event_data.get("timestamp")
+
+    def _handle_dag_node_complete_event(
+        self, event_data: Dict[str, Any], node_states: Dict[str, Dict[str, Any]]
+    ) -> None:
+        """Handle DAG_NODE_COMPLETE event."""
+        node_id = event_data.get("metadata", {}).get("dag_node_id")
+        if node_id and node_id in node_states:
+            node_states[node_id]["status"] = DAGNodeStatus.COMPLETED.value
+            node_states[node_id]["end_time"] = event_data.get("timestamp")
+            node_states[node_id]["actual_duration"] = event_data.get("duration", 0.0)
+
+    def _handle_dag_node_failed_event(self, event_data: Dict[str, Any], node_states: Dict[str, Dict[str, Any]]) -> None:
+        """Handle DAG_NODE_FAILED event."""
+        node_id = event_data.get("metadata", {}).get("dag_node_id")
+        if node_id and node_id in node_states:
+            node_states[node_id]["status"] = DAGNodeStatus.FAILED.value
+            node_states[node_id]["end_time"] = event_data.get("timestamp")
+            node_states[node_id]["actual_duration"] = event_data.get("duration", 0.0)
+            node_states[node_id]["error_message"] = event_data.get("error_message")
+
+    def _handle_operation_event(self, event_data: Dict[str, Any], node_states: Dict[str, Dict[str, Any]]) -> None:
+        """Handle operation events (OP_START, OP_COMPLETE, OP_FAILED) with DAG context."""
+        dag_context = event_data.get("metadata", {}).get("dag_context", {})
+        node_id = dag_context.get("dag_node_id")
+        if not node_id or node_id not in node_states:
+            return
+
+        event_type = event_data.get("event_type")
+        if event_type == EventType.OP_START.value:
+            node_states[node_id]["status"] = DAGNodeStatus.RUNNING.value
+            node_states[node_id]["start_time"] = event_data.get("timestamp")
+        elif event_type == EventType.OP_COMPLETE.value:
+            node_states[node_id]["status"] = DAGNodeStatus.COMPLETED.value
+            node_states[node_id]["end_time"] = event_data.get("timestamp")
+            node_states[node_id]["actual_duration"] = event_data.get("duration", 0.0)
+        elif event_type == EventType.OP_FAILED.value:
+            node_states[node_id]["status"] = DAGNodeStatus.FAILED.value
+            node_states[node_id]["end_time"] = event_data.get("timestamp")
+            node_states[node_id]["actual_duration"] = event_data.get("duration", 0.0)
+            node_states[node_id]["error_message"] = event_data.get("error_message")
+
+    def _calculate_dag_statistics(self, node_states: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+        """Calculate DAG execution statistics.
+
+        Args:
+            node_states: Dictionary of node states
+
+        Returns:
+            Dictionary with statistics
+        """
         total_nodes = len(node_states)
         completed_nodes = sum(1 for node in node_states.values() if node["status"] == DAGNodeStatus.COMPLETED.value)
         failed_nodes = sum(1 for node in node_states.values() if node["status"] == DAGNodeStatus.FAILED.value)
         running_nodes = sum(1 for node in node_states.values() if node["status"] == DAGNodeStatus.RUNNING.value)
         pending_nodes = sum(1 for node in node_states.values() if node["status"] == DAGNodeStatus.PENDING.value)
 
-        # Determine which nodes are ready to execute
+        return {
+            "total_nodes": total_nodes,
+            "completed_nodes": completed_nodes,
+            "failed_nodes": failed_nodes,
+            "running_nodes": running_nodes,
+            "pending_nodes": pending_nodes,
+            "ready_nodes": 0,  # Will be set by caller
+            "completion_percentage": (completed_nodes / total_nodes * 100) if total_nodes > 0 else 0,
+        }
+
+    def _find_ready_nodes(self, node_states: Dict[str, Dict[str, Any]]) -> List[str]:
+        """Find nodes that are ready to execute (all dependencies completed).
+
+        Args:
+            node_states: Dictionary of node states
+
+        Returns:
+            List of node IDs that are ready to execute
+        """
         ready_nodes = []
         for node_id, node_state in node_states.items():
             if node_state["status"] == DAGNodeStatus.PENDING.value:
@@ -571,61 +672,61 @@ class DAGExecutionMixin:
                 )
                 if all_deps_completed:
                     ready_nodes.append(node_id)
+        return ready_nodes
 
-        # Determine resumption strategy
+    def _determine_resumption_strategy(
+        self, node_states: Dict[str, Dict[str, Any]], ready_nodes: List[str], statistics: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Determine the resumption strategy based on current DAG state.
+
+        Args:
+            node_states: Dictionary of node states
+            ready_nodes: List of ready node IDs
+            statistics: DAG statistics
+
+        Returns:
+            Dictionary with resumption information
+        """
         can_resume = True
         resume_from_node = None
 
-        if failed_nodes > 0:
-            # Find the first failed node to resume from
+        # Priority 1: Resume from failed nodes
+        if statistics["failed_nodes"] > 0:
             failed_node_ids = [
                 node_id for node_id, state in node_states.items() if state["status"] == DAGNodeStatus.FAILED.value
             ]
             if failed_node_ids:
-                # Sort by execution order and take the first
                 failed_node_ids.sort(key=lambda x: node_states[x]["execution_order"])
                 resume_from_node = failed_node_ids[0]
-        elif running_nodes > 0:
-            # Find the first running node to resume from
+
+        # Priority 2: Resume from running nodes
+        elif statistics["running_nodes"] > 0:
             running_node_ids = [
                 node_id for node_id, state in node_states.items() if state["status"] == DAGNodeStatus.RUNNING.value
             ]
             if running_node_ids:
                 running_node_ids.sort(key=lambda x: node_states[x]["execution_order"])
                 resume_from_node = running_node_ids[0]
+
+        # Priority 3: Start from ready nodes
         elif ready_nodes:
-            # Start from the first ready node
-            ready_nodes.sort(key=lambda x: node_states[x]["execution_order"])
-            resume_from_node = ready_nodes[0]
-        elif completed_nodes == total_nodes:
-            can_resume = False  # All nodes completed
+            ready_nodes_sorted = sorted(ready_nodes, key=lambda x: node_states[x]["execution_order"])
+            resume_from_node = ready_nodes_sorted[0]
+
+        # All nodes completed - cannot resume
+        elif statistics["completed_nodes"] == statistics["total_nodes"]:
+            can_resume = False
 
         return {
-            "job_id": job_id,
-            "dag_plan_path": dag_plan_path,
-            "node_states": node_states,
-            "statistics": {
-                "total_nodes": total_nodes,
-                "completed_nodes": completed_nodes,
-                "failed_nodes": failed_nodes,
-                "running_nodes": running_nodes,
-                "pending_nodes": pending_nodes,
-                "ready_nodes": len(ready_nodes),
-                "completion_percentage": (completed_nodes / total_nodes * 100) if total_nodes > 0 else 0,
-            },
-            "resumption": {
-                "can_resume": can_resume,
-                "resume_from_node": resume_from_node,
-                "ready_nodes": ready_nodes,
-                "failed_nodes": [
-                    node_id for node_id, state in node_states.items() if state["status"] == DAGNodeStatus.FAILED.value
-                ],
-                "running_nodes": [
-                    node_id for node_id, state in node_states.items() if state["status"] == DAGNodeStatus.RUNNING.value
-                ],
-            },
-            "execution_plan": dag_plan.get("execution_plan", []),
-            "parallel_groups": dag_plan.get("parallel_groups", []),
+            "can_resume": can_resume,
+            "resume_from_node": resume_from_node,
+            "ready_nodes": ready_nodes,
+            "failed_nodes": [
+                node_id for node_id, state in node_states.items() if state["status"] == DAGNodeStatus.FAILED.value
+            ],
+            "running_nodes": [
+                node_id for node_id, state in node_states.items() if state["status"] == DAGNodeStatus.RUNNING.value
+            ],
         }
 
     def resume_dag_execution(self, job_id: str, dataset, ops: List) -> bool:
