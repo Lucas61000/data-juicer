@@ -583,7 +583,7 @@
 
 
 <div class="viewcode-block" id="GeneralFieldFilter">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.GeneralFieldFilter">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.GeneralFieldFilter">[docs]</a>
 <span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">GeneralFieldFilter</span><span class="p">(</span><span class="n">Filter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter to keep samples based on a general field filter condition.</span>
@@ -596,7 +596,7 @@
 <span class="sd">    already computed, the sample is not re-evaluated.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="GeneralFieldFilter.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.GeneralFieldFilter.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.GeneralFieldFilter.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filter_condition</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialization method.</span>
@@ -615,7 +615,7 @@
 
 
 <div class="viewcode-block" id="GeneralFieldFilter.compute_stats_single">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.GeneralFieldFilter.compute_stats_single">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.GeneralFieldFilter.compute_stats_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_stats_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_condition</span>
@@ -632,7 +632,7 @@
 
 
 <div class="viewcode-block" id="GeneralFieldFilter.process_single">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.GeneralFieldFilter.process_single">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.GeneralFieldFilter.process_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">process_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">sample</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">StatsKeys</span><span class="o">.</span><span class="n">general_field_filter_condition</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span></div>
 </div>
@@ -640,7 +640,7 @@
 
 
 <div class="viewcode-block" id="ExpressionTransformer">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ExpressionTransformer</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">NodeVisitor</span><span class="p">):</span>
     <span class="n">_COMPARE_OPERATORS</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">ast</span><span class="o">.</span><span class="n">Gt</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">left_operand</span><span class="p">,</span> <span class="n">right_operand</span><span class="p">:</span> <span class="n">left_operand</span> <span class="o">&gt;</span> <span class="n">right_operand</span><span class="p">,</span>
@@ -652,13 +652,13 @@
     <span class="p">}</span>
 
 <div class="viewcode-block" id="ExpressionTransformer.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="n">Dict</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sample</span> <span class="o">=</span> <span class="n">sample</span></div>
 
 
 <div class="viewcode-block" id="ExpressionTransformer.visit_BoolOp">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer.visit_BoolOp">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer.visit_BoolOp">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">visit_BoolOp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">BoolOp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">op</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">And</span><span class="p">):</span>
@@ -669,7 +669,7 @@
 
 
 <div class="viewcode-block" id="ExpressionTransformer.visit_Compare">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer.visit_Compare">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer.visit_Compare">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">visit_Compare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Compare</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
         <span class="n">comparators</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">comparators</span><span class="p">]</span>
@@ -695,7 +695,7 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported comparison operator: </span><span class="si">{</span><span class="n">op_type</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ExpressionTransformer.visit_Name">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer.visit_Name">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer.visit_Name">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">visit_Name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
             <span class="n">prefix</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -708,7 +708,7 @@
 
 
 <div class="viewcode-block" id="ExpressionTransformer.visit_Attribute">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer.visit_Attribute">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer.visit_Attribute">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">visit_Attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Attribute</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -719,19 +719,19 @@
 
 
 <div class="viewcode-block" id="ExpressionTransformer.visit_Constant">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer.visit_Constant">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer.visit_Constant">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">visit_Constant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Constant</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">value</span></div>
 
 
 <div class="viewcode-block" id="ExpressionTransformer.generic_visit">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer.generic_visit">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer.generic_visit">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generic_visit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">AST</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported node type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">, details: </span><span class="si">{</span><span class="n">ast</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">node</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ExpressionTransformer.transform">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.general_field_filter.ExpressionTransformer.transform">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.general_field_filter.html#data_juicer.ops.filter.ExpressionTransformer.transform">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ast_tree</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">ast_tree</span><span class="o">.</span><span class="n">body</span><span class="p">)</span></div>
 </div>

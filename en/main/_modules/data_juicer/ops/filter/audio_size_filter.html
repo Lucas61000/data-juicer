@@ -582,7 +582,7 @@
 
 
 <div class="viewcode-block" id="AudioSizeFilter">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.audio_size_filter.html#data_juicer.ops.filter.audio_size_filter.AudioSizeFilter">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.audio_size_filter.html#data_juicer.ops.filter.AudioSizeFilter">[docs]</a>
 <span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="s2">&quot;audio_size_filter&quot;</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AudioSizeFilter</span><span class="p">(</span><span class="n">Filter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Keep data samples based on the size of their audio files.</span>
@@ -596,7 +596,7 @@
 <span class="sd">    audio files must meet the size criteria for the sample to be kept.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="AudioSizeFilter.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.audio_size_filter.html#data_juicer.ops.filter.audio_size_filter.AudioSizeFilter.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.audio_size_filter.html#data_juicer.ops.filter.AudioSizeFilter.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_size</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;1TB&quot;</span><span class="p">,</span> <span class="n">any_or_all</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;any&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialization method.</span>
@@ -621,7 +621,7 @@
 
 
 <div class="viewcode-block" id="AudioSizeFilter.compute_stats_single">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.audio_size_filter.html#data_juicer.ops.filter.audio_size_filter.AudioSizeFilter.compute_stats_single">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.audio_size_filter.html#data_juicer.ops.filter.AudioSizeFilter.compute_stats_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_stats_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="c1"># check if it&#39;s computed already</span>
         <span class="k">if</span> <span class="n">StatsKeys</span><span class="o">.</span><span class="n">audio_sizes</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">]:</span>
@@ -639,7 +639,7 @@
 
 
 <div class="viewcode-block" id="AudioSizeFilter.process_single">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.audio_size_filter.html#data_juicer.ops.filter.audio_size_filter.AudioSizeFilter.process_single">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.audio_size_filter.html#data_juicer.ops.filter.AudioSizeFilter.process_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">process_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">):</span>
         <span class="n">audio_sizes</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">][</span><span class="n">StatsKeys</span><span class="o">.</span><span class="n">audio_sizes</span><span class="p">]</span>
         <span class="n">keep_bools</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
