@@ -360,12 +360,17 @@ class PartitionSizeOptimizer:
 
         try:
             # Sample dataset for analysis
-            if hasattr(dataset, "take"):
-                samples = dataset.take(sample_size)
-                logger.info(f"Successfully sampled {len(samples)} samples from Ray Dataset")
+            if hasattr(dataset, "get"):
+                # RayDataset with get() method
+                samples = dataset.get(sample_size)
+                logger.info(f"Successfully sampled {len(samples)} samples using get()")
+            elif hasattr(dataset, "take"):
+                # Datasets with take() method
+                samples = list(dataset.take(sample_size))
+                logger.info(f"Successfully sampled {len(samples)} samples using take()")
             elif hasattr(dataset, "__getitem__"):
                 # Handle list-like datasets
-                samples = dataset[:sample_size]
+                samples = list(dataset[:sample_size])
                 logger.info(f"Successfully sampled {len(samples)} samples from list-like dataset")
             else:
                 # Fallback: try to iterate
@@ -377,6 +382,9 @@ class PartitionSizeOptimizer:
                 logger.info(f"Successfully sampled {len(samples)} samples by iteration")
         except Exception as e:
             logger.warning(f"Could not sample dataset: {e}, using default analysis")
+            import traceback
+
+            logger.debug(f"Sampling error traceback: {traceback.format_exc()}")
             return DataCharacteristics(
                 primary_modality=ModalityType.TEXT,
                 modality_distribution={ModalityType.TEXT: 1},
