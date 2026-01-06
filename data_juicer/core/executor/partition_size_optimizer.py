@@ -231,6 +231,21 @@ class ResourceDetector:
 class PartitionSizeOptimizer:
     """Automatically optimizes partition sizes based on data characteristics and available resources."""
 
+    @staticmethod
+    def calculate_target_partition_mb(available_memory_gb: float) -> int:
+        """Calculate target partition size in MB based on available memory.
+
+        Scales from 32MB (low memory) to 256MB (high memory).
+        """
+        if available_memory_gb < 16:
+            return 32
+        elif available_memory_gb < 64:
+            return 64
+        elif available_memory_gb < 256:
+            return 128
+        else:
+            return 256
+
     # Default configurations for different modalities
     MODALITY_CONFIGS = {
         ModalityType.TEXT: ModalityConfig(
@@ -335,13 +350,13 @@ class PartitionSizeOptimizer:
             logger.warning(f"Could not determine dataset size: {e}, using estimate of 1000 samples")
             total_samples = 1000
 
-        # Adaptive sampling based on dataset size
-        if total_samples < 100:
+        # Adaptive sampling: minimum 0.1% for large datasets
+        if total_samples < 1000:
             sample_size = total_samples
-        elif total_samples < 1000:
-            sample_size = min(200, total_samples)
+        elif total_samples < 100000:
+            sample_size = min(1000, total_samples // 100)  # 1%
         else:
-            sample_size = min(500, total_samples // 10)
+            sample_size = min(10000, total_samples // 1000)  # 0.1%, cap at 10k
 
         try:
             # Sample dataset for analysis
@@ -416,15 +431,20 @@ class PartitionSizeOptimizer:
         avg_images_per_sample = sum(image_counts) / len(image_counts) if image_counts else 0
         avg_audio_per_sample = sum(audio_counts) / len(audio_counts) if audio_counts else 0
         avg_video_per_sample = sum(video_counts) / len(video_counts) if video_counts else 0
-        avg_memory_per_sample_mb = sum(sample_sizes) / len(sample_sizes) if sample_sizes else 0.002
 
-        # Calculate data skew factor (coefficient of variation)
+        # Calculate percentile-based memory estimates (p90 is more robust than mean)
         if sample_sizes and len(sample_sizes) > 1:
+            sorted_sizes = sorted(sample_sizes)
+            p90_idx = int(len(sorted_sizes) * 0.9)
+            p90_memory = sorted_sizes[p90_idx]
             mean_size = sum(sample_sizes) / len(sample_sizes)
             variance = sum((x - mean_size) ** 2 for x in sample_sizes) / (len(sample_sizes) - 1)
             std_dev = variance**0.5
             data_skew_factor = min(1.0, std_dev / mean_size if mean_size > 0 else 0)
+            # Use p90 for conservative sizing
+            avg_memory_per_sample_mb = p90_memory
         else:
+            avg_memory_per_sample_mb = sample_sizes[0] if sample_sizes else 0.002
             data_skew_factor = 0.5
 
         # Determine primary modality
@@ -457,58 +477,39 @@ class PartitionSizeOptimizer:
         return characteristics
 
     def estimate_sample_size_mb(self, sample: Dict) -> float:
-        """Estimate the memory size of a sample in MB."""
-        size_mb = 0.0
+        """Measure actual memory size of a sample in MB using sys.getsizeof."""
+        import sys
 
-        # Text size
-        if self.text_key in sample and sample[self.text_key]:
-            if isinstance(sample[self.text_key], str):
-                size_mb += len(sample[self.text_key]) / (1024 * 1024)  # Rough estimate
-            elif isinstance(sample[self.text_key], list):
-                size_mb += sum(len(t) for t in sample[self.text_key]) / (1024 * 1024)
-
-        # Media size estimates
-        images = sample.get(self.image_key, [])
-        if images:
-            size_mb += len(images) * 0.5  # Assume 0.5MB per image
-
-        audios = sample.get(self.audio_key, [])
-        if audios:
-            size_mb += len(audios) * 2.0  # Assume 2MB per audio file
-
-        videos = sample.get(self.video_key, [])
-        if videos:
-            size_mb += len(videos) * 10.0  # Assume 10MB per video file
-
-        return max(0.001, size_mb)  # Minimum 1KB
+        return sys.getsizeof(sample) / (1024 * 1024)
 
     def analyze_processing_complexity(self, process_pipeline: List) -> float:
-        """Analyze the complexity of the processing pipeline."""
-        complexity_score = 1.0
+        """Analyze the complexity of the processing pipeline using linear scoring."""
+        COMPLEXITY_WEIGHTS = {
+            "high": 0.3,  # embedding, model, neural
+            "medium": 0.2,  # filter, deduplicator
+            "low": 0.1,  # text cleaning
+        }
 
-        # Count operations by type
-        op_counts = {}
+        # Count operations by complexity level
+        high_ops = medium_ops = low_ops = 0
         for op in process_pipeline:
             if isinstance(op, dict):
-                op_name = list(op.keys())[0]
-                op_counts[op_name] = op_counts.get(op_name, 0) + 1
+                op_name = list(op.keys())[0].lower()
+                if any(kw in op_name for kw in ["embedding", "similarity", "model", "neural", "vision", "audio"]):
+                    high_ops += 1
+                elif any(kw in op_name for kw in ["filter", "deduplicator", "mapper"]):
+                    medium_ops += 1
+                else:
+                    low_ops += 1
 
-        # Adjust complexity based on operation types
-        for op_name, count in op_counts.items():
-            # High complexity operations
-            if any(
-                keyword in op_name.lower()
-                for keyword in ["embedding", "similarity", "model", "neural", "vision", "audio"]
-            ):
-                complexity_score *= 1.2**count
-            # Medium complexity operations
-            elif any(keyword in op_name.lower() for keyword in ["filter", "deduplicator", "mapper"]):
-                complexity_score *= 1.1**count
-            # Low complexity operations (text cleaning, etc.)
-            else:
-                complexity_score *= 1.05**count
+        # Linear complexity scoring
+        complexity_score = 1.0 + (
+            high_ops * COMPLEXITY_WEIGHTS["high"]
+            + medium_ops * COMPLEXITY_WEIGHTS["medium"]
+            + low_ops * COMPLEXITY_WEIGHTS["low"]
+        )
 
-        logger.info(f"Processing complexity score: {complexity_score:.2f}")
+        logger.info(f"Processing complexity: {high_ops} high, {medium_ops} med, {low_ops} low = {complexity_score:.2f}")
         return complexity_score
 
     def get_optimal_partition_size(self, dataset, process_pipeline: List) -> Tuple[int, int]:
@@ -568,14 +569,16 @@ class PartitionSizeOptimizer:
         # Get base configuration for the modality
         base_config = self.MODALITY_CONFIGS[characteristics.primary_modality]
 
-        # Step 1: Calculate ideal size for 64MB target
+        # Step 1: Calculate dynamic target based on available memory
+        available_memory_gb = self._get_available_memory(local_resources, cluster_resources)
+        target_memory_mb = self.calculate_target_partition_mb(available_memory_gb)
+
         if characteristics.primary_modality == ModalityType.TEXT:
             target_size = self.calculate_text_partition_size_simple(
-                characteristics.avg_text_length, complexity_multiplier
+                characteristics.avg_text_length, complexity_multiplier, target_memory_mb
             )
         else:
-            # For media, use memory-per-sample to calculate 64MB target
-            target_memory_mb = 64.0
+            # For media, use memory-per-sample to calculate target
             if characteristics.memory_per_sample_mb > 0:
                 target_size = int(target_memory_mb / (characteristics.memory_per_sample_mb * complexity_multiplier))
             else:
@@ -583,7 +586,6 @@ class PartitionSizeOptimizer:
             target_size = max(10, min(target_size, base_config.max_partition_size))
 
         # Step 2: Check if this fits in available memory
-        available_memory_gb = self._get_available_memory(local_resources, cluster_resources)
         max_partition_memory_mb = (available_memory_gb * 1024 * 0.8) / 4  # Allow 4 concurrent partitions
 
         if target_size * characteristics.memory_per_sample_mb * 2 > max_partition_memory_mb:
@@ -648,29 +650,25 @@ class PartitionSizeOptimizer:
 
         return max(1, int(available_cores * 1.5))
 
-    def calculate_text_partition_size_simple(self, avg_text_length: float, complexity_score: float) -> int:
-        """
-        Simplified text partition size calculation targeting 64MB.
-
-        Formula: samples = 64MB / (bytes_per_sample * complexity)
-        """
-        target_memory_mb = 64.0
-
+    def calculate_text_partition_size_simple(
+        self, avg_text_length: float, complexity_score: float, target_memory_mb: float
+    ) -> int:
+        """Calculate text partition size targeting specified memory size."""
         # Estimate bytes per sample (conservative: 2 bytes per char + overhead)
         bytes_per_sample = avg_text_length * 2.0
         mb_per_sample = bytes_per_sample / (1024 * 1024)
 
-        # Calculate samples for 64MB, adjusted for complexity
+        # Calculate samples for target, adjusted for complexity
         if mb_per_sample > 0:
             target_samples = int(target_memory_mb / (mb_per_sample * complexity_score))
         else:
-            target_samples = 5000  # Fallback for very small text
+            target_samples = 5000
 
         # Apply reasonable bounds
         target_samples = max(1000, min(target_samples, 20000))
 
         logger.info(f"Text partition calculation:")
-        logger.info(f"  Target: 64MB, Avg text: {avg_text_length:.0f} chars")
+        logger.info(f"  Target: {target_memory_mb}MB, Avg text: {avg_text_length:.0f} chars")
         logger.info(f"  Estimated: {mb_per_sample:.3f} MB/sample")
         logger.info(f"  Result: {target_samples} samples (~{target_samples * mb_per_sample:.1f} MB)")
 
@@ -683,38 +681,28 @@ class PartitionSizeOptimizer:
         cluster_resources: Optional[ClusterResources],
         complexity_multiplier: float,
     ) -> int:
-        """
-        Calculate optimal max partition size in MB.
-        Target: 64MB per partition for optimal memory usage and processing efficiency.
-        """
-
-        base_config = self.MODALITY_CONFIGS[characteristics.primary_modality]
-
-        # Target 64MB per partition (from modality config)
-        target_max_size_mb = base_config.max_partition_size_mb  # Should be 64MB
-
-        # Adjust for processing complexity
-        # More complex operations may need smaller partitions
-        complexity_adjusted_size = int(target_max_size_mb / complexity_multiplier)
-
-        # Adjust for available memory
+        """Calculate optimal max partition size in MB based on available memory."""
+        # Calculate dynamic target based on available memory
         available_memory_gb = local_resources.available_memory_gb
         if cluster_resources:
             available_memory_gb = min(available_memory_gb, cluster_resources.available_memory_gb)
 
+        target_max_size_mb = self.calculate_target_partition_mb(available_memory_gb)
+
+        # Adjust for processing complexity
+        complexity_adjusted_size = int(target_max_size_mb / complexity_multiplier)
+
         # Don't exceed 25% of available memory per partition
-        # This ensures we can have multiple partitions in memory simultaneously
         max_size_by_memory = int(available_memory_gb * 1024 * 0.25)
 
         # Apply bounds
         optimal_max_size_mb = min(complexity_adjusted_size, max_size_by_memory)
-        optimal_max_size_mb = max(32, optimal_max_size_mb)  # Minimum 32MB
-        optimal_max_size_mb = min(128, optimal_max_size_mb)  # Maximum 128MB
+        optimal_max_size_mb = max(32, optimal_max_size_mb)
+        optimal_max_size_mb = min(512, optimal_max_size_mb)  # Increased max from 128MB
 
-        logger.info(f"Max partition size calculation (targeting 64MB):")
-        logger.info(f"  Target size: {target_max_size_mb} MB")
+        logger.info(f"Max partition size calculation:")
+        logger.info(f"  Target size: {target_max_size_mb} MB (dynamic based on {available_memory_gb:.1f} GB)")
         logger.info(f"  Complexity adjusted: {complexity_adjusted_size} MB")
-        logger.info(f"  Available memory: {available_memory_gb:.1f} GB")
         logger.info(f"  Max by memory (25%): {max_size_by_memory} MB")
         logger.info(f"  Optimal max size: {optimal_max_size_mb} MB")
 
@@ -777,92 +765,27 @@ class PartitionSizeOptimizer:
         return recommendations
 
 
-def auto_configure_partition_size(cfg, dataset, process_pipeline: List) -> Dict:
-    """
-    Automatically configure partition size and worker count based on dataset characteristics and available resources.
-
-    Args:
-        cfg: Configuration object
-        dataset: Dataset to analyze
-        process_pipeline: List of processing operations
-
-    Returns:
-        Dict with recommended partition and worker configuration
-    """
-    optimizer = PartitionSizeOptimizer(cfg)
-    recommendations = optimizer.get_partition_recommendations(dataset, process_pipeline)
-
-    # Update configuration with recommendations
-    if not hasattr(cfg, "partition"):
-        cfg.partition = {}
-
-    cfg.partition["size"] = recommendations["recommended_partition_size"]
-    cfg.partition["max_size_mb"] = recommendations["recommended_max_size_mb"]
-
-    # Update worker count
-    cfg.np = recommendations["recommended_worker_count"]
-
-    logger.info("Auto-configured settings:")
-    logger.info(f"  partition.size: {cfg.partition['size']}")
-    logger.info(f"  partition.max_size_mb: {cfg.partition['max_size_mb']}")
-    logger.info(f"  np (worker count): {cfg.np}")
-
-    return recommendations
-
-
 def auto_configure_resources(cfg, dataset, process_pipeline: List) -> Dict:
     """
-    Automatically configure all resource-dependent settings based on dataset characteristics and available resources.
+    Analyze dataset and return resource configuration recommendations.
+
+    Does NOT mutate cfg - caller should apply recommendations as needed.
 
     Args:
-        cfg: Configuration object
+        cfg: Configuration object (read-only)
         dataset: Dataset to analyze
         process_pipeline: List of processing operations
 
     Returns:
         Dict with recommended resource configuration
     """
-    try:
-        logger.info("Starting resource optimization...")
+    logger.info("Starting resource optimization...")
+    optimizer = PartitionSizeOptimizer(cfg)
+    recommendations = optimizer.get_partition_recommendations(dataset, process_pipeline)
 
-        optimizer = PartitionSizeOptimizer(cfg)
-        recommendations = optimizer.get_partition_recommendations(dataset, process_pipeline)
+    logger.info("Resource optimization completed:")
+    logger.info(f"  Recommended partition.size: {recommendations['recommended_partition_size']}")
+    logger.info(f"  Recommended partition.max_size_mb: {recommendations['recommended_max_size_mb']}")
+    logger.info(f"  Recommended worker count: {recommendations['recommended_worker_count']}")
 
-        logger.info(f"Got recommendations: {recommendations}")
-
-        # Update configuration with recommendations
-        # Handle case where cfg.partition might be None
-        if not hasattr(cfg, "partition") or cfg.partition is None:
-            logger.info("Creating new partition configuration")
-            cfg.partition = {}
-
-        # Ensure cfg.partition is a dictionary
-        if not isinstance(cfg.partition, dict):
-            logger.info("Converting partition configuration to dictionary")
-            cfg.partition = {}
-
-        logger.info(f"Current cfg.partition: {cfg.partition}")
-        logger.info(f"Setting partition.size to: {recommendations['recommended_partition_size']}")
-        logger.info(f"Setting partition.max_size_mb to: {recommendations['recommended_max_size_mb']}")
-        logger.info(f"Setting np to: {recommendations['recommended_worker_count']}")
-
-        # Update partition configuration with new structure
-        cfg.partition["size"] = recommendations["recommended_partition_size"]
-        cfg.partition["max_size_mb"] = recommendations["recommended_max_size_mb"]
-
-        # Update worker count
-        cfg.np = recommendations["recommended_worker_count"]
-
-        logger.info("Resource optimization completed:")
-        logger.info(f"  partition.size: {cfg.partition['size']}")
-        logger.info(f"  partition.max_size_mb: {cfg.partition['max_size_mb']}")
-        logger.info(f"  np (worker count): {cfg.np}")
-
-        return recommendations
-
-    except Exception as e:
-        logger.error(f"Resource optimization failed: {e}")
-        import traceback
-
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        raise
+    return recommendations
