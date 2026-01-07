@@ -382,15 +382,23 @@ class DAGExecutionMixin:
             if per_op_metrics and op_idx < len(per_op_metrics):
                 op_metrics = per_op_metrics[op_idx]
             else:
-                # Use group-level aggregate metrics for all ops
-                # Since we materialize per group, we can't distinguish individual op metrics
-                # Show the same group aggregate for all ops (honest about granularity)
+                # We materialize per group, not per op, so we can't measure intermediate row counts
+                # Only show what we actually know:
+                # - First op: input to group
+                # - Last op: output from group
+                # - Middle ops: no row counts (unknown)
                 num_ops = len(ops)
                 op_metrics = {
                     "duration": metrics["duration"] / num_ops if num_ops > 0 else 0.0,
-                    "input_rows": metrics["input_rows"],  # Group input (same for all ops)
-                    "output_rows": metrics["output_rows"],  # Group output (same for all ops)
                 }
+
+                # Only show input rows for first op in group
+                if op_idx == 0 and metrics.get("input_rows"):
+                    op_metrics["input_rows"] = metrics["input_rows"]
+
+                # Only show output rows for last op in group
+                if op_idx == len(ops) - 1 and metrics.get("output_rows"):
+                    op_metrics["output_rows"] = metrics["output_rows"]
 
             if node_id:
                 # Mark DAG node as completed with real duration
