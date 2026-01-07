@@ -44,8 +44,12 @@ checkpoint_dir: "{work_dir}/checkpoints"  # Optional: separate large storage for
 
 # Partition configuration
 partition:
-  mode: "manual"                      # Auto partition mode - optimal partitioning
-  num_of_partitions: 4                   # Number of partitions (for manual mode)
+  mode: "manual"                      # Partition mode: "auto" (use optimizer) or "manual" (specify count)
+  num_of_partitions: 4                # Number of partitions (for manual mode)
+  target_size_mb: 256                 # Target partition size in MB (for auto mode)
+                                      # Options: 128 (memory-constrained), 256 (default, balanced),
+                                      #          512 (high-memory systems), 1024 (very large files)
+                                      # Smaller = more checkpoints & better recovery, larger = less overhead
 
 # Checkpoint configuration
 checkpoint:

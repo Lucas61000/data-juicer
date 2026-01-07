@@ -629,6 +629,14 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
                 default=4,
                 help="Number of partitions for manual mode (ignored in auto mode)",
             )
+            parser.add_argument(
+                "--partition.target_size_mb",
+                type=int,
+                default=256,
+                help="Target partition size in MB for auto mode (128, 256, 512, or 1024). "
+                "Controls how large each partition should be. Smaller = more checkpoints & better recovery, "
+                "larger = less overhead. Default 256MB balances memory safety and efficiency.",
+            )
 
             # Resource optimization configuration
             parser.add_argument(

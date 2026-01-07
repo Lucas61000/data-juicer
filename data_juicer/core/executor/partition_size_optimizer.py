@@ -231,12 +231,19 @@ class ResourceDetector:
 class PartitionSizeOptimizer:
     """Automatically optimizes partition sizes based on data characteristics and available resources."""
 
-    @staticmethod
-    def calculate_target_partition_mb(available_memory_gb: float) -> int:
-        """Calculate target partition size in MB based on available memory.
+    def calculate_target_partition_mb(self, available_memory_gb: float) -> int:
+        """Calculate target partition size in MB based on available memory and config.
 
-        Scales from 32MB (low memory) to 256MB (high memory).
+        Uses config.partition.target_size_mb if available, otherwise falls back to
+        dynamic sizing based on available memory (32MB - 256MB).
         """
+        # Use configured target if available
+        if hasattr(self.cfg, "partition") and hasattr(self.cfg.partition, "target_size_mb"):
+            configured_size = self.cfg.partition.target_size_mb
+            logger.info(f"Using configured target partition size: {configured_size} MB")
+            return configured_size
+
+        # Fall back to dynamic calculation based on available memory
         if available_memory_gb < 16:
             return 32
         elif available_memory_gb < 64:
@@ -250,48 +257,48 @@ class PartitionSizeOptimizer:
     MODALITY_CONFIGS = {
         ModalityType.TEXT: ModalityConfig(
             modality=ModalityType.TEXT,
-            default_partition_size=5000,  # Increased from 200
-            max_partition_size=20000,  # Increased from 1000
-            max_partition_size_mb=64,  # Target 64MB per partition
+            default_partition_size=10000,  # Increased for 256MB target
+            max_partition_size=50000,  # Increased for larger partitions
+            max_partition_size_mb=256,  # Default 256MB per partition (configurable)
             memory_multiplier=1.0,
             complexity_multiplier=1.0,
-            description="Text data - efficient processing, low memory usage, target 64MB partitions",
+            description="Text data - efficient processing, low memory usage, target 256MB partitions (configurable)",
         ),
         ModalityType.IMAGE: ModalityConfig(
             modality=ModalityType.IMAGE,
-            default_partition_size=1000,  # Increased from 50
-            max_partition_size=5000,  # Increased from 200
-            max_partition_size_mb=64,  # Target 64MB per partition
+            default_partition_size=2000,  # Increased for 256MB target
+            max_partition_size=10000,  # Increased for larger partitions
+            max_partition_size_mb=256,  # Default 256MB per partition (configurable)
             memory_multiplier=5.0,
             complexity_multiplier=3.0,
-            description="Image data - moderate memory usage, target 64MB partitions",
+            description="Image data - moderate memory usage, target 256MB partitions (configurable)",
         ),
         ModalityType.AUDIO: ModalityConfig(
             modality=ModalityType.AUDIO,
-            default_partition_size=500,  # Increased from 30
-            max_partition_size=2000,  # Increased from 100
-            max_partition_size_mb=64,  # Target 64MB per partition
+            default_partition_size=1000,  # Increased for 256MB target
+            max_partition_size=4000,  # Increased for larger partitions
+            max_partition_size_mb=256,  # Default 256MB per partition (configurable)
             memory_multiplier=8.0,
             complexity_multiplier=5.0,
-            description="Audio data - high memory usage, target 64MB partitions",
+            description="Audio data - high memory usage, target 256MB partitions (configurable)",
         ),
         ModalityType.VIDEO: ModalityConfig(
             modality=ModalityType.VIDEO,
-            default_partition_size=200,  # Increased from 10
-            max_partition_size=1000,  # Increased from 50
-            max_partition_size_mb=64,  # Target 64MB per partition
+            default_partition_size=400,  # Increased for 256MB target
+            max_partition_size=2000,  # Increased for larger partitions
+            max_partition_size_mb=256,  # Default 256MB per partition (configurable)
             memory_multiplier=20.0,
             complexity_multiplier=15.0,
-            description="Video data - very high memory usage, target 64MB partitions",
+            description="Video data - very high memory usage, target 256MB partitions (configurable)",
         ),
         ModalityType.MULTIMODAL: ModalityConfig(
             modality=ModalityType.MULTIMODAL,
-            default_partition_size=800,  # Increased from 20
-            max_partition_size=3000,  # Increased from 100
-            max_partition_size_mb=64,  # Target 64MB per partition
+            default_partition_size=1600,  # Increased for 256MB target
+            max_partition_size=6000,  # Increased for larger partitions
+            max_partition_size_mb=256,  # Default 256MB per partition (configurable)
             memory_multiplier=10.0,
             complexity_multiplier=8.0,
-            description="Multimodal data - combination of multiple modalities, target 64MB partitions",
+            description="Multimodal data - combination of multiple modalities, target 256MB partitions (configurable)",
         ),
     }
 
