@@ -382,12 +382,14 @@ class DAGExecutionMixin:
             if per_op_metrics and op_idx < len(per_op_metrics):
                 op_metrics = per_op_metrics[op_idx]
             else:
-                # Use aggregate metrics divided by number of ops (estimate)
+                # Use group-level aggregate metrics for all ops
+                # Since we materialize per group, we can't distinguish individual op metrics
+                # Show the same group aggregate for all ops (honest about granularity)
                 num_ops = len(ops)
                 op_metrics = {
                     "duration": metrics["duration"] / num_ops if num_ops > 0 else 0.0,
-                    "input_rows": metrics["input_rows"] if op_idx == 0 else 0,
-                    "output_rows": metrics["output_rows"] if op_idx == len(ops) - 1 else 0,
+                    "input_rows": metrics["input_rows"],  # Group input (same for all ops)
+                    "output_rows": metrics["output_rows"],  # Group output (same for all ops)
                 }
 
             if node_id:

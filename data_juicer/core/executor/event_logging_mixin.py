@@ -638,20 +638,27 @@ class EventLoggingMixin:
         self, partition_id, operation_name, operation_idx, duration, checkpoint_path, input_rows, output_rows, **kwargs
     ):
         """Log operation completion with detailed performance metrics."""
-        # Calculate performance metrics
-        throughput = input_rows / duration if duration > 0 and input_rows else 0
-        reduction_ratio = (input_rows - output_rows) / input_rows if input_rows > 0 else 0
-
+        # Build metadata with only meaningful metrics
         metadata = {
             "duration_seconds": duration,
-            "input_rows": input_rows,
-            "output_rows": output_rows,
-            "throughput_rows_per_second": throughput,
-            "reduction_ratio": reduction_ratio,
             "checkpoint_path": checkpoint_path,
             "completion_time": time.time(),
             "operation_class": operation_name,
         }
+
+        # Only include row counts and derived metrics if they're meaningful (non-zero or explicitly set)
+        if input_rows is not None and input_rows > 0:
+            metadata["input_rows"] = input_rows
+        if output_rows is not None and output_rows > 0:
+            metadata["output_rows"] = output_rows
+
+        # Calculate derived metrics only if we have valid row counts
+        if input_rows and output_rows is not None:
+            if duration > 0:
+                metadata["throughput_rows_per_second"] = input_rows / duration
+            if input_rows > 0:
+                metadata["reduction_ratio"] = (input_rows - output_rows) / input_rows
+
         # Merge any additional metadata from kwargs
         if "metadata" in kwargs:
             metadata.update(kwargs["metadata"])
@@ -659,18 +666,15 @@ class EventLoggingMixin:
         # Automatically add DAG context if DAGExecutionMixin is available
         self._add_dag_context_to_metadata(metadata, operation_name, operation_idx, partition_id)
 
+        # Build message without row counts (they're in metadata if meaningful)
         event_id = f"op_complete_{partition_id}_{operation_idx}_{int(time.time())}"
         self._log_event(
             EventType.OP_COMPLETE,
-            f"Operation {operation_name} (idx {operation_idx}) completed on partition {partition_id} - {input_rows}→{output_rows} rows in {duration:.3f}s",
+            f"Operation {operation_name} (idx {operation_idx}) completed on partition {partition_id} in {duration:.3f}s",
             event_id=event_id,
             partition_id=partition_id,
             operation_name=operation_name,
             operation_idx=operation_idx,
-            duration=duration,
-            checkpoint_path=checkpoint_path,
-            input_rows=input_rows,
-            output_rows=output_rows,
             status="success",
             metadata=metadata,
         )
