@@ -32,12 +32,12 @@ class TestPipelineDAG(unittest.TestCase):
         self.sample_config = {
             "process": [
                 {"text_length_filter": {"min_len": 10, "max_len": 1000}},
-                {"character_repetition_filter": {"repetition_ratio": 0.2}},
+                {"character_repetition_filter": {"rep_len": 3}},
                 {"words_num_filter": {"min_num": 5, "max_num": 1000}},
                 {"language_id_score_filter": {"lang": "en", "min_score": 0.8}},
-                {"document_deduplicator": {"method": "exact"}},
-                {"text_cleaning_mapper": {"text_key": "text"}},
-                {"text_splitter_mapper": {"text_key": "text", "max_length": 512}},
+                {"document_deduplicator": {}},
+                {"clean_email_mapper": {}},
+                {"clean_links_mapper": {}},
             ]
         }
 
