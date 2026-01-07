@@ -75,17 +75,17 @@ class PartitionedRayExecutorTest(DataJuicerTestCaseBase):
         # test checkpoint loading functionality
         executor2 = PartitionedRayExecutor(cfg)
         
-        # test _find_latest_checkpoint method
+        # test find_latest_checkpoint method (on checkpoint manager)
         for partition_id in range(2):
-            latest_checkpoint = executor2._find_latest_checkpoint(partition_id)
+            latest_checkpoint = executor2.ckpt_manager.find_latest_checkpoint(partition_id)
             if latest_checkpoint:
                 op_idx, _, checkpoint_path = latest_checkpoint
                 self.assertIsInstance(op_idx, int)
                 self.assertTrue(os.path.exists(checkpoint_path))
                 self.assertTrue(checkpoint_path.endswith('.parquet'))
-        
-        # test _resolve_checkpoint_filename method
-        test_filename = executor2._resolve_checkpoint_filename(0, 1)
+
+        # test resolve_checkpoint_filename method (on checkpoint manager)
+        test_filename = executor2.ckpt_manager.resolve_checkpoint_filename(0, 1)
         expected_pattern = 'checkpoint_op_0000_partition_0001.parquet'
         self.assertEqual(test_filename, expected_pattern)
 
@@ -127,23 +127,26 @@ class PartitionedRayExecutorTest(DataJuicerTestCaseBase):
             {'text_length_filter': {'min_len': 10}},
             {'text_length_filter': {'max_len': 1000}}
         ]
-        
+        cfg.job_id = 'test_convergence_123'  # Required for event logging
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_convergence')
+        cfg.event_logging = {'enabled': False}  # Disable event logging for this test
+
         # Create executor without running full initialization
         executor = PartitionedRayExecutor.__new__(PartitionedRayExecutor)
         executor.cfg = cfg
         executor.executor_type = 'ray_partitioned'
-        executor.work_dir = '/tmp/test'
+        executor.work_dir = cfg.work_dir
         executor.num_partitions = 2
-        
+
         # Initialize only the necessary components
         from data_juicer.core.executor.event_logging_mixin import EventLoggingMixin
         from data_juicer.core.executor.dag_execution_mixin import DAGExecutionMixin
         EventLoggingMixin.__init__(executor, cfg)
         DAGExecutionMixin.__init__(executor)
         executor._override_strategy_methods()
-        
-        convergence_points = executor._detect_convergence_points_partitioned(cfg)
-        
+
+        convergence_points = executor._detect_convergence_points(cfg)
+
         # Should not detect any convergence points for non-global operations
         self.assertEqual(len(convergence_points), 0)
 
@@ -190,29 +193,29 @@ class PartitionedRayExecutorTest(DataJuicerTestCaseBase):
             '--partition.num_of_partitions', '2',
             '--checkpoint.enabled', 'true'
         ])
-        
+
         # Test EVERY_OP strategy
         cfg.checkpoint = {'strategy': 'every_op'}
         executor = PartitionedRayExecutor(cfg)
-        self.assertEqual(executor.checkpoint_strategy.value, 'every_op')
-        
+        self.assertEqual(executor.ckpt_manager.checkpoint_strategy.value, 'every_op')
+
         # Test EVERY_N_OPS strategy
         cfg.checkpoint = {'strategy': 'every_n_ops', 'n_ops': 2}
         executor = PartitionedRayExecutor(cfg)
-        self.assertEqual(executor.checkpoint_strategy.value, 'every_n_ops')
-        self.assertEqual(executor.checkpoint_n_ops, 2)
-        
+        self.assertEqual(executor.ckpt_manager.checkpoint_strategy.value, 'every_n_ops')
+        self.assertEqual(executor.ckpt_manager.checkpoint_n_ops, 2)
+
         # Test MANUAL strategy
         cfg.checkpoint = {'strategy': 'manual', 'op_names': ['text_length_filter']}
         executor = PartitionedRayExecutor(cfg)
-        self.assertEqual(executor.checkpoint_strategy.value, 'manual')
-        self.assertIn('text_length_filter', executor.checkpoint_op_names)
-        
+        self.assertEqual(executor.ckpt_manager.checkpoint_strategy.value, 'manual')
+        self.assertIn('text_length_filter', executor.ckpt_manager.checkpoint_op_names)
+
         # Test DISABLED strategy
         cfg.checkpoint = {'strategy': 'disabled'}
         executor = PartitionedRayExecutor(cfg)
-        self.assertEqual(executor.checkpoint_strategy.value, 'disabled')
-        self.assertFalse(executor.checkpoint_enabled)
+        self.assertEqual(executor.ckpt_manager.checkpoint_strategy.value, 'disabled')
+        self.assertFalse(executor.ckpt_manager.checkpoint_enabled)
 
     @TEST_TAG('ray')
     def test_dag_node_generation(self):
@@ -288,7 +291,7 @@ class PartitionedRayExecutorTest(DataJuicerTestCaseBase):
         """Test job resumption workflow with user-provided job_id."""
         from unittest.mock import Mock, patch, MagicMock
         import json
-        
+
         # Create a simple config without loading from file
         from jsonargparse import Namespace
         cfg = Namespace()
@@ -299,14 +302,19 @@ class PartitionedRayExecutorTest(DataJuicerTestCaseBase):
         cfg.partition = {'mode': 'manual', 'num_of_partitions': 2}
         cfg.checkpoint = {'enabled': True, 'strategy': 'every_op'}
         cfg._user_provided_job_id = False
-        
+        cfg.job_id = 'test_job_resumption_123'  # Required for event logging
+        cfg.event_logging = {'enabled': True}  # Enable event logging for this test
+
+        # Create work_dir first
+        os.makedirs(cfg.work_dir, exist_ok=True)
+
         # Create executor without running full initialization
         executor = PartitionedRayExecutor.__new__(PartitionedRayExecutor)
         executor.cfg = cfg
         executor.executor_type = 'ray_partitioned'
         executor.work_dir = cfg.work_dir
         executor.num_partitions = 2
-        
+
         # Initialize only the necessary components
         from data_juicer.core.executor.event_logging_mixin import EventLoggingMixin
         from data_juicer.core.executor.dag_execution_mixin import DAGExecutionMixin
@@ -346,10 +354,10 @@ class PartitionedRayExecutorTest(DataJuicerTestCaseBase):
         cfg._user_provided_job_id = True
         cfg.job_id = job_id
         
-        # Mock the job directory finding to return our test directory
-        with patch.object(executor, '_find_job_directory', return_value=job_dir):
+        # Mock the work directory finding to return our test directory
+        with patch.object(executor, '_find_work_directory', return_value=job_dir):
             result = executor._resume_job(job_id)
-            # Should return "failed" due to config validation, but we've tested the core logic
+            # Should return "failed" due to config validation failure (we didn't save the config)
             self.assertEqual(result, "failed")
 
 
