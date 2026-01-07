@@ -411,8 +411,8 @@ class DAGExecutionMixin:
                     "op_complete",
                     partition_id=partition_id,
                     duration=op_metrics["duration"],
-                    input_rows=op_metrics["input_rows"],
-                    output_rows=op_metrics["output_rows"],
+                    input_rows=op_metrics.get("input_rows"),
+                    output_rows=op_metrics.get("output_rows"),
                 )
             else:
                 # Log operation completion without DAG context
@@ -423,8 +423,8 @@ class DAGExecutionMixin:
                         op_idx,
                         op_metrics["duration"],
                         None,
-                        op_metrics["input_rows"],
-                        op_metrics["output_rows"],
+                        op_metrics.get("input_rows"),
+                        op_metrics.get("output_rows"),
                     )
 
     def _extract_operation_types_from_ops(self, operations: List) -> List[str]:
