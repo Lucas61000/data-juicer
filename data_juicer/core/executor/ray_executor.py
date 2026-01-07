@@ -157,6 +157,10 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
             logger.info("Processing data with DAG monitoring...")
             tstart = time.time()
 
+            # Get input row count before processing
+            input_rows = dataset.data.count()
+            start_time = time.time()
+
             # Pre-execute DAG monitoring (log operation start events)
             if self.pipeline_dag:
                 self._pre_execute_operations_with_dag_monitoring(ops)
@@ -164,9 +168,18 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
             # Execute operations (Ray executor uses simple dataset.process)
             dataset = dataset.process(ops)
 
-            # Post-execute DAG monitoring (log operation completion events)
+            # Force materialization to get real execution
+            logger.info("Materializing dataset to collect real metrics...")
+            dataset.data = dataset.data.materialize()
+
+            # Get metrics after execution
+            duration = time.time() - start_time
+            output_rows = dataset.data.count()
+
+            # Post-execute DAG monitoring (log operation completion events with real metrics)
             if self.pipeline_dag:
-                self._post_execute_operations_with_dag_monitoring(ops)
+                metrics = {"duration": duration, "input_rows": input_rows, "output_rows": output_rows}
+                self._post_execute_operations_with_dag_monitoring(ops, metrics=metrics)
 
             # 4. data export
             if not skip_export:

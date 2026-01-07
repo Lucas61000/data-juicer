@@ -45,8 +45,7 @@ checkpoint_dir: "{work_dir}/checkpoints"  # Optional: separate large storage for
 # Partition configuration
 partition:
   mode: "manual"                      # Auto partition mode - optimal partitioning
-  num_of_partitions: 4  # Number of partitions to create
-
+  num_of_partitions: 4                   # Number of partitions (for manual mode)
 
 # Checkpoint configuration
 checkpoint:
@@ -105,11 +104,6 @@ process:
       text_key: "text"
       min_ratio: 0.0
       max_ratio: 0.5
-
-  - ray_bts_minhash_deduplicator:
-      tokenization: 'character'
-      lowercase: true
-      union_find_parallel_num: 2
 
 # Export configuration
 export_in_parallel: true
