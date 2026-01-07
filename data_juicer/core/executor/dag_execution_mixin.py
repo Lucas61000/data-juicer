@@ -345,7 +345,9 @@ class DAGExecutionMixin:
                 if log_method := getattr(self, "log_op_start", None):
                     log_method(partition_id, op_name, op_idx, {})
 
-    def _post_execute_operations_with_dag_monitoring(self, ops: List, partition_id: int = 0) -> None:
+    def _post_execute_operations_with_dag_monitoring(
+        self, ops: List, partition_id: int = 0, metrics: dict = None
+    ) -> None:
         """Log operation completion events with DAG monitoring after execution.
 
         This method should be called after dataset.process() to log operation completion events.
@@ -353,18 +355,44 @@ class DAGExecutionMixin:
         Args:
             ops: List of operations that were executed
             partition_id: Partition ID for partitioned executors (default: 0)
+            metrics: Optional dict with real execution metrics:
+                {
+                    'duration': float,
+                    'input_rows': int,
+                    'output_rows': int,
+                    'per_op_metrics': List[dict]  # Optional per-op breakdown
+                }
         """
         if not self.pipeline_dag:
             return
+
+        # Default metrics if not provided
+        if metrics is None:
+            metrics = {"duration": 0.0, "input_rows": 0, "output_rows": 0}
+
+        # Check if we have per-op metrics
+        per_op_metrics = metrics.get("per_op_metrics", [])
 
         # Log operation completion events for all operations
         for op_idx, op in enumerate(ops):
             op_name = op._name
             node_id = self._get_dag_node_for_operation(op_name, op_idx, partition_id=partition_id)
 
+            # Get metrics for this specific op if available
+            if per_op_metrics and op_idx < len(per_op_metrics):
+                op_metrics = per_op_metrics[op_idx]
+            else:
+                # Use aggregate metrics divided by number of ops (estimate)
+                num_ops = len(ops)
+                op_metrics = {
+                    "duration": metrics["duration"] / num_ops if num_ops > 0 else 0.0,
+                    "input_rows": metrics["input_rows"] if op_idx == 0 else 0,
+                    "output_rows": metrics["output_rows"] if op_idx == len(ops) - 1 else 0,
+                }
+
             if node_id:
-                # Mark DAG node as completed
-                self._mark_dag_node_completed(node_id, 0.0)  # Duration will be updated from events
+                # Mark DAG node as completed with real duration
+                self._mark_dag_node_completed(node_id, op_metrics["duration"])
 
                 # Log operation completion with DAG context
                 self._log_operation_with_dag_context(
@@ -372,14 +400,22 @@ class DAGExecutionMixin:
                     op_idx,
                     "op_complete",
                     partition_id=partition_id,
-                    duration=0.0,
-                    input_rows=0,
-                    output_rows=0,
+                    duration=op_metrics["duration"],
+                    input_rows=op_metrics["input_rows"],
+                    output_rows=op_metrics["output_rows"],
                 )
             else:
                 # Log operation completion without DAG context
                 if log_method := getattr(self, "log_op_complete", None):
-                    log_method(partition_id, op_name, op_idx, 0.0, None, 0, 0)
+                    log_method(
+                        partition_id,
+                        op_name,
+                        op_idx,
+                        op_metrics["duration"],
+                        None,
+                        op_metrics["input_rows"],
+                        op_metrics["output_rows"],
+                    )
 
     def _extract_operation_types_from_ops(self, operations: List) -> List[str]:
         """Extract operation types from operations list."""

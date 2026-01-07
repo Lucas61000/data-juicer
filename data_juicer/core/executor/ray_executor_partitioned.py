@@ -344,7 +344,12 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         logger.info("Preparing operations...")
         ops = self._prepare_operators()
 
-        # Initialize DAG execution planning
+        # Handle auto partition mode BEFORE initializing DAG
+        # (DAG needs final partition count)
+        if self.partition_mode == "auto":
+            self._configure_auto_partitioning(dataset, ops)
+
+        # Initialize DAG execution planning with final partition count
         self._initialize_dag_execution(self.cfg)
 
         # Log job start with DAG context
@@ -364,10 +369,6 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
             "parallel_groups_count": len(self.pipeline_dag.parallel_groups) if self.pipeline_dag else 0,
         }
         self.log_job_start(job_config, len(ops))
-
-        # Handle auto partition mode
-        if self.partition_mode == "auto":
-            self._configure_auto_partitioning(dataset, ops)
 
         # Detect convergence points for global operations
         convergence_points = self._detect_convergence_points(self.cfg)
@@ -519,16 +520,31 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
 
         if not self.ckpt_manager.checkpoint_enabled:
             logger.info(f"Checkpointing disabled, processing all operations at once for partition {partition_id}")
+
+            # Get input row count before processing
+            input_rows = dataset.data.count()
+            start_time = time.time()
+
             # Pre-execute DAG monitoring (log operation start events)
             if self.pipeline_dag:
                 self._pre_execute_operations_with_dag_monitoring(ops, partition_id=partition_id)
 
-            # Execute operations
+            # Execute operations (lazy)
             processed_dataset = dataset.process(ops)
 
-            # Post-execute DAG monitoring (log operation completion events)
+            # Force materialization to get real execution (required for union anyway)
+            processed_dataset.data = processed_dataset.data.materialize()
+
+            # Get metrics after execution
+            duration = time.time() - start_time
+            output_rows = processed_dataset.data.count()
+
+            logger.info(f"Partition {partition_id}: Processed {input_rows}→{output_rows} rows in {duration:.2f}s")
+
+            # Post-execute DAG monitoring with real metrics
             if self.pipeline_dag:
-                self._post_execute_operations_with_dag_monitoring(ops, partition_id=partition_id)
+                metrics = {"duration": duration, "input_rows": input_rows, "output_rows": output_rows}
+                self._post_execute_operations_with_dag_monitoring(ops, partition_id=partition_id, metrics=metrics)
 
             return processed_dataset
 
@@ -586,16 +602,34 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
                     f"Partition {partition_id}: Processing {len(group_ops)} operations in group {group_idx + 1}"
                 )
 
+                # Get input row count before processing
+                input_rows = current_dataset.data.count()
+                start_time = time.time()
+
                 # Pre-execute DAG monitoring (log operation start events)
                 if self.pipeline_dag:
                     self._pre_execute_operations_with_dag_monitoring(group_ops, partition_id=partition_id)
 
-                # Execute operations
+                # Execute operations (lazy)
                 current_dataset = current_dataset.process(group_ops)
 
-                # Post-execute DAG monitoring (log operation completion events)
+                # Force materialization (required for checkpointing anyway)
+                current_dataset.data = current_dataset.data.materialize()
+
+                # Get metrics after execution
+                duration = time.time() - start_time
+                output_rows = current_dataset.data.count()
+
+                logger.info(
+                    f"Partition {partition_id}, group {group_idx + 1}: Processed {input_rows}→{output_rows} rows in {duration:.2f}s"
+                )
+
+                # Post-execute DAG monitoring with real metrics
                 if self.pipeline_dag:
-                    self._post_execute_operations_with_dag_monitoring(group_ops, partition_id=partition_id)
+                    metrics = {"duration": duration, "input_rows": input_rows, "output_rows": output_rows}
+                    self._post_execute_operations_with_dag_monitoring(
+                        group_ops, partition_id=partition_id, metrics=metrics
+                    )
 
             # Checkpoint after the last operation in the group
             if group_ops:
@@ -605,6 +639,7 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
                     logger.info(
                         f"Partition {partition_id}: Creating checkpoint after operation {last_op_idx}: {last_op_name}"
                     )
+                    # Data already materialized above, safe to checkpoint
                     self.ckpt_manager.save_checkpoint(
                         current_dataset, last_op_idx, last_op_name, partition_id, cfg=self.cfg
                     )
