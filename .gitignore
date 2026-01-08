@@ -42,3 +42,8 @@ perf_bench_data/
 # claude
 .claude/
 CLAUDE.md
+
+# compiled artifacts (Cython, etc.)
+*.cpython-*.so
+*.pyd
+data_juicer/ops/deduplicator/*.c
