@@ -595,7 +595,7 @@
 
 <div class="viewcode-block" id="Tracer.__init__">
 <a class="viewcode-back" href="../../../api/data_juicer.core.tracer.html#data_juicer.core.Tracer.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">,</span> <span class="n">op_list_to_trace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_num</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">,</span> <span class="n">op_list_to_trace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_num</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">trace_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialization method.</span>
 
@@ -604,6 +604,9 @@
 <span class="sd">        :param op_list_to_trace: the OP list to be traced.</span>
 <span class="sd">        :param show_num: the maximum number of samples to show in the</span>
 <span class="sd">            comparison result files.</span>
+<span class="sd">        :param trace_keys: list of field names to include in trace output.</span>
+<span class="sd">            If set, the specified fields&#39; values will be included in each</span>
+<span class="sd">            trace entry.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="s2">&quot;trace&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">):</span>
@@ -614,7 +617,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">op_list_to_trace</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">OPERATORS</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">op_list_to_trace</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">op_list_to_trace</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">show_num</span> <span class="o">=</span> <span class="n">show_num</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_num</span> <span class="o">=</span> <span class="n">show_num</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace_keys</span> <span class="o">=</span> <span class="n">trace_keys</span> <span class="ow">or</span> <span class="p">[]</span></div>
 
 
 <div class="viewcode-block" id="Tracer.trace_mapper">
@@ -645,12 +649,14 @@
             <span class="n">previous_sample</span> <span class="o">=</span> <span class="n">previous_ds</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">text_key</span><span class="p">]</span>
             <span class="n">processed_sample</span> <span class="o">=</span> <span class="n">processed_ds</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">text_key</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">previous_sample</span> <span class="o">!=</span> <span class="n">processed_sample</span><span class="p">:</span>
-                <span class="n">dif_dict</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="p">{</span>
-                        <span class="s2">&quot;original_text&quot;</span><span class="p">:</span> <span class="n">previous_sample</span><span class="p">,</span>
-                        <span class="s2">&quot;processed_text&quot;</span><span class="p">:</span> <span class="n">processed_sample</span><span class="p">,</span>
-                    <span class="p">}</span>
-                <span class="p">)</span>
+                <span class="n">entry</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="c1"># Add specified fields first (appears at start of output)</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trace_keys</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">previous_ds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="c1"># Add trace data (these take precedence over trace_keys)</span>
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;original_text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">previous_sample</span>
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;processed_text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">processed_sample</span>
+                <span class="n">dif_dict</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
                 <span class="n">num</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_num</span><span class="p">:</span>
                     <span class="k">break</span>

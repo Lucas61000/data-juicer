@@ -690,7 +690,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">open_tracer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">open_tracer</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">open_tracer</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Preparing tracer...&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tracer</span> <span class="o">=</span> <span class="n">Tracer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">op_list_to_trace</span><span class="p">,</span> <span class="n">show_num</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">trace_num</span><span class="p">)</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracer</span> <span class="o">=</span> <span class="n">Tracer</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">op_list_to_trace</span><span class="p">,</span>
+                <span class="n">show_num</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">trace_num</span><span class="p">,</span>
+                <span class="n">trace_keys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">trace_keys</span><span class="p">,</span>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="DefaultExecutor.run">

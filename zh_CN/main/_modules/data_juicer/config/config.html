@@ -1037,6 +1037,14 @@
                 <span class="s2">&quot;open_tracer is true.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+                <span class="s2">&quot;--trace_keys&quot;</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;List of field names to include in trace output. If set, the &quot;</span>
+                <span class="s2">&quot;specified fields&#39; values will be included in each trace entry. &quot;</span>
+                <span class="s2">&quot;Only available when open_tracer is true.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
                 <span class="s2">&quot;--open_insight_mining&quot;</span><span class="p">,</span>
                 <span class="nb">type</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span>
                 <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
