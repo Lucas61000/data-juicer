@@ -893,11 +893,6 @@
                     <span class="p">)</span>
                 <span class="c1"># if no cpu is specified, ray will apply for 1 cpu by default</span>
                 <span class="n">cpu_required_frac</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">total_cpu</span>
-            <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Op[</span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">] is running in ray task mode, ``num_proc`` is expected to be set as an integer but got: </span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">)</span>
             <span class="c1"># set concurrency to none, using the default autoscaler of ray to ensure performance</span>
             <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">num_proc</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
                 <span class="n">op</span><span class="o">.</span><span class="n">num_proc</span> <span class="o">=</span> <span class="kc">None</span>
@@ -912,7 +907,7 @@
             <span class="s2">&quot;gpu_required_frac&quot;</span><span class="p">:</span> <span class="n">gpu_required_frac</span><span class="p">,</span>
             <span class="s2">&quot;num_proc&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="p">,</span>
             <span class="s2">&quot;auto_proc&quot;</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">use_auto_proc</span><span class="p">(),</span>
-            <span class="s2">&quot;is_actor&quot;</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">use_cuda</span><span class="p">(),</span>
+            <span class="s2">&quot;is_actor&quot;</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">use_ray_actor</span><span class="p">(),</span>
         <span class="p">}</span>
 
     <span class="n">fixed_min_cpu</span> <span class="o">=</span> <span class="n">fixed_max_cpu</span> <span class="o">=</span> <span class="n">fixed_min_gpu</span> <span class="o">=</span> <span class="n">fixed_max_gpu</span> <span class="o">=</span> <span class="mi">0</span>
@@ -992,7 +987,7 @@
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">auto_resource_frac_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># (cpu, gpu)</span>
                 <span class="n">op_resources_gpu</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">op_resources_cpu</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">best_combination_cpu</span><span class="p">,</span> <span class="n">best_combination_gpu</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{}</span>
@@ -1041,7 +1036,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">max_proc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_frac_cpu</span> <span class="o">/</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;cpu_required_frac&quot;</span><span class="p">]))</span>
 
-                <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;num_proc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_proc</span> <span class="k">if</span> <span class="n">min_proc</span> <span class="o">==</span> <span class="n">max_proc</span> <span class="k">else</span> <span class="p">(</span><span class="n">min_proc</span><span class="p">,</span> <span class="n">max_proc</span><span class="p">)</span>
+                <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;num_proc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_proc</span> <span class="k">if</span> <span class="n">min_proc</span> <span class="o">&gt;=</span> <span class="n">max_proc</span> <span class="k">else</span> <span class="p">(</span><span class="n">min_proc</span><span class="p">,</span> <span class="n">max_proc</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">op_idx</span><span class="p">,</span> <span class="n">op</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">operators</span><span class="p">):</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">resource_configs</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">op_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>

@@ -633,6 +633,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
         <span class="n">max_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">float_info</span><span class="o">.</span><span class="n">max</span><span class="p">,</span>
+        <span class="n">frame_field</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">sampling_fps</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
         <span class="n">size</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">,</span> <span class="n">PositiveInt</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">max_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -647,6 +648,8 @@
 
 <span class="sd">        :param min_score: The minimum motion score to keep samples.</span>
 <span class="sd">        :param max_score: The maximum motion score to keep samples.</span>
+<span class="sd">        :param frame_field: the field name of video frames to compute motion score.</span>
+<span class="sd">            If frame_field is None, extract frames from the video field.</span>
 <span class="sd">        :param sampling_fps: The sampling rate in frames_per_second for</span>
 <span class="sd">            optical flow calculations.</span>
 <span class="sd">        :param size: Resize frames before computing optical flow. If size is a</span>
@@ -673,6 +676,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span> <span class="o">=</span> <span class="n">min_score</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_score</span> <span class="o">=</span> <span class="n">max_score</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sampling_fps</span> <span class="o">=</span> <span class="n">sampling_fps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="o">=</span> <span class="n">frame_field</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">size</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
@@ -722,70 +726,112 @@
         <span class="k">if</span> <span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_motion_score</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">]:</span>
             <span class="k">return</span> <span class="n">sample</span>
 
-        <span class="c1"># there is no video in this sample</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sample</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]:</span>
+        <span class="c1"># there is no video or frames in this sample</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sample</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">])</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sample</span>
+        <span class="p">):</span>
             <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">][</span><span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_motion_score</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">sample</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">setup_model</span><span class="p">(</span><span class="n">rank</span><span class="p">)</span>
 
-        <span class="c1"># load videos</span>
-        <span class="n">loaded_video_keys</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]</span>
-        <span class="n">unique_motion_scores</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">video_key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">:</span>
-            <span class="c1"># skip duplicate videos</span>
-            <span class="k">if</span> <span class="n">video_key</span> <span class="ow">in</span> <span class="n">unique_motion_scores</span><span class="p">:</span>
-                <span class="k">continue</span>
+        <span class="c1"># load frames or videos</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">:</span>
+            <span class="c1"># Read frames directly from the specified field</span>
+            <span class="n">all_videos_frames</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span><span class="p">]</span>
+            <span class="n">num_videos</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_videos_frames</span><span class="p">)</span>
+            <span class="n">unique_motion_scores</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">video_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_videos</span><span class="p">):</span>
+                <span class="n">unique_motion_scores</span><span class="p">[</span><span class="n">video_idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_motion_scores_from_frames</span><span class="p">(</span><span class="n">all_videos_frames</span><span class="p">[</span><span class="n">video_idx</span><span class="p">])</span>
 
-            <span class="n">video_motion_scores</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">with</span> <span class="n">VideoCapture</span><span class="p">(</span><span class="n">video_key</span><span class="p">)</span> <span class="k">as</span> <span class="n">cap</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">cap</span><span class="o">.</span><span class="n">isOpened</span><span class="p">():</span>
-                    <span class="n">fps</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FPS</span><span class="p">)</span>
-                    <span class="n">sampling_fps</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_fps</span><span class="p">,</span> <span class="n">fps</span><span class="p">)</span>
-                    <span class="n">sampling_step</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">fps</span> <span class="o">/</span> <span class="n">sampling_fps</span><span class="p">)</span>
-                    <span class="n">total_frames</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FRAME_COUNT</span><span class="p">))</span>
-                    <span class="c1"># at least two frames for computing optical flow</span>
-                    <span class="n">sampling_step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">sampling_step</span><span class="p">,</span> <span class="n">total_frames</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
-                    <span class="n">height</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FRAME_HEIGHT</span><span class="p">)</span>
-                    <span class="n">width</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FRAME_WIDTH</span><span class="p">)</span>
-                    <span class="n">new_size</span> <span class="o">=</span> <span class="n">calculate_resized_dimensions</span><span class="p">((</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">divisible</span><span class="p">)</span>
+            <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">][</span><span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_motion_score</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">unique_motion_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_videos</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Read videos and compute motion scores</span>
+            <span class="n">loaded_video_keys</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]</span>
+            <span class="n">unique_motion_scores</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">video_key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">:</span>
+                <span class="c1"># skip duplicate videos</span>
+                <span class="k">if</span> <span class="n">video_key</span> <span class="ow">in</span> <span class="n">unique_motion_scores</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">unique_motion_scores</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_motion_scores_from_video</span><span class="p">(</span><span class="n">video_key</span><span class="p">)</span>
 
-                <span class="n">prev_frame</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="n">frame_count</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="k">while</span> <span class="n">cap</span><span class="o">.</span><span class="n">isOpened</span><span class="p">():</span>
-                    <span class="n">ret</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
-                        <span class="c1"># If the frame can&#39;t be read, it could be due to</span>
-                        <span class="c1"># a corrupt frame or reaching the end of the video.</span>
-                        <span class="k">break</span>
-
-                    <span class="k">if</span> <span class="n">new_size</span> <span class="o">!=</span> <span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
-                        <span class="n">frame</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">new_size</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">INTER_AREA</span><span class="p">)</span>
-
-                    <span class="c1"># return flow of shape (H, W, 2) and transformed frame</span>
-                    <span class="c1"># of shape (H, W, 3) in BGR mode</span>
-                    <span class="n">flow</span><span class="p">,</span> <span class="n">prev_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flow</span><span class="p">(</span><span class="n">prev_frame</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">flow</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="k">continue</span>
-                    <span class="n">mag</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cartToPolar</span><span class="p">(</span><span class="n">flow</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">flow</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
-                    <span class="n">frame_motion_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative</span><span class="p">:</span>
-                        <span class="n">frame_motion_score</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="o">*</span><span class="n">frame</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
-                    <span class="n">video_motion_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame_motion_score</span><span class="p">)</span>
-
-                    <span class="c1"># quickly skip frames</span>
-                    <span class="n">frame_count</span> <span class="o">+=</span> <span class="n">sampling_step</span>
-                    <span class="n">cap</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_POS_FRAMES</span><span class="p">,</span> <span class="n">frame_count</span><span class="p">)</span>
-
-            <span class="c1"># may due to frame corruption</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">video_motion_scores</span><span class="p">:</span>
-                <span class="n">unique_motion_scores</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">unique_motion_scores</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">video_motion_scores</span> <span class="ow">or</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-
-        <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">][</span><span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_motion_score</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">unique_motion_scores</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">]</span>
+            <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">][</span><span class="n">StatsKeys</span><span class="o">.</span><span class="n">video_motion_score</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">unique_motion_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]</span>
+            <span class="p">]</span>
         <span class="k">return</span> <span class="n">sample</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_motion_scores_from_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frames</span><span class="p">):</span>
+        <span class="n">video_motion_scores</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">prev_frame</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+                <span class="n">image_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+                <span class="n">frame</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imdecode</span><span class="p">(</span><span class="n">image_array</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">IMREAD_COLOR</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">frame</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">:</span>
+                <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">new_size</span> <span class="o">=</span> <span class="n">calculate_resized_dimensions</span><span class="p">((</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">divisible</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">new_size</span> <span class="o">!=</span> <span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
+                    <span class="n">frame</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">new_size</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">INTER_AREA</span><span class="p">)</span>
+
+            <span class="c1"># Compute optical flow</span>
+            <span class="n">flow</span><span class="p">,</span> <span class="n">prev_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flow</span><span class="p">(</span><span class="n">prev_frame</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">flow</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">mag</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cartToPolar</span><span class="p">(</span><span class="n">flow</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">flow</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">frame_motion_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative</span><span class="p">:</span>
+                <span class="n">frame_motion_score</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="o">*</span><span class="n">frame</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">video_motion_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">frame_motion_score</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">video_motion_scores</span> <span class="ow">or</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_motion_scores_from_video</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">video_key</span><span class="p">):</span>
+        <span class="n">video_motion_scores</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="n">VideoCapture</span><span class="p">(</span><span class="n">video_key</span><span class="p">)</span> <span class="k">as</span> <span class="n">cap</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cap</span><span class="o">.</span><span class="n">isOpened</span><span class="p">():</span>
+                <span class="n">fps</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FPS</span><span class="p">)</span>
+                <span class="n">sampling_fps</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sampling_fps</span><span class="p">,</span> <span class="n">fps</span><span class="p">)</span>
+                <span class="n">sampling_step</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">fps</span> <span class="o">/</span> <span class="n">sampling_fps</span><span class="p">)</span>
+                <span class="n">total_frames</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FRAME_COUNT</span><span class="p">))</span>
+                <span class="c1"># at least two frames for computing optical flow</span>
+                <span class="n">sampling_step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">sampling_step</span><span class="p">,</span> <span class="n">total_frames</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FRAME_HEIGHT</span><span class="p">)</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FRAME_WIDTH</span><span class="p">)</span>
+                <span class="n">new_size</span> <span class="o">=</span> <span class="n">calculate_resized_dimensions</span><span class="p">((</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">divisible</span><span class="p">)</span>
+
+            <span class="n">prev_frame</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">frame_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">cap</span><span class="o">.</span><span class="n">isOpened</span><span class="p">():</span>
+                <span class="n">ret</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="c1"># If the frame can&#39;t be read, it could be due to</span>
+                    <span class="c1"># a corrupt frame or reaching the end of the video.</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">new_size</span> <span class="o">!=</span> <span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
+                    <span class="n">frame</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">new_size</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">INTER_AREA</span><span class="p">)</span>
+
+                <span class="c1"># return flow of shape (H, W, 2) and transformed frame</span>
+                <span class="c1"># of shape (H, W, 3) in BGR mode</span>
+                <span class="n">flow</span><span class="p">,</span> <span class="n">prev_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flow</span><span class="p">(</span><span class="n">prev_frame</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">flow</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">mag</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cartToPolar</span><span class="p">(</span><span class="n">flow</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">flow</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+                <span class="n">frame_motion_score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative</span><span class="p">:</span>
+                    <span class="n">frame_motion_score</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">hypot</span><span class="p">(</span><span class="o">*</span><span class="n">frame</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+                <span class="n">video_motion_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">frame_motion_score</span><span class="p">))</span>
+
+                <span class="c1"># quickly skip frames</span>
+                <span class="n">frame_count</span> <span class="o">+=</span> <span class="n">sampling_step</span>
+                <span class="n">cap</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_POS_FRAMES</span><span class="p">,</span> <span class="n">frame_count</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">video_motion_scores</span> <span class="ow">or</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
 <div class="viewcode-block" id="VideoMotionScoreFilter.process_single">
 <a class="viewcode-back" href="../../../../api/data_juicer.ops.filter.html#data_juicer.ops.filter.VideoMotionScoreFilter.process_single">[docs]</a>

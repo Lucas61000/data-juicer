@@ -574,6 +574,7 @@
                   
   <h1>Source code for data_juicer.ops.mapper.video_split_by_scene_mapper</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span>
 
@@ -641,7 +642,9 @@
         <span class="n">min_scene_len</span><span class="p">:</span> <span class="n">NonNegativeInt</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
         <span class="n">show_progress</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">save_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">ffmpeg_extra_args</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">save_field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ffmpeg_extra_args</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;-movflags frag_keyframe+empty_moov&quot;</span><span class="p">,</span>
+        <span class="n">output_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;path&quot;</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -656,7 +659,25 @@
 <span class="sd">        :param save_dir: The directory where generated video files will be stored.</span>
 <span class="sd">            If not specified, outputs will be saved in the same directory as their corresponding input files.</span>
 <span class="sd">            This path can alternatively be defined by setting the `DJ_PRODUCED_DATA_DIR` environment variable.</span>
+<span class="sd">        :param save_field: The new field name to save generated video files path.</span>
+<span class="sd">            If not specified, will overwrite the original video field.</span>
 <span class="sd">        :param ffmpeg_extra_args: Extra ffmpeg args for splitting video.</span>
+<span class="sd">        :param output_format: The output format of the videos.</span>
+<span class="sd">            Supported formats are: [&quot;path&quot;, &quot;bytes&quot;].</span>
+<span class="sd">            If format is &quot;path&quot;, the output is a list of lists, where each inner</span>
+<span class="sd">            list contains the path of the split videos.</span>
+<span class="sd">            e.g.[</span>
+<span class="sd">                    [video1_split1_path, video1_split2_path, ...],</span>
+<span class="sd">                    [video2_split1_path, video2_split2_path, ...],</span>
+<span class="sd">                    ...</span>
+<span class="sd">                ] (In the order of the videos).</span>
+<span class="sd">            If format is &quot;bytes&quot;, the output is a list of lists, where each inner</span>
+<span class="sd">            list contains the bytes of the split videos.</span>
+<span class="sd">            e.g. [</span>
+<span class="sd">                    [video1_split1_byte, video1_split2_byte, ...],</span>
+<span class="sd">                    [video2_split1_byte, video2_split2_byte, ...],</span>
+<span class="sd">                    ...</span>
+<span class="sd">                ] (In the order of the videos).</span>
 <span class="sd">        :param args: extra args</span>
 <span class="sd">        :param kwargs: extra args</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -675,7 +696,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">min_scene_len</span> <span class="o">=</span> <span class="n">min_scene_len</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">show_progress</span> <span class="o">=</span> <span class="n">show_progress</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">=</span> <span class="n">save_dir</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_field</span> <span class="o">=</span> <span class="n">save_field</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ffmpeg_extra_args</span> <span class="o">=</span> <span class="n">ffmpeg_extra_args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_format</span> <span class="o">=</span> <span class="n">output_format</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_format</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;bytes&quot;</span><span class="p">,</span>
+        <span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;output_format &#39;</span><span class="si">{</span><span class="n">output_format</span><span class="si">}</span><span class="s2">&#39; is not supported. Can only be one of [&#39;path&#39;, &#39;bytes&#39;].&quot;</span>
 
         <span class="c1"># prepare detector args</span>
         <span class="n">available_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_detectors</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="p">]</span>
@@ -726,6 +755,11 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">output_video_keys</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">video_key</span><span class="p">]</span>
 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_format</span> <span class="o">==</span> <span class="s2">&quot;bytes&quot;</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.mm_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_file_byte</span>
+
+                <span class="n">output_video_keys</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">load_file_byte</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">output_video_keys</span><span class="p">[</span><span class="n">video_key</span><span class="p">]]</span>
+
         <span class="c1"># replace split video tokens</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_key</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">:</span>
             <span class="n">scene_counts_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">([</span><span class="n">scene_counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">])</span>
@@ -741,7 +775,10 @@
         <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">:</span>
             <span class="n">sample</span><span class="p">[</span><span class="n">Fields</span><span class="o">.</span><span class="n">source_file</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">value</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_video_keys</span><span class="p">[</span><span class="n">value</span><span class="p">]))</span>
 
-        <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">([</span><span class="n">output_video_keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_field</span><span class="p">:</span>
+            <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">save_field</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">([</span><span class="n">output_video_keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">([</span><span class="n">output_video_keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">]))</span>
         <span class="k">return</span> <span class="n">sample</span></div>
 </div>
 

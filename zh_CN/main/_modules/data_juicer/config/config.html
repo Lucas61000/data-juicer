@@ -1120,7 +1120,12 @@
                 <span class="s2">&quot;--custom-operator-paths&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Paths to custom operator scripts or directories.&quot;</span>
             <span class="p">)</span>
             <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--debug&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to run in debug mode.&quot;</span><span class="p">)</span>
-
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+                <span class="s2">&quot;--auto_op_parallelism&quot;</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to automatically set operator parallelism.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="c1"># Filter out non-essential arguments for initial parsing</span>
             <span class="n">essential_args</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
@@ -1377,6 +1382,7 @@
         <span class="s2">&quot;image_bytes_key&quot;</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;image_bytes_key&quot;</span><span class="p">,</span> <span class="s2">&quot;image_bytes&quot;</span><span class="p">),</span>
         <span class="s2">&quot;turbo&quot;</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;turbo&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
         <span class="s2">&quot;skip_op_error&quot;</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;skip_op_error&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="s2">&quot;auto_op_parallelism&quot;</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;auto_op_parallelism&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
         <span class="s2">&quot;work_dir&quot;</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">is_ray_mode</span><span class="p">():</span>

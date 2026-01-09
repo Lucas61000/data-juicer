@@ -685,8 +685,20 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">RayDataset</span><span class="p">(</span><span class="n">DJDataset</span><span class="p">):</span>
 <div class="viewcode-block" id="RayDataset.__init__">
 <a class="viewcode-back" href="../../../../api/data_juicer.core.data.ray_dataset.html#data_juicer.core.data.ray_dataset.RayDataset.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">ray</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Namespace</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">preprocess_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="p">:</span> <span class="n">ray</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">dataset_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cfg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Namespace</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">auto_op_parallelism</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">preprocess_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+
+        <span class="c1"># if auto_op_parallelism is set in both args and cfg, cfg takes precedence</span>
+        <span class="k">if</span> <span class="n">cfg</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;auto_op_parallelism&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_auto_proc</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;auto_op_parallelism&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_auto_proc</span> <span class="o">=</span> <span class="n">auto_op_parallelism</span></div>
 
 
 <div class="viewcode-block" id="RayDataset.schema">
@@ -757,7 +769,8 @@
 
         <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.process_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">calculate_ray_np</span>
 
-        <span class="n">calculate_ray_np</span><span class="p">(</span><span class="n">operators</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auto_proc</span><span class="p">:</span>
+            <span class="n">calculate_ray_np</span><span class="p">(</span><span class="n">operators</span><span class="p">)</span>
 
         <span class="c1"># Cache columns once at start to avoid breaking pipeline with repeated columns() calls</span>
         <span class="c1"># Ray&#39;s columns() internally does limit(1) which forces execution and breaks streaming</span>
@@ -789,14 +802,13 @@
             <span class="n">batch_size</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">is_batched_op</span><span class="p">()</span> <span class="k">else</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">Mapper</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">use_ray_actor</span><span class="p">():</span>
-                    <span class="n">op_kwargs</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">_op_cfg</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span><span class="p">]</span>
                     <span class="n">compute</span> <span class="o">=</span> <span class="n">get_compute_strategy</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">concurrency</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
                         <span class="n">op</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span>
                         <span class="n">fn_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                         <span class="n">fn_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                        <span class="n">fn_constructor_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                        <span class="n">fn_constructor_kwargs</span><span class="o">=</span><span class="n">op_kwargs</span><span class="p">,</span>
+                        <span class="n">fn_constructor_args</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">_init_args</span><span class="p">,</span>
+                        <span class="n">fn_constructor_kwargs</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">_init_kwargs</span><span class="p">,</span>
                         <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
                         <span class="n">num_cpus</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">num_cpus</span><span class="p">,</span>
                         <span class="n">num_gpus</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">,</span>
@@ -829,14 +841,13 @@
                     <span class="p">)</span>
                     <span class="n">cached_columns</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">use_ray_actor</span><span class="p">():</span>
-                    <span class="n">op_kwargs</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">_op_cfg</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span><span class="p">]</span>
                     <span class="n">compute</span> <span class="o">=</span> <span class="n">get_compute_strategy</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">concurrency</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">num_proc</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">map_batches</span><span class="p">(</span>
                         <span class="n">op</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span>
                         <span class="n">fn_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                         <span class="n">fn_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                        <span class="n">fn_constructor_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                        <span class="n">fn_constructor_kwargs</span><span class="o">=</span><span class="n">op_kwargs</span><span class="p">,</span>
+                        <span class="n">fn_constructor_args</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">_init_args</span><span class="p">,</span>
+                        <span class="n">fn_constructor_kwargs</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">_init_kwargs</span><span class="p">,</span>
                         <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
                         <span class="n">num_cpus</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">num_cpus</span><span class="p">,</span>
                         <span class="n">num_gpus</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">,</span>

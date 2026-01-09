@@ -576,24 +576,28 @@
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">osp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">PositiveInt</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.constant</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fields</span><span class="p">,</span> <span class="n">MetaKeys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.file_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_to_hash</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.lazy_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">LazyLoader</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.mm_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">SpecialTokens</span><span class="p">,</span>
-    <span class="n">close_video</span><span class="p">,</span>
-    <span class="n">extract_key_frames</span><span class="p">,</span>
     <span class="n">extract_key_frames_by_seconds</span><span class="p">,</span>
     <span class="n">extract_video_frames_uniformly</span><span class="p">,</span>
     <span class="n">extract_video_frames_uniformly_by_seconds</span><span class="p">,</span>
     <span class="n">load_data_with_context</span><span class="p">,</span>
-    <span class="n">load_video</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.video_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_video_reader</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base_op</span><span class="w"> </span><span class="kn">import</span> <span class="n">OPERATORS</span><span class="p">,</span> <span class="n">TAGGING_OPS</span><span class="p">,</span> <span class="n">Mapper</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..op_fusion</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOADED_VIDEOS</span>
+
+<span class="n">cv2</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;cv2&quot;</span><span class="p">,</span> <span class="s2">&quot;opencv-python&quot;</span><span class="p">)</span>
 
 <span class="n">OP_NAME</span> <span class="o">=</span> <span class="s2">&quot;video_extract_frames_mapper&quot;</span>
 
@@ -645,7 +649,10 @@
         <span class="n">frame_num</span><span class="p">:</span> <span class="n">PositiveInt</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
         <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">frame_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">frame_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MetaKeys</span><span class="o">.</span><span class="n">video_frames</span><span class="p">,</span>
+        <span class="n">frame_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">frame_field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MetaKeys</span><span class="o">.</span><span class="n">video_frames</span><span class="p">,</span>
+        <span class="n">legacy_split_by_text_token</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">video_backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;av&quot;</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -689,6 +696,10 @@
 <span class="sd">        :param frame_dir: Output directory to save extracted frames.</span>
 <span class="sd">            If output_format is &quot;path&quot;, must specify a directory.</span>
 <span class="sd">        :param frame_key: The name of field to save generated frames info.</span>
+<span class="sd">        :param frame_field: The name of field to save generated frames info.</span>
+<span class="sd">        :param legacy_split_by_text_token: Whether to split by special tokens (e.g. &lt;__dj__video&gt;)</span>
+<span class="sd">            in the text field and read videos in order, or use the &#39;videos&#39; or &#39;frames&#39; field directly.</span>
+<span class="sd">        :param video_backend: video backend, can be `ffmpeg`, `av`.</span>
 <span class="sd">        :param args: extra args</span>
 <span class="sd">        :param kwargs: extra args</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -715,7 +726,30 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">frame_num</span> <span class="o">=</span> <span class="n">frame_num</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">duration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">frame_key</span> <span class="o">=</span> <span class="n">frame_key</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">frame_fname_template</span> <span class="o">=</span> <span class="s2">&quot;frame_</span><span class="si">{}</span><span class="s2">.jpg&quot;</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="o">=</span> <span class="n">frame_field</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_key</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;&#39;frame_key&#39; is deprecated, please use &#39;frame_field&#39; instead.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_key</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&#39;frame_field&#39; must be specified.&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frame_fname_template</span> <span class="o">=</span> <span class="s2">&quot;frame_</span><span class="si">{}</span><span class="s2">.jpg&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_split_by_text_token</span> <span class="o">=</span> <span class="n">legacy_split_by_text_token</span>
+        <span class="k">if</span> <span class="n">legacy_split_by_text_token</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;`legacy_split_by_text_token` is set to true, &quot;</span>
+                <span class="s2">&quot;spliting the text field by special tokens &quot;</span>
+                <span class="s2">&quot;(e.g. &lt;__dj__video&gt;) to read videos in order. &quot;</span>
+                <span class="s2">&quot;This behavior will be deprecated in future versions. &quot;</span>
+                <span class="s2">&quot;Please set `legacy_split_by_text_token` to False, &quot;</span>
+                <span class="s2">&quot;and use the video field directly.&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">video_backend</span> <span class="o">=</span> <span class="n">video_backend</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_backend</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ffmpeg&quot;</span><span class="p">,</span> <span class="s2">&quot;av&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_sampling_method</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_backend</span> <span class="o">==</span> <span class="s2">&quot;av&quot;</span><span class="p">,</span> <span class="s2">&quot;Only &#39;av&#39; backend is supported for &#39;uniform&#39; frame sampling method.&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_backend</span> <span class="o">==</span> <span class="s2">&quot;av&quot;</span><span class="p">,</span> <span class="s2">&quot;Only &#39;av&#39; backend is supported when duration &gt; 0.&quot;</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_frame_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original_filepath</span><span class="p">):</span>
@@ -735,28 +769,57 @@
         <span class="c1"># extract frame videos</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_sampling_method</span> <span class="o">==</span> <span class="s2">&quot;all_keyframes&quot;</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
-                <span class="n">frames</span> <span class="o">=</span> <span class="n">extract_key_frames_by_seconds</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+                <span class="c1"># only support av backend when duration &gt; 0</span>
+                <span class="n">frames</span> <span class="o">=</span> <span class="n">extract_key_frames_by_seconds</span><span class="p">(</span><span class="n">video</span><span class="o">.</span><span class="n">container</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+                <span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">frame</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span> <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">frames</span> <span class="o">=</span> <span class="n">extract_key_frames</span><span class="p">(</span><span class="n">video</span><span class="p">)</span>
+                <span class="n">frames</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">extract_keyframes</span><span class="p">()</span><span class="o">.</span><span class="n">frames</span>
+                <span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">img</span><span class="p">)</span> <span class="k">for</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">]</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_sampling_method</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
+            <span class="c1"># only support av backend if using uniform sampling</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
-                <span class="n">frames</span> <span class="o">=</span> <span class="n">extract_video_frames_uniformly_by_seconds</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_num</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+                <span class="n">frames</span> <span class="o">=</span> <span class="n">extract_video_frames_uniformly_by_seconds</span><span class="p">(</span>
+                    <span class="n">video</span><span class="o">.</span><span class="n">container</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_num</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span>
+                <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">frames</span> <span class="o">=</span> <span class="n">extract_video_frames_uniformly</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_num</span><span class="p">)</span>
+                <span class="n">frames</span> <span class="o">=</span> <span class="n">extract_video_frames_uniformly</span><span class="p">(</span><span class="n">video</span><span class="o">.</span><span class="n">container</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_num</span><span class="p">)</span>
+            <span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">frame</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span> <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Not support sampling method </span><span class="se">\</span>
 <span class="s2">                `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">frame_sampling_method</span><span class="si">}</span><span class="s2">`.&quot;</span>
             <span class="p">)</span>
-        <span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">frame</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span> <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">frames</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_video</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">video_key</span><span class="p">):</span>
+        <span class="n">frames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_frames</span><span class="p">(</span><span class="n">video</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]:</span>
+            <span class="n">frame_dir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame_dir</span><span class="p">,</span> <span class="n">osp</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">osp</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">video_key</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">frame_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">cur_frames_path</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">frame</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+                <span class="n">frame_path</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">frame_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_fname_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">frame_path</span><span class="p">):</span>
+                    <span class="n">frame</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">frame_path</span><span class="p">)</span>
+                <span class="n">cur_frames_path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame_path</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">cur_frames_path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cur_frames_bytes</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">frame</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+                <span class="n">stream</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+                <span class="n">frame</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;jpeg&quot;</span><span class="p">)</span>
+                <span class="n">cur_frames_bytes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stream</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span>
+
+            <span class="k">return</span> <span class="n">cur_frames_bytes</span>
 
 <div class="viewcode-block" id="VideoExtractFramesMapper.process_single">
 <a class="viewcode-back" href="../../../../api/data_juicer.ops.mapper.html#data_juicer.ops.mapper.VideoExtractFramesMapper.process_single">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">process_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="c1"># check if it&#39;s generated already</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_key</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">sample</span>
 
         <span class="c1"># there is no videos in this sample</span>
@@ -765,49 +828,38 @@
 
         <span class="c1"># load videos</span>
         <span class="n">loaded_video_keys</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]</span>
-        <span class="n">sample</span><span class="p">,</span> <span class="n">videos</span> <span class="o">=</span> <span class="n">load_data_with_context</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">loaded_video_keys</span><span class="p">,</span> <span class="n">load_video</span><span class="p">)</span>
+        <span class="n">video_reader</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">create_video_reader</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">video_backend</span><span class="p">)</span>
+        <span class="n">sample</span><span class="p">,</span> <span class="n">videos</span> <span class="o">=</span> <span class="n">load_data_with_context</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">loaded_video_keys</span><span class="p">,</span> <span class="n">video_reader</span><span class="p">)</span>
         <span class="n">videos_frames_list</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">loaded_video_keys</span><span class="p">))]</span>
-        <span class="n">text</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_key</span><span class="p">]</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">SpecialTokens</span><span class="o">.</span><span class="n">eoc</span><span class="p">):</span>
-            <span class="n">video_count</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">SpecialTokens</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
-            <span class="c1"># no video or no text</span>
-            <span class="k">if</span> <span class="n">video_count</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">video_key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">video_count</span><span class="p">]:</span>
-                    <span class="n">video_idx</span> <span class="o">=</span> <span class="n">loaded_video_keys</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">video_key</span><span class="p">)</span>
-                    <span class="n">video</span> <span class="o">=</span> <span class="n">videos</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span>
-                    <span class="c1"># extract frame videos</span>
-                    <span class="n">frames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_frames</span><span class="p">(</span><span class="n">video</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]:</span>
-                        <span class="n">frame_dir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame_dir</span><span class="p">,</span> <span class="n">osp</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">osp</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">video_key</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span>
-                        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">frame_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                        <span class="n">cur_frames_path</span> <span class="o">=</span> <span class="p">[]</span>
 
-                        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">frame</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
-                            <span class="n">frame_path</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">frame_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_fname_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-                            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">frame_path</span><span class="p">):</span>
-                                <span class="n">frame</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">frame_path</span><span class="p">)</span>
-                            <span class="n">cur_frames_path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy_split_by_text_token</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">text_key</span><span class="p">]</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
 
-                        <span class="n">videos_frames_list</span><span class="p">[</span><span class="n">video_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_frames_path</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">cur_frames_bytes</span> <span class="o">=</span> <span class="p">[]</span>
-                        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">frame</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
-                            <span class="n">stream</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
-                            <span class="n">frame</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;jpeg&quot;</span><span class="p">)</span>
-                            <span class="n">cur_frames_bytes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stream</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span>
-
-                        <span class="n">videos_frames_list</span><span class="p">[</span><span class="n">video_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_frames_bytes</span>
-
-                <span class="n">offset</span> <span class="o">+=</span> <span class="n">video_count</span>
+            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">SpecialTokens</span><span class="o">.</span><span class="n">eoc</span><span class="p">):</span>
+                <span class="n">video_count</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">SpecialTokens</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+                <span class="c1"># no video or no text</span>
+                <span class="k">if</span> <span class="n">video_count</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">video_key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">video_count</span><span class="p">]:</span>
+                        <span class="n">video_idx</span> <span class="o">=</span> <span class="n">loaded_video_keys</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">video_key</span><span class="p">)</span>
+                        <span class="n">video</span> <span class="o">=</span> <span class="n">videos</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span>
+                        <span class="n">cur_frames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_video</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">video_key</span><span class="p">)</span>
+                        <span class="n">videos_frames_list</span><span class="p">[</span><span class="n">video_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_frames</span>
+                    <span class="n">offset</span> <span class="o">+=</span> <span class="n">video_count</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">video_key</span> <span class="ow">in</span> <span class="n">loaded_video_keys</span><span class="p">:</span>
+                <span class="n">video_idx</span> <span class="o">=</span> <span class="n">loaded_video_keys</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">video_key</span><span class="p">)</span>
+                <span class="n">video</span> <span class="o">=</span> <span class="n">videos</span><span class="p">[</span><span class="n">video_key</span><span class="p">]</span>
+                <span class="n">cur_frames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_video</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">video_key</span><span class="p">)</span>
+                <span class="n">videos_frames_list</span><span class="p">[</span><span class="n">video_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_frames</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">context</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">vid_key</span> <span class="ow">in</span> <span class="n">videos</span><span class="p">:</span>
-                <span class="n">close_video</span><span class="p">(</span><span class="n">videos</span><span class="p">[</span><span class="n">vid_key</span><span class="p">])</span>
+                <span class="n">videos</span><span class="p">[</span><span class="n">vid_key</span><span class="p">]</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-        <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">frame_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">videos_frames_list</span>
+        <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">frame_field</span><span class="p">]</span> <span class="o">=</span> <span class="n">videos_frames_list</span>
 
         <span class="k">return</span> <span class="n">sample</span></div>
 </div>
