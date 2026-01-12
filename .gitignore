@@ -39,11 +39,11 @@ perf_bench_data/
 # env file
 .env
 
+# cython outputs
+/data_juicer/ops/deduplicator/minhash.cpython-*
+/data_juicer/ops/deduplicator/tokenize.c
+/data_juicer/ops/deduplicator/tokenize.cpython-*
+
 # claude
 .claude/
 CLAUDE.md
-
-# compiled artifacts (Cython, etc.)
-*.cpython-*.so
-*.pyd
-data_juicer/ops/deduplicator/*.c

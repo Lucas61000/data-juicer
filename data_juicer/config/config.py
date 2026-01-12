@@ -521,6 +521,14 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
                 "open_tracer is true.",
             )
             parser.add_argument(
+                "--trace_keys",
+                type=List[str],
+                default=[],
+                help="List of field names to include in trace output. If set, the "
+                "specified fields' values will be included in each trace entry. "
+                "Only available when open_tracer is true.",
+            )
+            parser.add_argument(
                 "--open_insight_mining",
                 type=bool,
                 default=False,
@@ -712,8 +720,13 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
             parser.add_argument(
                 "--custom-operator-paths", nargs="+", help="Paths to custom operator scripts or directories."
             )
-            parser.add_argument("--debug", action="store_true", default=False, help="Whether to run in debug mode.")
-
+            parser.add_argument("--debug", action="store_true", help="Whether to run in debug mode.")
+            parser.add_argument(
+                "--auto_op_parallelism",
+                type=bool,
+                default=True,
+                help="Whether to automatically set operator parallelism.",
+            )
             # Filter out non-essential arguments for initial parsing
             essential_args = []
             if args:
@@ -983,6 +996,7 @@ def init_setup_from_cfg(cfg: Namespace, load_configs_only=False):
         "image_bytes_key": cfg.get("image_bytes_key", "image_bytes"),
         "turbo": cfg.get("turbo", False),
         "skip_op_error": cfg.get("skip_op_error", True),
+        "auto_op_parallelism": cfg.get("auto_op_parallelism", True),
         "work_dir": cfg.work_dir,
     }
     if not is_ray_mode():
