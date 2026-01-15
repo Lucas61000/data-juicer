@@ -17,7 +17,7 @@ def _is_egl_available():
         from OpenGL.platform import ctypesloader
         ctypesloader.loadLibrary(None, 'EGL')
         return True
-    except (ImportError, OSError):
+    except (ImportError, OSError, TypeError):
         return False
 
 
