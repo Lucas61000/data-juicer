@@ -122,6 +122,7 @@ distributed = [
     "uvloop==0.21.0",  # avoid async error before it's fixed in uvloop
     "pyspark==3.5.5",  # distributed data processing
     "s3fs",  # S3 filesystem support for cloud storage
+    "boto3",  # AWS SDK for S3 operations
     "bitarray", # efficient arrays of booleans
 ]
 
@@ -218,3 +219,14 @@ target-version = ['py310']
 
 [tool.isort]
 profile = "black"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["*Test"]
+python_functions = ["test_*"]
+addopts = "-v"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
