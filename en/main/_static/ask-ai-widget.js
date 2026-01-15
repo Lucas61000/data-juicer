@@ -695,13 +695,11 @@ var AskAIWidget = (function () {
       }
 
       // Close modal when clicking outside
+      // Note: expandBtn, closeBtn, and clearBtn checks are redundant since they are children of this.modal
       document.addEventListener('click', (e) => {
         if (this.isOpen &&
           !this.modal.contains(e.target) &&
-          !this.button.contains(e.target) &&
-          !this.expandBtn.contains(e.target) &&
-          !this.closeBtn.contains(e.target) &&
-          !this.clearBtn.contains(e.target)) {
+          !this.button.contains(e.target)) {
           if (onClose) onClose();
         }
       });
@@ -1082,12 +1080,7 @@ var AskAIWidget = (function () {
       this.messages = [];
       const existingMessages = this.messagesContainer.querySelectorAll('.ask-ai-message, .ask-ai-message-wrapper');
       existingMessages.forEach(msg => msg.remove());
-
-      // Remove welcome message if it exists
-      const welcomeElement = this.messagesContainer.querySelector('.ask-ai-welcome');
-      if (welcomeElement) {
-        welcomeElement.remove();
-      }
+      // Note: Welcome message is intentionally kept - it will be updated by addWelcomeMessage()
     }
 
     /**
@@ -1095,22 +1088,22 @@ var AskAIWidget = (function () {
      * @param {boolean} apiConnected - Whether API is connected
      */
     addWelcomeMessage(apiConnected) {
-      // Only add welcome message if no history was loaded
-      if (this.messages.length === 0) {
-        const welcomeElement = this.messagesContainer.querySelector('.ask-ai-welcome');
-        if (welcomeElement) {
-          if (apiConnected) {
-            welcomeElement.innerHTML = this.i18n.welcomeConnected;
-          } else {
-            welcomeElement.innerHTML = this.i18n.welcomeOffline;
-          }
-        }
+      // Always show welcome message, regardless of history
+      let welcomeElement = this.messagesContainer.querySelector('.ask-ai-welcome');
+      
+      // If welcome element doesn't exist, create it
+      if (!welcomeElement) {
+        welcomeElement = document.createElement('div');
+        welcomeElement.className = 'ask-ai-welcome';
+        // Insert at the beginning of messages container
+        this.messagesContainer.insertBefore(welcomeElement, this.messagesContainer.firstChild);
+      }
+      
+      // Update welcome message content based on connection status
+      if (apiConnected) {
+        welcomeElement.innerHTML = this.i18n.welcomeConnected;
       } else {
-        // Remove welcome message if we have history
-        const welcomeElement = this.messagesContainer.querySelector('.ask-ai-welcome');
-        if (welcomeElement) {
-          welcomeElement.remove();
-        }
+        welcomeElement.innerHTML = this.i18n.welcomeOffline;
       }
     }
 
@@ -1125,13 +1118,10 @@ var AskAIWidget = (function () {
       try {
         const renderer = new marked.Renderer();
 
-        // Custom heading renderer
+        // Custom heading renderer - use CSS classes instead of inline styles
         renderer.heading = (token) => {
-          const size = ['1.3em', '1.2em', '1.1em', '1em', '0.95em', '0.9em'];
           const escapedText = this.escapeHtml(token.text);
-          return `<h${token.depth} style="font-size: ${size[token.depth - 1]}; margin: 0.3em 0;">
-        ${escapedText}
-      </h${token.depth}>`;
+          return `<h${token.depth}>${escapedText}</h${token.depth}>`;
         };
 
         // Custom link renderer - open in new tab

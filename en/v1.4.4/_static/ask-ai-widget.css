@@ -178,6 +178,37 @@
   border-bottom-left-radius: 6px;
 }
 
+/* Heading styles for markdown content in messages */
+.ask-ai-message h1 {
+  font-size: 1.3em;
+  margin: 0.3em 0;
+}
+
+.ask-ai-message h2 {
+  font-size: 1.2em;
+  margin: 0.3em 0;
+}
+
+.ask-ai-message h3 {
+  font-size: 1.1em;
+  margin: 0.3em 0;
+}
+
+.ask-ai-message h4 {
+  font-size: 1em;
+  margin: 0.3em 0;
+}
+
+.ask-ai-message h5 {
+  font-size: 0.95em;
+  margin: 0.3em 0;
+}
+
+.ask-ai-message h6 {
+  font-size: 0.9em;
+  margin: 0.3em 0;
+}
+
 .ask-ai-message.typing {
   background: #f1f3f4;
   color: #666;
