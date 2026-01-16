@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/operators/mapper/remove_words_with_incorrect_substrings_mapper';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -762,7 +762,7 @@
                 <article class="bd-article">
                   
   <section id="remove-words-with-incorrect-substrings-mapper">
-<h1>remove_words_with_incorrect_substrings_mapper<a class="headerlink" href="#remove-words-with-incorrect-substrings-mapper" title="Link to this heading">#</a></h1>
+<h1>remove_words_with_incorrect_substrings_mapper<a class="headerlink" href="#remove-words-with-incorrect-substrings-mapper" title="链接到此标题。">#</a></h1>
 <p>Mapper to remove words containing specified incorrect substrings.</p>
 <p>This operator processes text by removing words that contain any of the specified incorrect substrings. By default, it removes words with substrings like &quot;http&quot;, &quot;www&quot;, &quot;.com&quot;, &quot;href&quot;, and &quot;//&quot;. The operator can operate in tokenized or non-tokenized mode. In tokenized mode, it uses a Hugging Face tokenizer to tokenize the text before processing. The key metric is not computed; this operator focuses on filtering out specific words.</p>
 <ul class="simple">
@@ -782,7 +782,7 @@
 <p>Type 算子类型: <strong>mapper</strong></p>
 <p>Tags 标签: cpu, text</p>
 <section id="parameter-configuration">
-<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
+<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>name 参数名</p></th>
@@ -822,48 +822,48 @@
 </div>
 </section>
 <section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
+<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
 <section id="test-en-case">
-<h3>test_en_case<a class="headerlink" href="#test-en-case" title="Link to this heading">#</a></h3>
+<h3>test_en_case<a class="headerlink" href="#test-en-case" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RemoveWordsWithIncorrectSubstringsMapper</span><span class="p">(</span><span class="n">substrings</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;http&#39;</span><span class="p">,</span> <span class="s1">&#39;www&#39;</span><span class="p">,</span> <span class="s1">&#39;.com&#39;</span><span class="p">,</span> <span class="s1">&#39;href&#39;</span><span class="p">,</span> <span class="s1">&#39;//&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 <section id="input-data">
-<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">This paper proposed a novel https://whiugc.com method on LLM</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 2:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">plusieurs èrdash@hqbchd.ckd d&#x27;accéder à ces wwwasdasd fonc</pre></div>
 </section>
 <section id="output-data">
-<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">This paper proposed a novel method on LLM</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 2:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">plusieurs èrdash@hqbchd.ckd d&#x27;accéder à ces fonc</pre></div>
 </section>
 <section id="explanation">
-<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="链接到此标题。">#</a></h4>
 <p>This example demonstrates the operator's ability to remove words containing specified incorrect substrings such as 'http', 'www', and '.com' from English text. In the first sample, '<a class="reference external" href="https://whiugc.com">https://whiugc.com</a>' is removed because it contains 'http' and '.com'. In the second sample, 'wwwasdasd' is removed because it contains 'www'. The resulting text is free of these incorrect substrings.
 这个例子展示了算子从英文文本中移除包含指定错误子字符串（如'http'、'www'和'.com'）的单词的能力。在第一个样本中，'<a class="reference external" href="https://whiugc.com">https://whiugc.com</a>'被移除，因为它包含了'http'和'.com'。在第二个样本中，'wwwasdasd'被移除，因为它包含了'www'。结果文本中不再包含这些错误子字符串。</p>
 </section>
 </section>
 <section id="test-zh-case">
-<h3>test_zh_case<a class="headerlink" href="#test-zh-case" title="Link to this heading">#</a></h3>
+<h3>test_zh_case<a class="headerlink" href="#test-zh-case" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RemoveWordsWithIncorrectSubstringsMapper</span><span class="p">(</span><span class="n">lang</span><span class="o">=</span><span class="s1">&#39;zh&#39;</span><span class="p">,</span> <span class="n">tokenization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">substrings</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;com&#39;</span><span class="p">,</span> <span class="s1">&#39;算子&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 <section id="id1">
-<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">你好，请问你是谁</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 2:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">欢迎来到阿里巴巴！</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 3:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">根据算子使用情况增量安装方案确定</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 4:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">请用百度www.baidu.com进行搜索</pre></div>
 </section>
 <section id="id2">
-<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">你好，请问你是谁</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 2:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">欢迎来到阿里巴巴！</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 3:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">根据使用情况增量安装方案确定</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 4:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">请用百度www.baidu.进行搜索</pre></div>
 </section>
 <section id="id3">
-<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h4>
 <p>This example shows how the operator works with Chinese text when tokenization is enabled. It removes words containing specified incorrect substrings such as 'com' and '算子'. In the third sample, '算子' is removed. In the fourth sample, '.com' is partially removed, leaving 'www.baidu.'. The resulting text is free of these incorrect substrings.
 这个例子展示了当启用分词时，算子如何处理中文文本。它移除包含指定错误子字符串（如'com'和'算子'）的单词。在第三个样本中，'算子'被移除。在第四个样本中，'.com'部分被移除，留下了'www.baidu.'。结果文本中不再包含这些错误子字符串。</p>
 </section>
 </section>
 </section>
 <section id="related-links">
-<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
+<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/data_juicer/ops/mapper/remove_words_with_incorrect_substrings_mapper.py">source code 源代码</a></p></li>
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/tests/ops/mapper/test_remove_words_with_incorrect_substrings_mapper.py">unit test 单元测试</a></p></li>
@@ -988,7 +988,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

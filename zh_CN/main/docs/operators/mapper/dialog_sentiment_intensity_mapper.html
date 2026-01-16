@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/operators/mapper/dialog_sentiment_intensity_mapper';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -762,7 +762,7 @@
                 <article class="bd-article">
                   
   <section id="dialog-sentiment-intensity-mapper">
-<h1>dialog_sentiment_intensity_mapper<a class="headerlink" href="#dialog-sentiment-intensity-mapper" title="Link to this heading">#</a></h1>
+<h1>dialog_sentiment_intensity_mapper<a class="headerlink" href="#dialog-sentiment-intensity-mapper" title="链接到此标题。">#</a></h1>
 <p>Mapper to predict user's sentiment intensity in a dialog, ranging from -5 to 5.</p>
 <p>This operator analyzes the sentiment of user queries in a dialog and outputs a list of sentiment intensities and corresponding analyses. The sentiment intensity ranges from -5 (extremely negative) to 5 (extremely positive), with 0 indicating a neutral sentiment. The analysis is based on the provided history, query, and response keys. The default system prompt and templates guide the sentiment analysis process. The results are stored in the meta field under 'dialog_sentiment_intensity' for intensities and 'dialog_sentiment_intensity_analysis' for analyses. The operator uses an API model to generate the sentiment analysis, with configurable retry attempts and sampling parameters.</p>
 <p>预测用户在对话中的情感强度，范围从-5到5。</p>
@@ -770,7 +770,7 @@
 <p>Type 算子类型: <strong>mapper</strong></p>
 <p>Tags 标签: cpu, api</p>
 <section id="parameter-configuration">
-<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
+<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>name 参数名</p></th>
@@ -870,48 +870,48 @@
 </div>
 </section>
 <section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
+<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
 <section id="test-default">
-<h3>test_default<a class="headerlink" href="#test-default" title="Link to this heading">#</a></h3>
+<h3>test_default<a class="headerlink" href="#test-default" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">DialogSentimentIntensityMapper</span><span class="p">(</span><span class="n">api_model</span><span class="o">=</span><span class="s1">&#39;qwen2.5-72b-instruct&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="input-data">
-<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> empty</div><div class='meta' style='margin:6px 0;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>history</th></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;李莲花有口皆碑&#x27;, &#x27;「微笑」过奖了，我也就是个普通大夫，没什么值得夸耀的。&#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;是的，你确实是一个普通大夫，没什么值得夸耀的。&#x27;, &#x27;「委屈」你这话说的，我也是尽心尽力治病救人了。&#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;你自己说的呀，我现在说了，你又不高兴了。&#x27;, &#x27;or of of of of or or and or of of of of of of of,,, &#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;你在说什么我听不懂。&#x27;, &#x27;「委屈」我也没说什么呀，就是觉得你有点冤枉我了&#x27;)</td></tr></table></div></div>
 </section>
 <section id="output-data">
-<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> empty</div><div class='meta' style='margin:6px 0;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>history</th></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;李莲花有口皆碑&#x27;, &#x27;「微笑」过奖了，我也就是个普通大夫，没什么值得夸耀的。&#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;是的，你确实是一个普通大夫，没什么值得夸耀的。&#x27;, &#x27;「委屈」你这话说的，我也是尽心尽力治病救人了。&#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;你自己说的呀，我现在说了，你又不高兴了。&#x27;, &#x27;or of of of of or or and or of of of of of of of,,, &#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;你在说什么我听不懂。&#x27;, &#x27;「委屈」我也没说什么呀，就是觉得你有点冤枉我了&#x27;]</td></tr><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>__dj__meta__</th></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>dialog_sentiment_intensity</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>[3, 1, -1, -2]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'><strong>dialog_sentiment_intensity_analysis</strong></td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户提及“李莲花有口皆碑”，这句话表达了对李莲花的高度认可和赞赏，情绪较为正面。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户似乎对LLM的谦虚回应感到不满，认为LLM低估了自己的价值，情绪有所下降。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户对LLM的反应感到困惑和不满，认为LLM前后态度不一致，情绪进一步下降。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>LLM的回答混乱无序，用户无法理解，导致情绪再次下降。</td></tr></table></div></div>
 </section>
 <section id="explanation">
-<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="链接到此标题。">#</a></h4>
 <p>This example shows the default behavior of the operator, which analyzes the sentiment intensity and provides an analysis for each dialog round. The sentiment intensity ranges from -5 (extremely negative) to 5 (extremely positive). In this case, the operator processes four rounds of dialog and outputs the corresponding sentiment intensities and analyses.
 这个例子展示了算子的默认行为，它分析每个对话轮次的情绪强度并提供分析。情绪强度范围从-5（极度负面）到5（极度正面）。在这个例子中，算子处理了四轮对话，并输出相应的情绪强度和分析。</p>
 </section>
 </section>
 <section id="test-max-round-zero">
-<h3>test_max_round_zero<a class="headerlink" href="#test-max-round-zero" title="Link to this heading">#</a></h3>
+<h3>test_max_round_zero<a class="headerlink" href="#test-max-round-zero" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">DialogSentimentIntensityMapper</span><span class="p">(</span><span class="n">api_model</span><span class="o">=</span><span class="s1">&#39;qwen2.5-72b-instruct&#39;</span><span class="p">,</span> <span class="n">max_round</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="id1">
-<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> empty</div><div class='meta' style='margin:6px 0;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>history</th></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;李莲花有口皆碑&#x27;, &#x27;「微笑」过奖了，我也就是个普通大夫，没什么值得夸耀的。&#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;是的，你确实是一个普通大夫，没什么值得夸耀的。&#x27;, &#x27;「委屈」你这话说的，我也是尽心尽力治病救人了。&#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;你自己说的呀，我现在说了，你又不高兴了。&#x27;, &#x27;or of of of of or or and or of of of of of of of,,, &#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;你在说什么我听不懂。&#x27;, &#x27;「委屈」我也没说什么呀，就是觉得你有点冤枉我了&#x27;)</td></tr></table></div></div>
 </section>
 <section id="id2">
-<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> empty</div><div class='meta' style='margin:6px 0;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>history</th></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;李莲花有口皆碑&#x27;, &#x27;「微笑」过奖了，我也就是个普通大夫，没什么值得夸耀的。&#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;是的，你确实是一个普通大夫，没什么值得夸耀的。&#x27;, &#x27;「委屈」你这话说的，我也是尽心尽力治病救人了。&#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;你自己说的呀，我现在说了，你又不高兴了。&#x27;, &#x27;or of of of of or or and or of of of of of of of,,, &#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;你在说什么我听不懂。&#x27;, &#x27;「委屈」我也没说什么呀，就是觉得你有点冤枉我了&#x27;]</td></tr><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>__dj__meta__</th></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>dialog_sentiment_intensity</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>[3, -3, -3, -2]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'><strong>dialog_sentiment_intensity_analysis</strong></td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户提到“有口皆碑”，表明对李莲花持有较高的评价，情绪较为正面。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户的言辞带有明显的讽刺意味，表达了不满和失望，情绪较为负面。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户感到困惑和不满，认为自己的发言没有得到合理的回应。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户表示不理解，可能感到困惑或挫败，情绪值下降。</td></tr></table></div></div>
 </section>
 <section id="id3">
-<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h4>
 <p>This example demonstrates an edge case where the <code class="docutils literal notranslate"><span class="pre">max_round</span></code> parameter is set to 0. This means that the operator will not consider any historical context and will only analyze the current round of the dialog. The output shows the sentiment intensities and analyses for each round, but without considering the previous context, the results may differ from the default case.
 这个例子展示了一个边缘情况，其中<code class="docutils literal notranslate"><span class="pre">max_round</span></code>参数设置为0。这意味着算子不会考虑任何历史上下文，只会分析当前轮次的对话。输出显示了每一轮的情绪强度和分析，但由于没有考虑之前的上下文，结果可能与默认情况不同。</p>
 </section>
 </section>
 </section>
 <section id="related-links">
-<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
+<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/data_juicer/ops/mapper/dialog_sentiment_intensity_mapper.py">source code 源代码</a></p></li>
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/tests/ops/mapper/test_dialog_sentiment_intensity_mapper.py">unit test 单元测试</a></p></li>
@@ -1036,7 +1036,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

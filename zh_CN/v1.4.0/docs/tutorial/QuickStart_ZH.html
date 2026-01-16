@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/tutorial/QuickStart_ZH';</script>
     <script src="../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../genindex.html" />
     <link rel="search" title="搜索" href="../../search.html" />
@@ -663,9 +663,9 @@
 
 
   <section id="id1">
-<h1>快速上手<a class="headerlink" href="#id1" title="Link to this heading">#</a></h1>
+<h1>快速上手<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h1>
 <section id="id2">
-<h2>数据集配置<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>数据集配置<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <p>DJ 支持多种数据集输入类型，包括本地文件、远程数据集（如 huggingface）；还支持数据验证和数据混合。</p>
 <p>配置输入文件的两种方法</p>
 <ul class="simple">
@@ -686,7 +686,7 @@
 <p>更多详细信息，请参阅 <a class="reference internal" href="../DatasetCfg_ZH.html"><span class="std std-doc">数据集配置指南</span></a>。</p>
 </section>
 <section id="id3">
-<h2>数据处理<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<h2>数据处理<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>以配置文件路径作为参数来运行 <code class="docutils literal notranslate"><span class="pre">process_data.py</span></code> 或者 <code class="docutils literal notranslate"><span class="pre">dj-process</span></code> 命令行工具来处理数据集。</p></li>
 </ul>
@@ -725,7 +725,7 @@ dj-process<span class="w"> </span>--config<span class="w"> </span>configs/demo/p
 </div>
 </section>
 <section id="id4">
-<h2>分布式数据处理<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<h2>分布式数据处理<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h2>
 <p>Data-Juicer 现在基于<a class="reference external" href="https://www.ray.io/">RAY</a>实现了多机分布式数据处理。
 对应Demo可以通过如下命令运行：</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># 运行文字数据处理</span>
@@ -746,7 +746,7 @@ python<span class="w"> </span>tools/process_data.py<span class="w"> </span>--con
 </div></blockquote>
 </section>
 <section id="id5">
-<h2>数据分析<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<h2>数据分析<a class="headerlink" href="#id5" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>以配置文件路径为参数运行 <code class="docutils literal notranslate"><span class="pre">analyze_data.py</span></code> 或者 <code class="docutils literal notranslate"><span class="pre">dj-analyze</span></code> 命令行工具来分析数据集。</p></li>
 </ul>
@@ -771,7 +771,7 @@ dj-analyze<span class="w"> </span>--auto<span class="w"> </span>--dataset_path<s
 </ul>
 </section>
 <section id="id6">
-<h2>数据可视化<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<h2>数据可视化<a class="headerlink" href="#id6" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>运行 <code class="docutils literal notranslate"><span class="pre">app.py</span></code> 来在浏览器中可视化您的数据集。</p></li>
 <li><p><strong>注意</strong>：只可用于从源码安装的方法。</p></li>
@@ -781,7 +781,7 @@ dj-analyze<span class="w"> </span>--auto<span class="w"> </span>--dataset_path<s
 </div>
 </section>
 <section id="id7">
-<h2>构建配置文件<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
+<h2>构建配置文件<a class="headerlink" href="#id7" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>配置文件包含一系列全局参数和用于数据处理的算子列表。您需要设置:</p>
 <ul>
@@ -807,7 +807,7 @@ dj-analyze<span class="w"> </span>--auto<span class="w"> </span>--dataset_path<s
 </ul>
 </section>
 <section id="id8">
-<h2>沙盒实验室<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
+<h2>沙盒实验室<a class="headerlink" href="#id8" title="链接到此标题。">#</a></h2>
 <p>数据沙盒实验室 (DJ-Sandbox) 为用户提供了持续生产数据菜谱的最佳实践，其具有低开销、可迁移、有指导性等特点。</p>
 <ul class="simple">
 <li><p>用户在沙盒中可以基于一些小规模数据集、模型对数据菜谱进行快速实验、迭代、优化，再迁移到更大尺度上，大规模生产高质量数据以服务大模型。</p></li>
@@ -819,7 +819,7 @@ dj-analyze<span class="w"> </span>--auto<span class="w"> </span>--dataset_path<s
 </div>
 </section>
 <section id="id9">
-<h2>预处理原始数据（可选）<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
+<h2>预处理原始数据（可选）<a class="headerlink" href="#id9" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>我们的 Formatter 目前支持一些常见的输入数据集格式：</p>
 <ul>
@@ -843,7 +843,7 @@ dj-analyze<span class="w"> </span>--auto<span class="w"> </span>--dataset_path<s
 </ul>
 </section>
 <section id="docker">
-<h2>对于 Docker 用户<a class="headerlink" href="#docker" title="Link to this heading">#</a></h2>
+<h2>对于 Docker 用户<a class="headerlink" href="#docker" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>如果您构建或者拉取了 <code class="docutils literal notranslate"><span class="pre">data-juicer</span></code> 的 docker 镜像，您可以使用这个 docker 镜像来运行上面提到的这些命令或者工具。</p></li>
 <li><p>直接运行：</p></li>
@@ -992,7 +992,7 @@ docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </spa
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

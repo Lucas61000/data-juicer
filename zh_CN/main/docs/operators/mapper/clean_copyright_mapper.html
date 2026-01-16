@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/operators/mapper/clean_copyright_mapper';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -762,7 +762,7 @@
                 <article class="bd-article">
                   
   <section id="clean-copyright-mapper">
-<h1>clean_copyright_mapper<a class="headerlink" href="#clean-copyright-mapper" title="Link to this heading">#</a></h1>
+<h1>clean_copyright_mapper<a class="headerlink" href="#clean-copyright-mapper" title="链接到此标题。">#</a></h1>
 <p>Cleans copyright comments at the beginning of text samples.</p>
 <p>This operator removes copyright comments from the start of text samples. It identifies and strips multiline comments that contain the word &quot;copyright&quot; using a regular expression. It also greedily removes lines starting with comment markers like <code class="docutils literal notranslate"><span class="pre">//</span></code>, <code class="docutils literal notranslate"><span class="pre">#</span></code>, or <code class="docutils literal notranslate"><span class="pre">--</span></code> at the beginning of the text, as these are often part of copyright headers. The operator processes each sample individually but can handle batches for efficiency.</p>
 <p>清理文本样本开头的版权声明。</p>
@@ -770,7 +770,7 @@
 <p>Type 算子类型: <strong>mapper</strong></p>
 <p>Tags 标签: cpu, text</p>
 <section id="parameter-configuration">
-<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
+<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>name 参数名</p></th>
@@ -795,14 +795,14 @@
 </div>
 </section>
 <section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
+<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
 <section id="test-clean-copyright">
-<h3>test_clean_copyright<a class="headerlink" href="#test-clean-copyright" title="Link to this heading">#</a></h3>
+<h3>test_clean_copyright<a class="headerlink" href="#test-clean-copyright" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">CleanCopyrightMapper</span><span class="p">()</span>
 </pre></div>
 </div>
 <section id="input-data">
-<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">这是一段 /* 多行注释
 注释内容copyright
 */ 的文本。另外还有一些 // 单行注释。</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 2:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">如果多行/*注释中没有
@@ -818,7 +818,7 @@ that will be cleaned
 #evenly</pre></div>
 </section>
 <section id="output-data">
-<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">这是一段  的文本。另外还有一些 // 单行注释。</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 2:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">如果多行/*注释中没有
 关键词,那么
 这部分注释也不会
@@ -827,14 +827,14 @@ that will be cleaned
 #evenly</pre></div><div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 6:</strong> empty</div></div>
 </section>
 <section id="explanation">
-<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="链接到此标题。">#</a></h4>
 <p>This example demonstrates how the operator removes copyright comments, including both multi-line and single-line comments, from the start of text samples. Multi-line comments containing 'copyright' are stripped, and lines starting with '//', '#', or '--' at the beginning of the text are also removed. The result shows that only the parts without these comment markers are kept. For instance, in the first sample, the multi-line comment with 'copyright' is removed, while the single-line comment remains because it's not at the very start. In the last sample, all content is removed as it starts with a comment marker.
 这个示例展示了算子如何从文本样本的开头移除版权注释，包括多行和单行注释。包含'copyright'的多行注释会被删除，同时位于文本开头且以'//', '#' 或 '--' 开头的行也会被移除。结果显示，只有不带这些注释标记的部分被保留了下来。例如，在第一个样本中，带有'copyright'的多行注释被删除了，而单行注释因为不在最开始的位置所以被保留。在最后一个样本中，由于内容以注释标记开始，因此全部内容都被移除了。</p>
 </section>
 </section>
 </section>
 <section id="related-links">
-<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
+<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/data_juicer/ops/mapper/clean_copyright_mapper.py">source code 源代码</a></p></li>
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/tests/ops/mapper/test_clean_copyright_mapper.py">unit test 单元测试</a></p></li>
@@ -953,7 +953,7 @@ that will be cleaned
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

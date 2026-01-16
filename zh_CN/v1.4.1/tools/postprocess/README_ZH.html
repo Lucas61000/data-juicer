@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tools/postprocess/README_ZH';</script>
     <script src="../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../genindex.html" />
     <link rel="search" title="搜索" href="../../search.html" />
@@ -663,12 +663,12 @@
 
 
   <section id="postprocess-tools">
-<h1>Postprocess tools<a class="headerlink" href="#postprocess-tools" title="Link to this heading">#</a></h1>
+<h1>Postprocess tools<a class="headerlink" href="#postprocess-tools" title="链接到此标题。">#</a></h1>
 <p>此文件夹包含一些后处理脚本，用于对 Data-Juicer 处理后的数据集进行进一步处理。</p>
 <section id="id1">
-<h2>用法<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<h2>用法<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h2>
 <section id="token">
-<h3>为数据集计算token数目<a class="headerlink" href="#token" title="Link to this heading">#</a></h3>
+<h3>为数据集计算token数目<a class="headerlink" href="#token" title="链接到此标题。">#</a></h3>
 <p>使用 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.1/tools/postprocess/count_token.py">count_token.py</a> 计算数据集包含的 token 数目。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/postprocess/count_token.py<span class="w">        </span><span class="se">\</span>
 <span class="w">    </span>--data_path<span class="w">            </span>&lt;data_path&gt;<span class="w">         </span><span class="se">\</span>
@@ -688,7 +688,7 @@ python<span class="w"> </span>tools/postprocess/count_token.py<span class="w"> <
 </ul>
 </section>
 <section id="id2">
-<h3>将多个数据集以可选的权重混合<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<h3>将多个数据集以可选的权重混合<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h3>
 <p>使用 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.1/tools/postprocess/data_mixture.py">data_mixture.py</a> 将多个数据集混合。</p>
 <p>该脚本将从每个数据集中随机选择样本并混合这些样本并导出到新的数据集。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/postprocess/data_mixture.py<span class="w">        </span><span class="se">\</span>
@@ -711,7 +711,7 @@ python<span class="w"> </span>tools/postprocess/data_mixture.py<span class="w"> 
 <p><strong>注意事项:</strong> 所有数据集必须具有相同的元字段，从而可以使用 <a class="reference external" href="https://huggingface.co/docs/datasets/index">HuggingFace Datasets</a> 来对齐它们的特征。</p>
 </section>
 <section id="jsonl">
-<h3>反序列化 jsonl 文件中的元字段<a class="headerlink" href="#jsonl" title="Link to this heading">#</a></h3>
+<h3>反序列化 jsonl 文件中的元字段<a class="headerlink" href="#jsonl" title="链接到此标题。">#</a></h3>
 <p>该工具通常和 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.1/tools/preprocess/serialize_meta.py">serialize_meta.py</a> 配合使用，将指定字段反序列化为原始格式。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/postprocess/deserialize_meta.py<span class="w">           </span><span class="se">\</span>
 <span class="w">    </span>--src_dir<span class="w">           </span>&lt;src_dir&gt;<span class="w">         </span><span class="se">\</span>
@@ -840,7 +840,7 @@ python<span class="w"> </span>tools/postprocess/deserialize_meta.py<span class="
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

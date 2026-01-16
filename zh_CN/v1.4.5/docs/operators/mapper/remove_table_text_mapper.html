@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/operators/mapper/remove_table_text_mapper';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -762,7 +762,7 @@
                 <article class="bd-article">
                   
   <section id="remove-table-text-mapper">
-<h1>remove_table_text_mapper<a class="headerlink" href="#remove-table-text-mapper" title="Link to this heading">#</a></h1>
+<h1>remove_table_text_mapper<a class="headerlink" href="#remove-table-text-mapper" title="链接到此标题。">#</a></h1>
 <p>Mapper to remove table texts from text samples.</p>
 <p>This operator uses regular expressions to identify and remove tables from the text. It targets tables with a specified range of columns, defined by the minimum and maximum number of columns. The operator iterates over each sample, applying the regex pattern to remove tables that match the column criteria. The processed text, with tables removed, is then stored back in the sample. This operation is batched for efficiency.</p>
 <p>用于从文本样本中移除表格文本的映射器。</p>
@@ -770,7 +770,7 @@
 <p>Type 算子类型: <strong>mapper</strong></p>
 <p>Tags 标签: cpu, text</p>
 <section id="parameter-configuration">
-<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
+<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>name 参数名</p></th>
@@ -805,14 +805,14 @@
 </div>
 </section>
 <section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
+<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
 <section id="test-single-table-case">
-<h3>test_single_table_case<a class="headerlink" href="#test-single-table-case" title="Link to this heading">#</a></h3>
+<h3>test_single_table_case<a class="headerlink" href="#test-single-table-case" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RemoveTableTextMapper</span><span class="p">()</span>
 </pre></div>
 </div>
 <section id="input-data">
-<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">This is a table:
 编号 分行 营运资金1 营运资金2 营运资金3 营运资金4 营运资金5
 ① 北京分行 495,000,000.00 200,000,000.00 295,000,000.00 - 495,000,000.00
@@ -828,23 +828,23 @@
 The end of the table.</pre></details></div>
 </section>
 <section id="output-data">
-<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">This is a table:
 The end of the table.</pre></div>
 </section>
 <section id="explanation">
-<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="链接到此标题。">#</a></h4>
 <p>This example demonstrates the operator's ability to remove a typical table from the text. The input text contains a table with multiple rows and columns, which is completely removed by the operator, leaving only the introductory and concluding sentences. This showcases the operator's effectiveness in identifying and removing structured data (tables) from unstructured text.
 这个例子展示了算子从文本中移除典型表格的能力。输入文本包含一个有多行多列的表格，算子完全移除了这个表格，只留下了引言和结尾句。这展示了算子在识别并移除结构化数据（表格）方面是有效的。</p>
 </section>
 </section>
 <section id="test-false-positive-case">
-<h3>test_false_positive_case<a class="headerlink" href="#test-false-positive-case" title="Link to this heading">#</a></h3>
+<h3>test_false_positive_case<a class="headerlink" href="#test-false-positive-case" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RemoveTableTextMapper</span><span class="p">()</span>
 </pre></div>
 </div>
 <section id="id1">
-<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">平安银行股份有限公司
 非公开发行普通股认购资金到位情况的验资报告非公开发行普通股认购资金到位情况的验资报告
 普华永道中天验字(2015)第446号
@@ -933,7 +933,7 @@ B0014H144030001，深圳市工商行政管理局批准核发的 440301103098545 
 4</pre></details></div>
 </section>
 <section id="id2">
-<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">平安银行股份有限公司
 非公开发行普通股认购资金到位情况的验资报告非公开发行普通股认购资金到位情况的验资报告
 普华永道中天验字(2015)第446号
@@ -1006,14 +1006,14 @@ B0014H144030001，深圳市工商行政管理局批准核发的 440301103098545 
 4</pre></details></div>
 </section>
 <section id="id3">
-<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h4>
 <p>This example illustrates an important edge case where the input text does not contain a table but has a format that could be mistaken for one. The operator correctly identifies that there is no table present and leaves the text unchanged. This shows the operator's capability to distinguish between actual tables and text that may resemble a table, preventing false positives.
 这个例子展示了一个重要的边界情况，其中输入文本不包含表格，但格式可能被误认为是表格。算子正确地识别出没有表格存在，并且保持文本不变。这展示了算子能够区分实际的表格和看起来像表格的文本，防止了误报。</p>
 </section>
 </section>
 </section>
 <section id="related-links">
-<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
+<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.5/data_juicer/ops/mapper/remove_table_text_mapper.py">source code 源代码</a></p></li>
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.5/tests/ops/mapper/test_remove_table_text_mapper.py">unit test 单元测试</a></p></li>
@@ -1138,7 +1138,7 @@ B0014H144030001，深圳市工商行政管理局批准核发的 440301103098545 
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

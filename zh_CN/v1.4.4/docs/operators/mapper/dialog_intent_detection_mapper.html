@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/operators/mapper/dialog_intent_detection_mapper';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -766,7 +766,7 @@
 
 
   <section id="dialog-intent-detection-mapper">
-<h1>dialog_intent_detection_mapper<a class="headerlink" href="#dialog-intent-detection-mapper" title="Link to this heading">#</a></h1>
+<h1>dialog_intent_detection_mapper<a class="headerlink" href="#dialog-intent-detection-mapper" title="链接到此标题。">#</a></h1>
 <p>Generates user's intent labels in a dialog by analyzing the history, query, and response.</p>
 <p>This operator processes a dialog to identify and label the user's intent. It uses a predefined system prompt and templates to build input prompts for an API call. The API model (e.g., GPT-4) is used to analyze the dialog and generate intent labels and analysis. The results are stored in the meta field under 'dialog_intent_labels' and 'dialog_intent_labels_analysis'. The operator supports customizing the system prompt, templates, and patterns for parsing the API response. If the intent candidates are provided, they are included in the input prompt. The operator retries the API call up to a specified number of times if there are errors.</p>
 <p>通过分析历史记录、查询和响应，在对话中生成用户的意图标签。</p>
@@ -774,7 +774,7 @@
 <p>Type 算子类型: <strong>mapper</strong></p>
 <p>Tags 标签: cpu, api</p>
 <section id="parameter-configuration">
-<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
+<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>name 参数名</p></th>
@@ -884,29 +884,29 @@
 </div>
 </section>
 <section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
+<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
 <section id="test-default">
-<h3>test_default<a class="headerlink" href="#test-default" title="Link to this heading">#</a></h3>
+<h3>test_default<a class="headerlink" href="#test-default" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">DialogIntentDetectionMapper</span><span class="p">(</span><span class="n">api_model</span><span class="o">=</span><span class="s1">&#39;qwen2.5-72b-instruct&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="input-data">
-<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> empty</div><div class='meta' style='margin:6px 0;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>history</th></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;李莲花有口皆碑&#x27;, &#x27;「微笑」过奖了，我也就是个普通大夫，没什么值得夸耀的。&#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;是的，你确实是一个普通大夫，没什么值得夸耀的。&#x27;, &#x27;「委屈」你这话说的，我也是尽心尽力治病救人了。&#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;你自己说的呀，我现在说了，你又不高兴了。&#x27;, &#x27;or of of of of or or and or of of of of of of of,,, &#x27;)</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>(&#x27;你在说什么我听不懂。&#x27;, &#x27;「委屈」我也没说什么呀，就是觉得你有点冤枉我了&#x27;)</td></tr></table></div></div>
 </section>
 <section id="output-data">
-<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> empty</div><div class='meta' style='margin:6px 0;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>history</th></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;李莲花有口皆碑&#x27;, &#x27;「微笑」过奖了，我也就是个普通大夫，没什么值得夸耀的。&#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;是的，你确实是一个普通大夫，没什么值得夸耀的。&#x27;, &#x27;「委屈」你这话说的，我也是尽心尽力治病救人了。&#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;你自己说的呀，我现在说了，你又不高兴了。&#x27;, &#x27;or of of of of or or and or of of of of of of of,,, &#x27;]</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'>[&#x27;你在说什么我听不懂。&#x27;, &#x27;「委屈」我也没说什么呀，就是觉得你有点冤枉我了&#x27;]</td></tr><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>__dj__meta__</th></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'><strong>dialog_intent_labels</strong></td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>表达观点/寻求反馈</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>表达不同意见/讽刺</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>表达不满/讽刺</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>表达困惑/请求澄清</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'><strong>dialog_intent_labels_analysis</strong></td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户在表达对“李莲花”这一人物或品牌的正面评价，可能是想分享自己的看法或是询问他人对“李莲花”的看法。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户可能是在回应LLM的回答，但语气中带有讽刺或者不赞同，似乎认为李莲花（假设为LLM的角色）谦虚过头了，实际上有很多值得称赞的地方。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户继续以一种带有些许讽刺的语气回应，似乎在指出LLM之前的说法与现在反应之间的矛盾，同时也表达了对LLM反应的不满。</td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'>用户在表达困惑，对LLM的回复内容无法理解，可能希望得到更清晰的解释或说明。</td></tr></table></div></div>
 </section>
 <section id="explanation">
-<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="链接到此标题。">#</a></h4>
 <p>This example demonstrates the basic usage of the operator, where it analyzes a conversation history to generate intent labels and analysis for each round. The operator uses an API model (qwen2.5-72b-instruct) to process the input data and returns the results in the 'dialog_intent_labels' and 'dialog_intent_labels_analysis' fields. Each round of the conversation is analyzed, and the corresponding intent and analysis are provided.
 这个示例展示了算子的基本用法，它分析对话历史以生成每轮的意图标签和分析。算子使用API模型（qwen2.5-72b-instruct）处理输入数据，并在'dialog_intent_labels'和'dialog_intent_labels_analysis'字段中返回结果。每一轮对话都被分析，并提供了相应的意图和分析。</p>
 </section>
 </section>
 </section>
 <section id="related-links">
-<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
+<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.4/data_juicer/ops/mapper/dialog_intent_detection_mapper.py">source code 源代码</a></p></li>
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.4/tests/ops/mapper/test_dialog_intent_detection_mapper.py">unit test 单元测试</a></p></li>
@@ -1026,7 +1026,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

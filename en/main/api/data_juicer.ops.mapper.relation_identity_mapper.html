@@ -43,15 +43,15 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=8a448e45"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.ops.mapper.relation_identity_mapper';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -604,7 +604,7 @@
 <span id="data-juicer-ops-mapper-relation-identity-mapper-module"></span><h1>data_juicer.ops.mapper.relation_identity_mapper module<a class="headerlink" href="#module-data_juicer.ops.mapper.relation_identity_mapper" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.relation_identity_mapper.</span></span><span class="sig-name descname"><span class="pre">RelationIdentityMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/relation_identity_mapper.html#RelationIdentityMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.relation_identity_mapper.</span></span><span class="sig-name descname"><span class="pre">RelationIdentityMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/relation_identity_mapper.html#RelationIdentityMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="data_juicer.ops.base_op.html#data_juicer.ops.base_op.Mapper" title="data_juicer.ops.base_op.Mapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapper</span></code></a></p>
 <p>Identify the relation between two entities in a given text.</p>
 <p>This operator uses an API model to analyze the relationship between two specified
@@ -617,17 +617,17 @@ specified number of times in case of errors. If <cite>drop_text</cite> is set to
 text is removed from the sample after processing.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_SYSTEM_PROMPT_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_SYSTEM_PROMPT_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'给定关于{entity1}和{entity2}的文本信息。判断{entity1}和{entity2}之间的关系。\n要求：\n-</span> <span class="pre">关系用一个或多个词语表示，必要时可以加一个形容词来描述这段关系\n-</span> <span class="pre">输出关系时不要参杂任何标点符号\n-</span> <span class="pre">需要你进行合理的推理才能得出结论\n-</span> <span class="pre">如果两个人物身份是同一个人，输出关系为：另一个身份\n-</span> <span class="pre">输出格式为：\n分析推理：...\n所以{entity2}是{entity1}的：...\n-</span> <span class="pre">注意输出的是{entity2}是{entity1}的什么关系，而不是{entity1}是{entity2}的什么关系'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_SYSTEM_PROMPT_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_SYSTEM_PROMPT_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'给定关于{entity1}和{entity2}的文本信息。判断{entity1}和{entity2}之间的关系。\n要求：\n-</span> <span class="pre">关系用一个或多个词语表示，必要时可以加一个形容词来描述这段关系\n-</span> <span class="pre">输出关系时不要参杂任何标点符号\n-</span> <span class="pre">需要你进行合理的推理才能得出结论\n-</span> <span class="pre">如果两个人物身份是同一个人，输出关系为：另一个身份\n-</span> <span class="pre">输出格式为：\n分析推理：...\n所以{entity2}是{entity1}的：...\n-</span> <span class="pre">注意输出的是{entity2}是{entity1}的什么关系，而不是{entity1}是{entity2}的什么关系'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_SYSTEM_PROMPT_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_INPUT_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_INPUT_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'关于{entity1}和{entity2}的文本信息：\n```\n{text}\n```\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_INPUT_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_INPUT_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'关于{entity1}和{entity2}的文本信息：\n```\n{text}\n```\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_INPUT_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_OUTPUT_PATTERN_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_OUTPUT_PATTERN_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'\n</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">\\s*分析推理：\\s*(.*?)\\s*\n</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">\\s*所以{entity2}是{entity1}的：\\s*(.*?)\\Z\n</span>&#160;&#160;&#160; <span class="pre">'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_OUTPUT_PATTERN_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_OUTPUT_PATTERN_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'\n</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">\\s*分析推理：\\s*(.*?)\\s*\n</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">\\s*所以{entity2}是{entity1}的：\\s*(.*?)\\Z\n</span>&#160;&#160;&#160; <span class="pre">'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.relation_identity_mapper.RelationIdentityMapper.DEFAULT_OUTPUT_PATTERN_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -778,7 +778,7 @@ e.g {‘temperature’: 0.9, ‘top_p’: 0.95}</p></li>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

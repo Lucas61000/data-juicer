@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/operators/mapper/extract_nickname_mapper';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -766,7 +766,7 @@
 
 
   <section id="extract-nickname-mapper">
-<h1>extract_nickname_mapper<a class="headerlink" href="#extract-nickname-mapper" title="Link to this heading">#</a></h1>
+<h1>extract_nickname_mapper<a class="headerlink" href="#extract-nickname-mapper" title="链接到此标题。">#</a></h1>
 <p>Extracts nickname relationships in the text using a language model.</p>
 <p>This operator uses a language model to identify and extract nickname relationships from the input text. It follows specific instructions to ensure accurate extraction, such as identifying the speaker, the person being addressed, and the nickname used. The extracted relationships are stored in the meta field under the specified key. The operator uses a default system prompt, input template, and output pattern, but these can be customized. The results are parsed and validated to ensure they meet the required format. If the text already contains the nickname information, it is not processed again. The operator retries the API call a specified number of times if an error occurs.</p>
 <p>使用语言模型从文本中提取昵称关系。</p>
@@ -774,7 +774,7 @@
 <p>Type 算子类型: <strong>mapper</strong></p>
 <p>Tags 标签: cpu, api, text</p>
 <section id="parameter-configuration">
-<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
+<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>name 参数名</p></th>
@@ -849,14 +849,14 @@
 </div>
 </section>
 <section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
+<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
 <section id="test">
-<h3>test<a class="headerlink" href="#test" title="Link to this heading">#</a></h3>
+<h3>test<a class="headerlink" href="#test" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ExtractNicknameMapper</span><span class="p">(</span><span class="n">api_model</span><span class="o">=</span><span class="s1">&#39;qwen2.5-72b-instruct&#39;</span><span class="p">,</span> <span class="n">response_path</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="input-data">
-<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">△李莲花又指出刚才门框上的痕迹。
 △李莲花：门框上也是人的掌痕和爪印。指力能嵌入硬物寸余，七分力道主上，三分力道垫下，还有辅以的爪式，看样子这还有昆仑派的外家功夫。
 方多病看着李莲花，愈发生疑os：通过痕迹就能判断出功夫和门派，这绝对只有精通武艺之人才能做到，李莲花你到底是什么人？！
@@ -879,7 +879,7 @@
 </pre></details></div>
 </section>
 <section id="output-data">
-<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> text</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">△李莲花又指出刚才门框上的痕迹。
 △李莲花：门框上也是人的掌痕和爪印。指力能嵌入硬物寸余，七分力道主上，三分力道垫下，还有辅以的爪式，看样子这还有昆仑派的外家功夫。
 方多病看着李莲花，愈发生疑os：通过痕迹就能判断出功夫和门派，这绝对只有精通武艺之人才能做到，李莲花你到底是什么人？！
@@ -902,14 +902,14 @@
 </pre></details><div class='meta' style='margin:6px 0;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><th colspan='2' style='text-align:left; vertical-align:top; padding:6px 8px; font-weight:600; border-bottom:1px solid #e3e3e3;'>__dj__meta__</th></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:22px; border-bottom:1px solid #e3e3e3;'><strong>nickname</strong></td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'><div style='margin:2px 0 6px 0; padding-left:8px;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_description</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>李莲花你</td></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_keywords</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>[&#x27;nickname&#x27;]</td></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_source_entity</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>方多病</td></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_strength</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>None</td></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_target_entity</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>李莲花</td></tr></table></div></td></tr><tr><td colspan='2' style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:36px; border-bottom:1px solid #e3e3e3;'><div style='margin:2px 0 6px 0; padding-left:8px;'><table class='meta-table' style='border-collapse:collapse; width:100%; border:1px solid #e3e3e3;'><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_description</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>方小宝</td></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_keywords</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>[&#x27;nickname&#x27;]</td></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_source_entity</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>李莲花</td></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_strength</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>None</td></tr><tr><td style='text-align:left; vertical-align:top; padding:4px 8px; padding-left:50px; font-weight:500; color:#444; border-bottom:1px solid #e3e3e3; white-space:nowrap;'>relation_target_entity</td><td style='text-align:left; vertical-align:top; padding:4px 6px; padding-left:4px; border-bottom:1px solid #e3e3e3;'>方多病</td></tr></table></div></td></tr></table></div></div>
 </section>
 <section id="explanation">
-<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="链接到此标题。">#</a></h4>
 <p>The operator identifies and extracts nickname relationships from the input text. In this example, it correctly identifies that '方多病' refers to '李莲花' as '李莲花你', and '李莲花' refers to '方多病' as '方小宝'. The output data shows these relationships in a structured format within the meta field.
 算子从输入文本中识别并提取昵称关系。在这个例子中，它正确地识别出“方多病”称呼“李莲花”为“李莲花你”，以及“李莲花”称呼“方多病”为“方小宝”。输出数据以结构化格式在meta字段中展示了这些关系。</p>
 </section>
 </section>
 </section>
 <section id="related-links">
-<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
+<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.4/data_juicer/ops/mapper/extract_nickname_mapper.py">source code 源代码</a></p></li>
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.4/tests/ops/mapper/test_extract_nickname_mapper.py">unit test 单元测试</a></p></li>
@@ -1029,7 +1029,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
-    <script src="../_static/translations.js?v=beaddf03"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.utils.ckpt_utils';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
@@ -602,10 +602,10 @@
                 <article class="bd-article">
                   
   <section id="module-data_juicer.utils.ckpt_utils">
-<span id="data-juicer-utils-ckpt-utils-module"></span><h1>data_juicer.utils.ckpt_utils module<a class="headerlink" href="#module-data_juicer.utils.ckpt_utils" title="Link to this heading">#</a></h1>
+<span id="data-juicer-utils-ckpt-utils-module"></span><h1>data_juicer.utils.ckpt_utils module<a class="headerlink" href="#module-data_juicer.utils.ckpt_utils" title="链接到此标题。">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.utils.ckpt_utils.</span></span><span class="sig-name descname"><span class="pre">CheckpointManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_process_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.utils.ckpt_utils.</span></span><span class="sig-name descname"><span class="pre">CheckpointManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_process_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager" title="链接到此定义。">#</a></dt>
 <dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class is used to save the latest version of dataset to checkpoint
 directory or load it from checkpoint directory, a bit like cache management
@@ -614,7 +614,7 @@ Rerun the same config will reload the checkpoint and skip ops before it.</p>
 rerun from the beginning.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_process_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.__init__"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.__init__" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_process_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.__init__"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.__init__" title="链接到此定义。">#</a></dt>
 <dd><p>Initialization method.</p>
 <dl class="field-list simple">
 <dt class="field-odd">参数<span class="colon">:</span></dt>
@@ -629,7 +629,7 @@ rerun from the beginning.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.get_left_process_list">
-<span class="sig-name descname"><span class="pre">get_left_process_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.get_left_process_list"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.get_left_process_list" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">get_left_process_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.get_left_process_list"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.get_left_process_list" title="链接到此定义。">#</a></dt>
 <dd><p>Get left process list of ops for processing dataset, when checkpoint is
 available, remove some ops from process list, otherwise keep it
 unchanged.</p>
@@ -642,7 +642,7 @@ unchanged.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.check_ckpt">
-<span class="sig-name descname"><span class="pre">check_ckpt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.check_ckpt"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.check_ckpt" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">check_ckpt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.check_ckpt"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.check_ckpt" title="链接到此定义。">#</a></dt>
 <dd><p>Check if checkpoint is available.</p>
 <dl class="field-list simple">
 <dt class="field-odd">返回<span class="colon">:</span></dt>
@@ -653,14 +653,14 @@ unchanged.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.record">
-<span class="sig-name descname"><span class="pre">record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.record"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.record" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.record"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.record" title="链接到此定义。">#</a></dt>
 <dd><p>Save op name and args to op record, which is used to compare with
 the process list from config to decide if a checkpoint is available.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.check_ops_to_skip">
-<span class="sig-name descname"><span class="pre">check_ops_to_skip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.check_ops_to_skip"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.check_ops_to_skip" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">check_ops_to_skip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.check_ops_to_skip"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.check_ops_to_skip" title="链接到此定义。">#</a></dt>
 <dd><p>Check which ops need to be skipped in the process list.</p>
 <p>If op record list from checkpoint are the same as the prefix
 part of process list, then skip these ops and start processing
@@ -675,7 +675,7 @@ from scratch.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.save_ckpt">
-<span class="sig-name descname"><span class="pre">save_ckpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.save_ckpt"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.save_ckpt" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">save_ckpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.save_ckpt"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.save_ckpt" title="链接到此定义。">#</a></dt>
 <dd><p>Save dataset to checkpoint directory and dump processed ops list.</p>
 <dl class="field-list simple">
 <dt class="field-odd">参数<span class="colon">:</span></dt>
@@ -686,7 +686,7 @@ from scratch.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.load_ckpt">
-<span class="sig-name descname"><span class="pre">load_ckpt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.load_ckpt"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.load_ckpt" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">load_ckpt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.load_ckpt"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.load_ckpt" title="链接到此定义。">#</a></dt>
 <dd><p>Load dataset from a checkpoint file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">返回<span class="colon">:</span></dt>
@@ -790,7 +790,7 @@ from scratch.</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tools/quality_classifier/README_ZH';</script>
     <script src="../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../genindex.html" />
     <link rel="search" title="搜索" href="../../search.html" />
@@ -676,9 +676,9 @@
 
 
   <section id="id1">
-<h1>给数据打分<a class="headerlink" href="#id1" title="Link to this heading">#</a></h1>
+<h1>给数据打分<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h1>
 <section id="id2">
-<h2>数据打分能力<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>数据打分能力<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <p>Data-Juicer 提供了一组数据打分能力，可帮助您评估数据集。</p>
 <ul class="simple">
 <li><p>所有 <a class="reference internal" href="../../docs/Operators.html"><span class="std std-doc">Filter OPs</span></a> 都包含一个名为 <code class="docutils literal notranslate"><span class="pre">compute_stats</span></code> 的子过程，该过程根据运算符的预定义功能目标，计算统计测量值。这些测量值通常使用简单规则、辅助模型或高级算法得出，例如困惑度、长度、模态匹配分数等。<code class="docutils literal notranslate"><span class="pre">Analyzer</span></code> 将自动汇总这些统计数据并将其报告在结果数据集中。</p></li>
@@ -687,7 +687,7 @@
 </ul>
 </section>
 <section id="gpt3">
-<h2>复现GPT3的质量分类器套件<a class="headerlink" href="#gpt3" title="Link to this heading">#</a></h2>
+<h2>复现GPT3的质量分类器套件<a class="headerlink" href="#gpt3" title="链接到此标题。">#</a></h2>
 <p>帮助您复现类似于 GPT-3 质量分类器并将其应用到您的 Web 数据集。</p>
 <p>整个工具包基于PySpark，分类器的基本模块包括：</p>
 <ul class="simple">
@@ -696,9 +696,9 @@
 <li><p>classifier: <a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.classification.LogisticRegression.html##logisticregression">LogisticRegression</a></p></li>
 </ul>
 <section id="id3">
-<h3>用法<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<h3>用法<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h3>
 <section id="id4">
-<h4>使用现有的分类器进行预测<a class="headerlink" href="#id4" title="Link to this heading">#</a></h4>
+<h4>使用现有的分类器进行预测<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h4>
 <p>使用 <code class="docutils literal notranslate"><span class="pre">predict.py</span></code> 来预测一个文档的“质量”分数，并为每个样本添加一个标签，以根据分数判断是否应该保留该样本。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1">## 预测数据集的 doc_score</span>
 python<span class="w"> </span>predict.py<span class="w"> </span><span class="se">\</span>
@@ -725,7 +725,7 @@ python<span class="w"> </span>predict.py<span class="w"> </span>--help
 </ul>
 </section>
 <section id="id5">
-<h4>训练自己的质量分类器<a class="headerlink" href="#id5" title="Link to this heading">#</a></h4>
+<h4>训练自己的质量分类器<a class="headerlink" href="#id5" title="链接到此标题。">#</a></h4>
 <p>使用<code class="docutils literal notranslate"><span class="pre">train.py</span></code>在您的数据集上训练您自己的质量分类器。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1">## 为自己的数据集训练质量分类器</span>
 python<span class="w"> </span>train.py<span class="w"> </span><span class="se">\</span>
@@ -754,7 +754,7 @@ python<span class="w"> </span>train.py<span class="w"> </span>--help
 </ul>
 </section>
 <section id="id6">
-<h4>评估质量分类器<a class="headerlink" href="#id6" title="Link to this heading">#</a></h4>
+<h4>评估质量分类器<a class="headerlink" href="#id6" title="链接到此标题。">#</a></h4>
 <p>使用<code class="docutils literal notranslate"><span class="pre">eval.py</span></code>以报告精度、召回率和 F1 指标来评估质量分类器。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1">## 在自己的数据集上评估质量分类器</span>
 python<span class="w"> </span>eval.py<span class="w"> </span><span class="se">\</span>
@@ -778,7 +778,7 @@ python<span class="w"> </span>eval.py<span class="w"> </span>--help
 </section>
 </section>
 <section id="model-zoo">
-<h3>Model Zoo<a class="headerlink" href="#model-zoo" title="Link to this heading">#</a></h3>
+<h3>Model Zoo<a class="headerlink" href="#model-zoo" title="链接到此标题。">#</a></h3>
 <p>我们提供了已训练好的三个模型：<code class="docutils literal notranslate"><span class="pre">gpt3</span></code>，<code class="docutils literal notranslate"><span class="pre">chinese</span></code>，<code class="docutils literal notranslate"><span class="pre">code</span></code>。每个模型都有其 tokenizer 和 keep method。其中Tokenizer <code class="docutils literal notranslate"><span class="pre">xx.sp.model</span></code> 使用 <a class="reference external" href="https://github.com/google/sentencepiece">sentencepiece</a> 的训练数据进行训练。</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
@@ -872,9 +872,9 @@ python<span class="w"> </span>eval.py<span class="w"> </span>--help
 </div>
 </section>
 <section id="id7">
-<h3>有关质量分类器的更多信息<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<h3>有关质量分类器的更多信息<a class="headerlink" href="#id7" title="链接到此标题。">#</a></h3>
 <section id="id8">
-<h4>方法<a class="headerlink" href="#id8" title="Link to this heading">#</a></h4>
+<h4>方法<a class="headerlink" href="#id8" title="链接到此标题。">#</a></h4>
 <p>这里的质量分类器主要参考GPT-3论文附录A中提到的GPT-3质量分类器：</p>
 <blockquote>
 <div><p>In order to improve the quality of Common Crawl, we developed an automatic filtering method to remove low quality documents. Using the original WebText as a proxy for high-quality documents, we trained a classifier to distinguish these from raw Common Crawl. We then used this classifier to re-sample Common Crawl by prioritizing documents which were predicted by the classifier to be higher quality. The classifier is trained using logistic regression classifier with features from Spark’s standard tokenizer and HashingTF 10. For the positive examples, we used a collection of curated datasets such as WebText, Wikiedia, and our web books corpus as the positive examples, and for the negative examples, we used unfiltered Common Crawl. We used this classifier to score Common Crawl documents. We kept each document in our dataset iff</p>
@@ -885,14 +885,14 @@ python<span class="w"> </span>eval.py<span class="w"> </span>--help
 </div></blockquote>
 </section>
 <section id="tokenizers">
-<h4>Tokenizers<a class="headerlink" href="#tokenizers" title="Link to this heading">#</a></h4>
+<h4>Tokenizers<a class="headerlink" href="#tokenizers" title="链接到此标题。">#</a></h4>
 <ul class="simple">
 <li><p>Spark 中的标准 Tokenizer: 根据空白字符分割文本.</p></li>
 <li><p>zh/code.sp.model: 使用 sentencepiece 训练得到。</p></li>
 </ul>
 </section>
 <section id="keep-methods">
-<h4>Keep Methods<a class="headerlink" href="#keep-methods" title="Link to this heading">#</a></h4>
+<h4>Keep Methods<a class="headerlink" href="#keep-methods" title="链接到此标题。">#</a></h4>
 <ul class="simple">
 <li><p>label: <code class="docutils literal notranslate"><span class="pre">doc_score</span> <span class="pre">&gt;</span> <span class="pre">0.5</span></code></p></li>
 <li><p>pareto: <code class="docutils literal notranslate"><span class="pre">doc_score</span> <span class="pre">&gt;</span> <span class="pre">1</span> <span class="pre">-</span> <span class="pre">np.random.pareto(α),</span> <span class="pre">α</span> <span class="pre">=</span> <span class="pre">9</span></code></p></li>
@@ -1019,7 +1019,7 @@ python<span class="w"> </span>eval.py<span class="w"> </span>--help
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

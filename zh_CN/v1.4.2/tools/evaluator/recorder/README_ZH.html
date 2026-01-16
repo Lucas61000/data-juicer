@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tools/evaluator/recorder/README_ZH';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -664,7 +664,7 @@
 
 
   <section id="evaluation-results-recorder">
-<h1>Evaluation Results Recorder<a class="headerlink" href="#evaluation-results-recorder" title="Link to this heading">#</a></h1>
+<h1>Evaluation Results Recorder<a class="headerlink" href="#evaluation-results-recorder" title="链接到此标题。">#</a></h1>
 <p>使用 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.2/tools/evaluator/recorder/wandb_writer.py"><code class="docutils literal notranslate"><span class="pre">wandb_writer.py</span></code></a> 将评测结果记录到 <a class="reference external" href="https://wandb.ai/">W&amp;B</a> (wandb) 并可视化展示。</p>
 <p><code class="docutils literal notranslate"><span class="pre">wandb_writer.py</span></code> 能够:</p>
 <ul class="simple">
@@ -674,7 +674,7 @@
 <img alt="Leaderboard" src="https://github.com/datajuicer/data-juicer/blob/v1.4.2/docs/imgs/eval-01.png" /></p></li>
 </ul>
 <section id="id1">
-<h2>用法<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<h2>用法<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h2>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>wandb_writer.py<span class="w"> </span>--config<span class="w"> </span>&lt;config_file&gt;<span class="w"> </span><span class="o">[</span>--print-only<span class="o">]</span>
 </pre></div>
 </div>
@@ -684,7 +684,7 @@
 </ul>
 </section>
 <section id="id2">
-<h2>配置<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>配置<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <p>我们在 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.2/tools/evaluator/recorder/config"><code class="docutils literal notranslate"><span class="pre">config</span></code></a> 文件夹中为三种不同的情况提供了三个示例文件，其中通用的配置项格式如下:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;str&gt;</span><span class="w">   </span><span class="c1"># wandb 项目名</span>
 <span class="nt">base_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;str&gt;</span><span class="w">  </span><span class="c1"># wandb 实例 url</span>
@@ -693,7 +693,7 @@
 </div>
 <p>其他配置项根据实际需要填写。</p>
 <section id="helm">
-<h3>从 HELM 输出目录中提取评测结果<a class="headerlink" href="#helm" title="Link to this heading">#</a></h3>
+<h3>从 HELM 输出目录中提取评测结果<a class="headerlink" href="#helm" title="链接到此标题。">#</a></h3>
 <p>如下配置项用于从 HELM 的输出目录中提取评测结果并记录到 wandb 中。</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># general configurations</span>
 <span class="c1"># ...</span>
@@ -729,7 +729,7 @@
 </div></blockquote>
 </section>
 <section id="id3">
-<h3>从配置文件中读取评测结果<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<h3>从配置文件中读取评测结果<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h3>
 <p>评测结果可以直接写在配置文件中，该选项主要用于快速向 wandb 记录已有的评测结果。</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># general configurations</span>
 <span class="c1"># ...</span>
@@ -753,7 +753,7 @@
 </div>
 </section>
 <section id="id4">
-<h3>构建排行榜<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<h3>构建排行榜<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h3>
 <p>如下配置用于对在同一个 wandb 项目中的数据生成排行榜。</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># general configurations</span>
 <span class="c1"># ...</span>
@@ -883,7 +883,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

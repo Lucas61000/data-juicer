@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
-    <script src="../_static/translations.js?v=beaddf03"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.tools.quality_classifier.qc_utils';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
@@ -602,10 +602,10 @@
                 <article class="bd-article">
                   
   <section id="module-data_juicer.tools.quality_classifier.qc_utils">
-<span id="data-juicer-tools-quality-classifier-qc-utils-module"></span><h1>data_juicer.tools.quality_classifier.qc_utils module<a class="headerlink" href="#module-data_juicer.tools.quality_classifier.qc_utils" title="Link to this heading">#</a></h1>
+<span id="data-juicer-tools-quality-classifier-qc-utils-module"></span><h1>data_juicer.tools.quality_classifier.qc_utils module<a class="headerlink" href="#module-data_juicer.tools.quality_classifier.qc_utils" title="链接到此标题。">#</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.init_spark">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">init_spark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark_executor_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_driver_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_executor_memoryOverhead</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#init_spark"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.init_spark" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">init_spark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark_executor_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_driver_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_executor_memoryOverhead</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#init_spark"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.init_spark" title="链接到此定义。">#</a></dt>
 <dd><p>Initialize a spark session. You can set parameters such as memory, number
 of partitions, timeout and so on here
 :return: A spark session instance.</p>
@@ -613,7 +613,7 @@ of partitions, timeout and so on here
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.prepare_model">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/home/runner/.cache/data_juicer/models'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#prepare_model"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.prepare_model" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/home/runner/.cache/data_juicer/models'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#prepare_model"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.prepare_model" title="链接到此定义。">#</a></dt>
 <dd><p>Prepare the specific model from model cache path or the remote oss
 :param model_name: name of the quality classifier model
 :param model_path: the path to store the model to be loaded
@@ -622,7 +622,7 @@ of partitions, timeout and so on here
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.load_dataset">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">load_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'text'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">only_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#load_dataset"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.load_dataset" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">load_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'text'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">only_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#load_dataset"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.load_dataset" title="链接到此定义。">#</a></dt>
 <dd><p>Load a single dataset using PySpark. Only support 'json', 'jsonl', or
 'parquet' files for now
 :param spark: spark session
@@ -634,7 +634,7 @@ of partitions, timeout and so on here
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.load_datasets">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">load_datasets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'text'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">only_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#load_datasets"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.load_datasets" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">load_datasets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'text'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">only_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#load_datasets"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.load_datasets" title="链接到此定义。">#</a></dt>
 <dd><p>Load a list of datasets. Only support 'json', 'jsonl', or 'parquet' files
 for now
 :param spark: spark session
@@ -647,7 +647,7 @@ for now
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.shuffle">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">shuffle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#shuffle"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.shuffle" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">shuffle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#shuffle"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.shuffle" title="链接到此定义。">#</a></dt>
 <dd><p>Shuffle a data frame
 :param df: input data frame
 :return: shuffled data frame</p>
@@ -655,7 +655,7 @@ for now
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.export_result">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">export_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">res_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#export_result"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.export_result" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">export_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">res_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#export_result"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.export_result" title="链接到此定义。">#</a></dt>
 <dd><p>Export a dataset to specified path. Only support 'json', 'jsonl', or
 'parquet' export formats for now
 :param ds: the dataset to be exported
@@ -665,7 +665,7 @@ for now
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.get_keep_method_udf">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">get_keep_method_udf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keep_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#get_keep_method_udf"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.get_keep_method_udf" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">get_keep_method_udf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keep_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#get_keep_method_udf"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.get_keep_method_udf" title="链接到此定义。">#</a></dt>
 <dd><p>Given the name of keep method, return a PySpark user-defined function of
 this kind of keep method. Only support 'gpt3' or 'label' for now
 :param keep_method: name of keep method
@@ -674,7 +674,7 @@ this kind of keep method. Only support 'gpt3' or 'label' for now
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.tokenize_dataset">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">tokenize_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#tokenize_dataset"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.tokenize_dataset" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">tokenize_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#tokenize_dataset"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.tokenize_dataset" title="链接到此定义。">#</a></dt>
 <dd><p>Tokenize the texts in input dataset using specified tokenizer
 :param ds: dataset to be tokenized
 :param tokenizer: tokenizer used to tokenize texts
@@ -686,7 +686,7 @@ this kind of keep method. Only support 'gpt3' or 'label' for now
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.train">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_model_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#train"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.train" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_model_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#train"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.train" title="链接到此定义。">#</a></dt>
 <dd><p>Train a quality classifier with training dataset and export the trained
 model to a specified path
 :param output_model_path: the path to store the trained model
@@ -704,7 +704,7 @@ model to a specified path
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.eval">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#eval"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.eval" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#eval"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.eval" title="链接到此定义。">#</a></dt>
 <dd><p>Evaluate a quality classifier model on specified dataset
 :param model_path: the path to the model to be evaluated
 :param ds: evaluation dataset
@@ -721,7 +721,7 @@ model to a specified path
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.tools.quality_classifier.qc_utils.predict">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'label'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#predict"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.predict" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.tools.quality_classifier.qc_utils.</span></span><span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'label'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/tools/quality_classifier/qc_utils.html#predict"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.tools.quality_classifier.qc_utils.predict" title="链接到此定义。">#</a></dt>
 <dd><p>Predict document scores for a dataset using a trained quality classifier
 model
 :param model: the model used to predict
@@ -834,7 +834,7 @@ model
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

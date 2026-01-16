@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tools/humanops/README';</script>
     <script src="../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../genindex.html" />
     <link rel="search" title="搜索" href="../../search.html" />
@@ -676,10 +676,10 @@
 
 
   <section id="label-studio-service-utility">
-<h1>Label Studio Service Utility<a class="headerlink" href="#label-studio-service-utility" title="Link to this heading">#</a></h1>
+<h1>Label Studio Service Utility<a class="headerlink" href="#label-studio-service-utility" title="链接到此标题。">#</a></h1>
 <p>This utility script (<code class="docutils literal notranslate"><span class="pre">label_studio_service.py</span></code>) helps you manage a local Label Studio instance for development and testing, either via Docker or pip. It also provides automation for test project creation and connection info management.</p>
 <section id="features">
-<h2>Features<a class="headerlink" href="#features" title="Link to this heading">#</a></h2>
+<h2>Features<a class="headerlink" href="#features" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>Start/stop Label Studio using Docker or pip</p></li>
 <li><p>Automatically create a test project and sample task</p></li>
@@ -688,12 +688,12 @@
 </ul>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="链接到此标题。">#</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>label_studio_service.py<span class="w"> </span><span class="o">[</span>--port<span class="w"> </span>PORT<span class="o">]</span><span class="w"> </span><span class="o">[</span>--create-test-project<span class="o">]</span><span class="w"> </span><span class="o">[</span>--use-pip<span class="o">]</span>
 </pre></div>
 </div>
 <section id="key-options">
-<h3>Key Options<a class="headerlink" href="#key-options" title="Link to this heading">#</a></h3>
+<h3>Key Options<a class="headerlink" href="#key-options" title="链接到此标题。">#</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--use-pip</span></code>: Run Label Studio using a local pip installation instead of Docker. This is useful if you want to avoid Docker or need to run Label Studio in a virtual environment.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--create-test-project</span></code>: Automatically creates a test project and a sample annotation task.</p></li>
@@ -701,7 +701,7 @@
 </section>
 </section>
 <section id="connection-file-label-studio-localhost-connection-json">
-<h2>Connection File: <code class="docutils literal notranslate"><span class="pre">label_studio_localhost_connection.json</span></code><a class="headerlink" href="#connection-file-label-studio-localhost-connection-json" title="Link to this heading">#</a></h2>
+<h2>Connection File: <code class="docutils literal notranslate"><span class="pre">label_studio_localhost_connection.json</span></code><a class="headerlink" href="#connection-file-label-studio-localhost-connection-json" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>When you run the script, it generates a <code class="docutils literal notranslate"><span class="pre">label_studio_localhost_connection.json</span></code> file in the current directory.</p></li>
 <li><p>This file contains connection details such as the API URL, API key, and project ID.</p></li>
@@ -711,7 +711,7 @@
 </ul>
 </section>
 <section id="enabling-legacy-token-authentication">
-<h2>Enabling Legacy Token Authentication<a class="headerlink" href="#enabling-legacy-token-authentication" title="Link to this heading">#</a></h2>
+<h2>Enabling Legacy Token Authentication<a class="headerlink" href="#enabling-legacy-token-authentication" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><strong>Important:</strong> To ensure proper API access, you must manually enable legacy token authentication in the Label Studio web portal after the instance is running.</p></li>
 <li><p>Go to the Label Studio admin interface, navigate to your organization settings, and turn on &quot;Legacy token authentication&quot;.</p></li>
@@ -726,7 +726,7 @@
 </ol>
 </section>
 <section id="label-studio-version">
-<h2>Label Studio Version<a class="headerlink" href="#label-studio-version" title="Link to this heading">#</a></h2>
+<h2>Label Studio Version<a class="headerlink" href="#label-studio-version" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>The version of Label Studio used is specified in <code class="docutils literal notranslate"><span class="pre">requirements/minimal.txt</span></code>.</p></li>
 <li><p>If you use <code class="docutils literal notranslate"><span class="pre">--use-pip</span></code>, the script will install the version listed in <code class="docutils literal notranslate"><span class="pre">requirements/minimal.txt</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">label-studio==1.17.0</span></code>).</p></li>
@@ -734,7 +734,7 @@
 </ul>
 </section>
 <section id="example">
-<h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
+<h2>Example<a class="headerlink" href="#example" title="链接到此标题。">#</a></h2>
 <p>Start Label Studio on port 7070 using pip and create a test project:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>label_studio_service.py<span class="w"> </span>--use-pip<span class="w"> </span>--port<span class="w"> </span><span class="m">7070</span><span class="w"> </span>--create-test-project
 </pre></div>
@@ -742,7 +742,7 @@
 <p>After startup, check the <code class="docutils literal notranslate"><span class="pre">label_studio_localhost_connection.json</span></code> file for connection details.</p>
 </section>
 <section id="troubleshooting">
-<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>If you encounter API authentication errors, double-check that legacy token authentication is enabled in the Label Studio portal.</p></li>
 <li><p>If you change the Label Studio version in <code class="docutils literal notranslate"><span class="pre">requirements/minimal.txt</span></code>, rerun the script to update your environment.</p></li>
@@ -862,7 +862,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

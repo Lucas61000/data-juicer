@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/operators/mapper/clean_email_mapper';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -764,7 +764,7 @@
 
 
   <section id="clean-email-mapper">
-<h1>clean_email_mapper<a class="headerlink" href="#clean-email-mapper" title="Link to this heading">#</a></h1>
+<h1>clean_email_mapper<a class="headerlink" href="#clean-email-mapper" title="链接到此标题。">#</a></h1>
 <p>Cleans email addresses from text samples using a regular expression.</p>
 <p>This operator removes or replaces email addresses in the text based on a regular expression pattern. By default, it uses a standard pattern to match email addresses, but a custom pattern can be provided. The matched email addresses are replaced with a specified replacement string, which defaults to an empty string. The operation is applied to each text sample in the batch. If no email address is found in a sample, it remains unchanged.</p>
 <p>使用正则表达式从文本样本中清理电子邮件地址。</p>
@@ -772,7 +772,7 @@
 <p>Type 算子类型: <strong>mapper</strong></p>
 <p>Tags 标签: cpu, text</p>
 <section id="parameter-configuration">
-<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
+<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>name 参数名</p></th>
@@ -807,48 +807,48 @@
 </div>
 </section>
 <section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
+<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
 <section id="test-clean-email">
-<h3>test_clean_email<a class="headerlink" href="#test-clean-email" title="Link to this heading">#</a></h3>
+<h3>test_clean_email<a class="headerlink" href="#test-clean-email" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">CleanEmailMapper</span><span class="p">()</span>
 </pre></div>
 </div>
 <section id="input-data">
-<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> list</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">[&#x27;happy day euqdh@cjqi.com&#x27;, &#x27;请问你是谁dasoidhao@1264fg.45om&#x27;, &#x27;ftp://examplema-nièrdash@hqbchd.ckdhnfes.cds&#x27;, &#x27;👊23da44sh12@46hqb12chd.ckdhnfes.comd.dasd.asd.dc&#x27;]</pre></div>
 </section>
 <section id="output-data">
-<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> list</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">[&#x27;happy day &#x27;, &#x27;请问你是谁dasoidhao@1264fg.45om&#x27;, &#x27;ftp://examplema-niè&#x27;, &#x27;👊&#x27;]</pre></div>
 </section>
 <section id="explanation">
-<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="链接到此标题。">#</a></h4>
 <p>This example demonstrates the default behavior of the CleanEmailMapper, which removes email addresses from the text. The operator uses a regular expression to identify and remove any email addresses found in the 'text' field. In the provided samples, emails like 'euqdh&#64;cjqi.com' and 'rdash&#64;hqbchd.ckdhnfes.cds' are removed, leaving only the non-email parts of the text. The sample with no valid email address ('请问你是谁dasoidhao&#64;1264fg.45om') remains unchanged.
 这个例子展示了CleanEmailMapper的默认行为，即从文本中移除电子邮件地址。算子使用正则表达式来识别并移除'text'字段中的任何电子邮件地址。在提供的样本中，像'euqdh&#64;cjqi.com'和'rdash&#64;hqbchd.ckdhnfes.cds'这样的电子邮件被移除，只留下文本中的非电子邮件部分。没有有效电子邮件地址的样本（'请问你是谁dasoidhao&#64;1264fg.45om'）保持不变。</p>
 </section>
 </section>
 <section id="test-replace-email">
-<h3>test_replace_email<a class="headerlink" href="#test-replace-email" title="Link to this heading">#</a></h3>
+<h3>test_replace_email<a class="headerlink" href="#test-replace-email" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">CleanEmailMapper</span><span class="p">(</span><span class="n">repl</span><span class="o">=</span><span class="s1">&#39;&lt;EMAIL&gt;&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="id1">
-<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> list</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">[&#x27;happy day euqdh@cjqi.com&#x27;, &#x27;请问你是谁dasoidhao@1264fg.45om&#x27;, &#x27;ftp://examplema-nièrdash@hqbchd.ckdhnfes.cds&#x27;, &#x27;👊23da44sh12@46hqb12chd.ckdhnfes.comd.dasd.asd.dc&#x27;]</pre></div>
 </section>
 <section id="id2">
-<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> list</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">[&#x27;happy day &lt;EMAIL&gt;&#x27;, &#x27;请问你是谁dasoidhao@1264fg.45om&#x27;, &#x27;ftp://examplema-niè&lt;EMAIL&gt;&#x27;, &#x27;👊&lt;EMAIL&gt;&#x27;]</pre></div>
 </section>
 <section id="id3">
-<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h4>
 <p>In this case, the CleanEmailMapper is configured to replace email addresses with a specific string '<EMAIL>' instead of removing them. The operator identifies email addresses using a regular expression and replaces each found email with the specified replacement string. This way, the original structure of the sentences is maintained, but all email addresses are replaced with '<EMAIL>'. For instance, 'euqdh&#64;cjqi.com' is replaced by '<EMAIL>', and 'rdash&#64;hqbchd.ckdhnfes.cds' is also replaced by the same string. The sample that does not contain a valid email address remains as it is.
 在这种情况下，CleanEmailMapper被配置为用特定字符串'<EMAIL>'替换电子邮件地址而不是移除它们。算子使用正则表达式识别电子邮件地址，并将每个找到的电子邮件替换为指定的替换字符串。这样，句子的原始结构得以保留，但所有电子邮件地址都被替换成了'<EMAIL>'。例如，'euqdh&#64;cjqi.com'被替换为'<EMAIL>'，而'rdash&#64;hqbchd.ckdhnfes.cds'也被替换为相同的字符串。不含有效电子邮件地址的样本保持不变。</p>
 </section>
 </section>
 </section>
 <section id="related-links">
-<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
+<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.3/data_juicer/ops/mapper/clean_email_mapper.py">source code 源代码</a></p></li>
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.3/tests/ops/mapper/test_clean_email_mapper.py">unit test 单元测试</a></p></li>
@@ -974,7 +974,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

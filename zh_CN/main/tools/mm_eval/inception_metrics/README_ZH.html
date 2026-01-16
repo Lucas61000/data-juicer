@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tools/mm_eval/inception_metrics/README_ZH';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -669,10 +669,10 @@
                 <article class="bd-article">
                   
   <section id="id1">
-<h1>视频生成测评工具<a class="headerlink" href="#id1" title="Link to this heading">#</a></h1>
+<h1>视频生成测评工具<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h1>
 <p>此文件夹包含一些测评脚本，用于测评模型生成的视频。</p>
 <section id="id2">
-<h2>用法<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>用法<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <p>使用 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/tools/mm_eval/inception_metrics/calc_metrics_for_videos.py">calc_metrics_for_videos.py</a> 计算生成视频集的FVD或ISV</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/video_metrics/calc_metrics_for_videos.py<span class="w">        </span><span class="se">\</span>
 <span class="w">    </span>--fake_data_path<span class="w">    </span>&lt;fake_data_path&gt;<span class="w">        </span><span class="se">\</span>
@@ -722,38 +722,38 @@ python<span class="w"> </span>tools/video_metrics/calc_metrics_for_videos.py<spa
 </ul>
 </section>
 <section id="id3">
-<h2>指标介绍<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<h2>指标介绍<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h2>
 <section id="fvd">
-<h3>FVD<a class="headerlink" href="#fvd" title="Link to this heading">#</a></h3>
+<h3>FVD<a class="headerlink" href="#fvd" title="链接到此标题。">#</a></h3>
 <p>Frechet Video Distance (FVD)<sup><a class="reference internal" href="#reference"><span class="xref myst">1</span></a></sup>衡量了从真实数据集和生成数据集中提取的视频特征的分布距离。视频特征是由视频分类器提取的。视频分类器是一个在Kinetics-400数据集上训练的I3D模型，包含400种人类动作类别。</p>
 </section>
 <section id="kvd">
-<h3>KVD<a class="headerlink" href="#kvd" title="Link to this heading">#</a></h3>
+<h3>KVD<a class="headerlink" href="#kvd" title="链接到此标题。">#</a></h3>
 <p>Kernel Video Distance (KVD)是视频版本的Frechet Inception Distance (FID)<sup><a class="reference internal" href="#reference"><span class="xref myst">3</span></a></sup>，它从视频中提取特征，使用了一个在包含400种人类动作类别的Kinetics-400数据集上训练的I3D模型。</p>
 </section>
 <section id="isv">
-<h3>ISV<a class="headerlink" href="#isv" title="Link to this heading">#</a></h3>
+<h3>ISV<a class="headerlink" href="#isv" title="链接到此标题。">#</a></h3>
 <p>Inception Score of Videos (ISV)<sup><a class="reference internal" href="#reference"><span class="xref myst">2</span></a></sup>基于生成视频的质量和多样性进行评估，其中更偏向于多样性。ISV利用了在UCF101动作识别数据集上训练的C3D视频分类模型，通过计算每个视频分类预测的负熵之和来评估质量。多样性则是通过预测概率分布的平均值的熵来衡量的。</p>
 </section>
 <section id="prv">
-<h3>PRV<a class="headerlink" href="#prv" title="Link to this heading">#</a></h3>
+<h3>PRV<a class="headerlink" href="#prv" title="链接到此标题。">#</a></h3>
 <p>Precision/Recall of Videos (PRV)<sup><a class="reference internal" href="#reference"><span class="xref myst">5</span></a></sup>通过在特征空间中划定到k个最近领特征的距离内的区域，来估计视频特征的分布。然后，通过确定样本是否落在真实数据集和生成数据集的分布内，来评估视频生成的精确度和召回率。这些特征是从Kinetics-400数据集上训练的包含400个人类动作类别的I3D模型中提取的。
 Precision/Recall of Videos (PRV)是视频版本的Precision/Recall (PR)<sup><a class="reference internal" href="#reference"><span class="xref myst">5</span></a></sup>，它从视频中提取特征，使用了一个在包含400种人类动作类别的Kinetics-400数据集上训练的I3D模型。</p>
 </section>
 <section id="fid">
-<h3>FID<a class="headerlink" href="#fid" title="Link to this heading">#</a></h3>
+<h3>FID<a class="headerlink" href="#fid" title="链接到此标题。">#</a></h3>
 <p>Frechet Inception Distance (FID)<sup><a class="reference internal" href="#reference"><span class="xref myst">3</span></a></sup>与FVD的方法类似，这里提取的是每一帧的特征，模型采用在ImageNet上训练的图像分类模型。</p>
 </section>
 <section id="kid">
-<h3>KID<a class="headerlink" href="#kid" title="Link to this heading">#</a></h3>
+<h3>KID<a class="headerlink" href="#kid" title="链接到此标题。">#</a></h3>
 <p>Kernel Inception Distance (KID)<sup><a class="reference internal" href="#reference"><span class="xref myst">4</span></a></sup>类似于FID，通过多次抽样计算帧特征的平方最大均值差异来量化两组视频之间的差异。不同于FID，KID是无偏估计，采用三阶核函数，更一致地符合人类感知。所应用的图像分类模型与FID中所应用的模型相同。</p>
 </section>
 <section id="is">
-<h3>IS<a class="headerlink" href="#is" title="Link to this heading">#</a></h3>
+<h3>IS<a class="headerlink" href="#is" title="链接到此标题。">#</a></h3>
 <p>Inception Score (IS)<sup><a class="reference internal" href="#reference"><span class="xref myst">2</span></a></sup>与ISV的方法类似，这里提利用了模型对每一帧的分类预测，模型采用在ImageNet上训练的图像分类模型。</p>
 </section>
 <section id="pr">
-<h3>PR<a class="headerlink" href="#pr" title="Link to this heading">#</a></h3>
+<h3>PR<a class="headerlink" href="#pr" title="链接到此标题。">#</a></h3>
 <p>The Precision/Recall (PR)<sup><a class="reference internal" href="#reference"><span class="xref myst">5</span></a></sup>通过在视频帧的特征空间中划定到k个最近领特征的距离内的区域，来估计视频特征的分布。然后，通过确定样本帧是否落在真实数据集和生成数据集的分布内，来评估视频生成帧的精确度和召回率。这些特征是从ILSVRC-2012上训练的VGG图像分类模型<sup><a class="reference internal" href="#reference"><span class="xref myst">6</span></a></sup>中提取的。</p>
 <h2 id="reference">参考文献：</h2>
 <ul class="simple">
@@ -879,7 +879,7 @@ Precision/Recall of Videos (PRV)是视频版本的Precision/Recall (PR)<sup><a c
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

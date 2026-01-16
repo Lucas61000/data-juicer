@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tools/evaluator/README_ZH';</script>
     <script src="../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../genindex.html" />
     <link rel="search" title="搜索" href="../../search.html" />
@@ -669,10 +669,10 @@
                 <article class="bd-article">
                   
   <section id="auto-evaluation-toolkit">
-<h1>Auto Evaluation Toolkit<a class="headerlink" href="#auto-evaluation-toolkit" title="Link to this heading">#</a></h1>
+<h1>Auto Evaluation Toolkit<a class="headerlink" href="#auto-evaluation-toolkit" title="链接到此标题。">#</a></h1>
 <p>在训练过程中自动评测您的模型并持续监控指标的变化。</p>
 <section id="id1">
-<h2>准备工作<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<h2>准备工作<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h2>
 <ol class="arabic simple">
 <li><p>多台GPU机器（至少2台，一台用于运行评测，其他机器用于训练模型）。</p></li>
 <li><p>将共享文件系统（例如NAS）挂载到上述机器上的相同路径（例如 <code class="docutils literal notranslate"><span class="pre">/mnt/shared</span></code>）。</p></li>
@@ -683,7 +683,7 @@
 </ol>
 </section>
 <section id="id2">
-<h2>用法<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>用法<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <p>通过 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.5/tools/evaluator/evaluator.py"><code class="docutils literal notranslate"><span class="pre">evaluator.py</span></code></a> 来使用 HELM 或 OpenAI API 自动评估您的模型。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/evaluator.py<span class="w">  </span><span class="se">\</span>
 <span class="w">    </span>--config<span class="w"> </span>&lt;config&gt;<span class="w">      </span><span class="se">\</span>
@@ -724,7 +724,7 @@
 <p>在运行 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.5/tools/evaluator/evaluator.py">evaluator.py</a> 之后, 可以使用 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.5/tools/evaluator/recorder/wandb_writer.py">recorder/wandb_writer.py</a> 将评测结果记录到 wandb 并可视化展示，更多细节请参考 <a class="reference internal" href="recorder/README_ZH.html"><span class="std std-doc">recorder/README_ZH.md</span></a>。</p>
 </section>
 <section id="id3">
-<h2>配置<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<h2>配置<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">config_file</span></code> 文件格式如下:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">auto_eval</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">project_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;str&gt;</span><span class="w"> </span><span class="c1"># 项目名称</span>
@@ -862,7 +862,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

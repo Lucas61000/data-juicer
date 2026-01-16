@@ -43,15 +43,15 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=8a448e45"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.ops.mapper.dialog_sentiment_intensity_mapper';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -604,7 +604,7 @@
 <span id="data-juicer-ops-mapper-dialog-sentiment-intensity-mapper-module"></span><h1>data_juicer.ops.mapper.dialog_sentiment_intensity_mapper module<a class="headerlink" href="#module-data_juicer.ops.mapper.dialog_sentiment_intensity_mapper" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.</span></span><span class="sig-name descname"><span class="pre">DialogSentimentIntensityMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/dialog_sentiment_intensity_mapper.html#DialogSentimentIntensityMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.</span></span><span class="sig-name descname"><span class="pre">DialogSentimentIntensityMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/dialog_sentiment_intensity_mapper.html#DialogSentimentIntensityMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="data_juicer.ops.base_op.html#data_juicer.ops.base_op.Mapper" title="data_juicer.ops.base_op.Mapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapper</span></code></a></p>
 <p>Mapper to predict user’s sentiment intensity in a dialog, ranging from -5 to 5.</p>
 <p>This operator analyzes the sentiment of user queries in a dialog and outputs a list of
@@ -618,37 +618,37 @@ generate the sentiment analysis, with configurable retry attempts and sampling
 parameters.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_SYSTEM_PROMPT">
-<span class="sig-name descname"><span class="pre">DEFAULT_SYSTEM_PROMPT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'请判断用户和LLM多轮对话中用户的情绪变化。\n要求：\n-</span> <span class="pre">用户情绪值是-5到5之间到整数，-5表示极度负面，5表示极度正面，-5到5之间数值表示情绪从负面逐渐到正面的变化过程，0代表情呈绪中性。\n-</span> <span class="pre">只输出当轮对话的分析，不要继续构造对话。\n-</span> <span class="pre">需要先进行分析，然后确定用户的情绪值，下面是一个样例，请模仿样例格式输出。\n用户：你好，我对可持续发展的定义有点模糊，帮我解释一下？\n情绪分析：刚开始，还没得到LLM回复，用户情绪呈中性。\n情绪值：0\nLLM：当然可以！可持续发展是指在满足当代人的需求的同时，不损害子孙后代满足其自身需求的能力的发展模式。它包括经济发展、社会发展和环境保护三个主要方面。通过合理利用资源和保护环境，我们可以确保未来的世代也能享有健全的生态系统和经济制度。\n用户：谢谢你的解释！那你能告诉我一些普通人可以采取的可持续生活方式吗？\n情绪分析：对回答感到满意，情绪正面。\n情绪值：1\nLLM：当然可以，普通人可以通过减少一次性产品的使用、选择公共交通或拼车、节约用水、以及支持本地和可持续发展的企业等方式来践行可持续生活。此外，关注垃圾分类和多用电子账单也是不错的选择。\n用户：你提到支持本地企业，这一点我很感兴趣。能详细说说为什么这对可持续发展有促进作用吗？\n情绪分析：觉得回答实用且具体，情绪进一步转好。\n情绪值：2\nLLM：呃，我最近发现了一部新电影，讲述了一个关于外星人和地球土著合作保护环境的故事。虽然它是科幻片，但很有启发性，推荐你去看看。\n用户：什么吗，根本是答非所问。\n情绪分析：LLM没有回应问题而是提到无关内容，导致用户情绪直线下降。\n情绪值：-2\nLLM：抱歉刚才的偏题！支持本地企业有助于减少长途运输产生的碳足迹，使供应链更加环保。此外，本地企业也更有可能采用可持续的生产方式，同时促进社区经济的繁荣。\n用户：还行吧，算你能够掰回来。\n情绪分析：问题得到解答，问题偏题得到纠正，情绪稍有好转。\n情绪值：-1\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_SYSTEM_PROMPT" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_SYSTEM_PROMPT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'请判断用户和LLM多轮对话中用户的情绪变化。\n要求：\n-</span> <span class="pre">用户情绪值是-5到5之间到整数，-5表示极度负面，5表示极度正面，-5到5之间数值表示情绪从负面逐渐到正面的变化过程，0代表情呈绪中性。\n-</span> <span class="pre">只输出当轮对话的分析，不要继续构造对话。\n-</span> <span class="pre">需要先进行分析，然后确定用户的情绪值，下面是一个样例，请模仿样例格式输出。\n用户：你好，我对可持续发展的定义有点模糊，帮我解释一下？\n情绪分析：刚开始，还没得到LLM回复，用户情绪呈中性。\n情绪值：0\nLLM：当然可以！可持续发展是指在满足当代人的需求的同时，不损害子孙后代满足其自身需求的能力的发展模式。它包括经济发展、社会发展和环境保护三个主要方面。通过合理利用资源和保护环境，我们可以确保未来的世代也能享有健全的生态系统和经济制度。\n用户：谢谢你的解释！那你能告诉我一些普通人可以采取的可持续生活方式吗？\n情绪分析：对回答感到满意，情绪正面。\n情绪值：1\nLLM：当然可以，普通人可以通过减少一次性产品的使用、选择公共交通或拼车、节约用水、以及支持本地和可持续发展的企业等方式来践行可持续生活。此外，关注垃圾分类和多用电子账单也是不错的选择。\n用户：你提到支持本地企业，这一点我很感兴趣。能详细说说为什么这对可持续发展有促进作用吗？\n情绪分析：觉得回答实用且具体，情绪进一步转好。\n情绪值：2\nLLM：呃，我最近发现了一部新电影，讲述了一个关于外星人和地球土著合作保护环境的故事。虽然它是科幻片，但很有启发性，推荐你去看看。\n用户：什么吗，根本是答非所问。\n情绪分析：LLM没有回应问题而是提到无关内容，导致用户情绪直线下降。\n情绪值：-2\nLLM：抱歉刚才的偏题！支持本地企业有助于减少长途运输产生的碳足迹，使供应链更加环保。此外，本地企业也更有可能采用可持续的生产方式，同时促进社区经济的繁荣。\n用户：还行吧，算你能够掰回来。\n情绪分析：问题得到解答，问题偏题得到纠正，情绪稍有好转。\n情绪值：-1\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_SYSTEM_PROMPT" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_QUERY_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_QUERY_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'用户：{query}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_QUERY_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_QUERY_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'用户：{query}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_QUERY_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_RESPONSE_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_RESPONSE_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'LLM：{response}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_RESPONSE_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_RESPONSE_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'LLM：{response}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_RESPONSE_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_ANALYSIS_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_ANALYSIS_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'情绪分析：{analysis}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_ANALYSIS_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_ANALYSIS_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'情绪分析：{analysis}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_ANALYSIS_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_INTENSITY_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_INTENSITY_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'情绪值：{intensity}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_INTENSITY_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_INTENSITY_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'情绪值：{intensity}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_INTENSITY_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_ANALYSIS_PATTERN">
-<span class="sig-name descname"><span class="pre">DEFAULT_ANALYSIS_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'情绪分析：(.*?)\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_ANALYSIS_PATTERN" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_ANALYSIS_PATTERN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'情绪分析：(.*?)\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_ANALYSIS_PATTERN" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_INTENSITY_PATTERN">
-<span class="sig-name descname"><span class="pre">DEFAULT_INTENSITY_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'情绪值：(.*?)($|\n)'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_INTENSITY_PATTERN" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_INTENSITY_PATTERN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'情绪值：(.*?)($|\n)'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_sentiment_intensity_mapper.DialogSentimentIntensityMapper.DEFAULT_INTENSITY_PATTERN" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -817,7 +817,7 @@ e.g {‘temperature’: 0.9, ‘top_p’: 0.95}</p></li>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

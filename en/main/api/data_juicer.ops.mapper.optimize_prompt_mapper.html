@@ -43,15 +43,15 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=8a448e45"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.ops.mapper.optimize_prompt_mapper';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -604,7 +604,7 @@
 <span id="data-juicer-ops-mapper-optimize-prompt-mapper-module"></span><h1>data_juicer.ops.mapper.optimize_prompt_mapper module<a class="headerlink" href="#module-data_juicer.ops.mapper.optimize_prompt_mapper" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.optimize_prompt_mapper.</span></span><span class="sig-name descname"><span class="pre">OptimizePromptMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/optimize_prompt_mapper.html#OptimizePromptMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.optimize_prompt_mapper.</span></span><span class="sig-name descname"><span class="pre">OptimizePromptMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/optimize_prompt_mapper.html#OptimizePromptMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="data_juicer.ops.base_op.html#data_juicer.ops.base_op.Mapper" title="data_juicer.ops.base_op.Mapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapper</span></code></a></p>
 <p>Optimize prompts based on existing ones in the same batch.</p>
 <p>This operator uses the existing prompts and newly optimized prompts as examples to
@@ -623,27 +623,27 @@ inference acceleration on CUDA devices.</p>
 </ul>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_SYSTEM_PROMPT">
-<span class="sig-name descname"><span class="pre">DEFAULT_SYSTEM_PROMPT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'请你仔细观察多个示例提示词，按照你的理解，总结出相应规矩，然后写出一个新的更好的提示词，以让模型更好地完成指定任务。注意，新生成的【提示词】需要满足如下要求：\n1.</span> <span class="pre">生成的【提示词】不能与输入的【提示词】完全一致，但是需要保持格式类似。\n2.</span> <span class="pre">生成的【提示词】相比于输入的【提示词】不能有很大的变化，更多应该是关键词、核心参数等方面的微调。\n3.</span> <span class="pre">生成时只需生成带有【提示词】前缀的提示词，不需生成其他任何额外信息。\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_SYSTEM_PROMPT" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_SYSTEM_PROMPT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'请你仔细观察多个示例提示词，按照你的理解，总结出相应规矩，然后写出一个新的更好的提示词，以让模型更好地完成指定任务。注意，新生成的【提示词】需要满足如下要求：\n1.</span> <span class="pre">生成的【提示词】不能与输入的【提示词】完全一致，但是需要保持格式类似。\n2.</span> <span class="pre">生成的【提示词】相比于输入的【提示词】不能有很大的变化，更多应该是关键词、核心参数等方面的微调。\n3.</span> <span class="pre">生成时只需生成带有【提示词】前缀的提示词，不需生成其他任何额外信息。\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_SYSTEM_PROMPT" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_INPUT_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_INPUT_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'{}'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_INPUT_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_INPUT_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'{}'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_INPUT_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_EXAMPLE_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_EXAMPLE_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'\n如下是一条示例数据：\n{}'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_EXAMPLE_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_EXAMPLE_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'\n如下是一条示例数据：\n{}'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_EXAMPLE_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_PROMPT_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_PROMPT_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'【提示词】\n{}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_PROMPT_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_PROMPT_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'【提示词】\n{}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_PROMPT_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_OUTPUT_PATTERN">
-<span class="sig-name descname"><span class="pre">DEFAULT_OUTPUT_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'【提示词】(.*?)(?=【|$)'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_OUTPUT_PATTERN" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_OUTPUT_PATTERN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'【提示词】(.*?)(?=【|$)'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.optimize_prompt_mapper.OptimizePromptMapper.DEFAULT_OUTPUT_PATTERN" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -808,7 +808,7 @@ e.g {‘temperature’: 0.9, ‘top_p’: 0.95}</p></li>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

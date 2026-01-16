@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>data_juicer.core.tracer module &#8212; Data Juicer</title>
+    <title>data_juicer.core.tracer &#8212; Data Juicer</title>
   
   
   
@@ -43,15 +43,15 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=8a448e45"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.core.tracer';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -583,7 +583,7 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">data_juicer.core.tracer module</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">data_juicer.core.tracer</span></li>
   </ul>
 </nav>
 </div>
@@ -601,118 +601,26 @@
                 <article class="bd-article">
                   
   <section id="module-data_juicer.core.tracer">
-<span id="data-juicer-core-tracer-module"></span><h1>data_juicer.core.tracer module<a class="headerlink" href="#module-data_juicer.core.tracer" title="Link to this heading">#</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="data_juicer.core.tracer.Tracer">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.core.tracer.</span></span><span class="sig-name descname"><span class="pre">Tracer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">work_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_list_to_trace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#Tracer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.Tracer" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>The tracer to trace the sample changes before and after an operator
-process.</p>
-<p>The comparison results will be stored in the work directory.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.core.tracer.Tracer.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">work_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_list_to_trace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#Tracer.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.Tracer.__init__" title="Link to this definition">#</a></dt>
-<dd><p>Initialization method.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>work_dir</strong> – the work directory to store the comparison
-results</p></li>
-<li><p><strong>op_list_to_trace</strong> – the OP list to be traced.</p></li>
-<li><p><strong>show_num</strong> – the maximum number of samples to show in the
-comparison result files.</p></li>
-<li><p><strong>trace_keys</strong> – list of field names to include in trace output.
-If set, the specified fields’ values will be included in each
-trace entry.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
+<span id="data-juicer-core-tracer"></span><h1>data_juicer.core.tracer<a class="headerlink" href="#module-data_juicer.core.tracer" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.core.tracer.check_tracer_collect_complete">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.core.tracer.</span></span><span class="sig-name descname"><span class="pre">check_tracer_collect_complete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tracer_instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#check_tracer_collect_complete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.check_tracer_collect_complete" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.core.tracer.Tracer.trace_mapper">
-<span class="sig-name descname"><span class="pre">trace_mapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#Tracer.trace_mapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.Tracer.trace_mapper" title="Link to this definition">#</a></dt>
-<dd><p>Compare datasets before and after a Mapper.</p>
-<p>This will mainly show the different sample pairs due to the
-modification by the Mapper</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>op_name</strong> – the op name of mapper</p></li>
-<li><p><strong>previous_ds</strong> – dataset before the mapper process</p></li>
-<li><p><strong>processed_ds</strong> – dataset processed by the mapper</p></li>
-<li><p><strong>text_key</strong> – which text_key to trace</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p></p>
-</dd>
-</dl>
-</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.core.tracer.should_trace_op">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.core.tracer.</span></span><span class="sig-name descname"><span class="pre">should_trace_op</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tracer_instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#should_trace_op"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.should_trace_op" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.core.tracer.Tracer.trace_batch_mapper">
-<span class="sig-name descname"><span class="pre">trace_batch_mapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#Tracer.trace_batch_mapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.Tracer.trace_batch_mapper" title="Link to this definition">#</a></dt>
-<dd><p>Compare datasets before and after a BatchMapper.</p>
-<p>This will mainly show the new samples augmented by the BatchMapper</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>op_name</strong> – the op name of mapper</p></li>
-<li><p><strong>previous_ds</strong> – dataset before the mapper process</p></li>
-<li><p><strong>processed_ds</strong> – dataset processed by the mapper</p></li>
-<li><p><strong>text_key</strong> – which text_key to trace</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p></p>
-</dd>
-</dl>
-</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.core.tracer.collect_for_mapper">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.core.tracer.</span></span><span class="sig-name descname"><span class="pre">collect_for_mapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tracer_instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_sample_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed_sample_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#collect_for_mapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.collect_for_mapper" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.core.tracer.Tracer.trace_filter">
-<span class="sig-name descname"><span class="pre">trace_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed_ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dataset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#Tracer.trace_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.Tracer.trace_filter" title="Link to this definition">#</a></dt>
-<dd><p>Compare datasets before and after a Filter.</p>
-<p>This will mainly show the filtered samples by the Filter</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>op_name</strong> – the op name of filter</p></li>
-<li><p><strong>previous_ds</strong> – dataset before the filter process</p></li>
-<li><p><strong>processed_ds</strong> – dataset processed by the filter</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="data_juicer.core.tracer.Tracer.trace_deduplicator">
-<span class="sig-name descname"><span class="pre">trace_deduplicator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dup_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#Tracer.trace_deduplicator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.Tracer.trace_deduplicator" title="Link to this definition">#</a></dt>
-<dd><p>Compare datasets before and after a Deduplicator.</p>
-<p>This will mainly show the near-duplicate sample pairs extracted
-by the Deduplicator. Different from the other two trace methods,
-the trace process for deduplicator is embedded into the process
-method of deduplicator, but the other two trace methods are
-independent of the process method of mapper and filter operators</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>op_name</strong> – the op name of deduplicator</p></li>
-<li><p><strong>dup_pairs</strong> – duplicate sample pairs obtained from
-deduplicator</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.core.tracer.collect_for_filter">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.core.tracer.</span></span><span class="sig-name descname"><span class="pre">collect_for_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tracer_instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">should_keep</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/tracer.html#collect_for_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.tracer.collect_for_filter" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 </section>
 
@@ -745,14 +653,10 @@ deduplicator</p></li>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.Tracer"><code class="docutils literal notranslate"><span class="pre">Tracer</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.Tracer.__init__"><code class="docutils literal notranslate"><span class="pre">Tracer.__init__()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.Tracer.trace_mapper"><code class="docutils literal notranslate"><span class="pre">Tracer.trace_mapper()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.Tracer.trace_batch_mapper"><code class="docutils literal notranslate"><span class="pre">Tracer.trace_batch_mapper()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.Tracer.trace_filter"><code class="docutils literal notranslate"><span class="pre">Tracer.trace_filter()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.Tracer.trace_deduplicator"><code class="docutils literal notranslate"><span class="pre">Tracer.trace_deduplicator()</span></code></a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.check_tracer_collect_complete"><code class="docutils literal notranslate"><span class="pre">check_tracer_collect_complete()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.should_trace_op"><code class="docutils literal notranslate"><span class="pre">should_trace_op()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.collect_for_mapper"><code class="docutils literal notranslate"><span class="pre">collect_for_mapper()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.tracer.collect_for_filter"><code class="docutils literal notranslate"><span class="pre">collect_for_filter()</span></code></a></li>
 </ul>
   </nav></div>
 
@@ -805,7 +709,7 @@ deduplicator</p></li>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

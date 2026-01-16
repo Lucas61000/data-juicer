@@ -42,15 +42,15 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=8a448e45"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/data_juicer/ops/base_op';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -696,6 +696,161 @@
 
 
 
+<div class="viewcode-block" id="sample_to_dict">
+<a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.sample_to_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_to_dict</span><span class="p">(</span><span class="n">sample</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert sample to dict.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.formatting.formatting</span><span class="w"> </span><span class="kn">import</span> <span class="n">LazyDict</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">LazyDict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">sample</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">pa</span><span class="o">.</span><span class="n">Table</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">sample</span><span class="o">.</span><span class="n">to_pydict</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown sample type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="wrap_mapper_with_tracer">
+<a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.wrap_mapper_with_tracer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">wrap_mapper_with_tracer</span><span class="p">(</span><span class="n">process_method</span><span class="p">,</span> <span class="n">op_name</span><span class="p">,</span> <span class="n">text_key</span><span class="p">,</span> <span class="n">tracer</span><span class="p">,</span> <span class="n">is_batched_op</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrap a mapper&#39;s process method to collect sample-level changes.</span>
+
+<span class="sd">    :param process_method: the original process method (single or batched)</span>
+<span class="sd">    :param op_name: the operator name</span>
+<span class="sd">    :param text_key: the text key to compare</span>
+<span class="sd">    :param tracer: the tracer instance</span>
+<span class="sd">    :param is_batched_op: whether this is a batched operator</span>
+<span class="sd">    :return: wrapped process method</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.tracer</span><span class="w"> </span><span class="kn">import</span> <span class="n">should_trace_op</span>
+
+    <span class="k">if</span> <span class="n">tracer</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">should_trace_op</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">process_method</span>
+
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">process_method</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapped_process</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.tracer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">check_tracer_collect_complete</span><span class="p">,</span>
+            <span class="n">collect_for_mapper</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Check if collection is already complete (early exit for performance)</span>
+        <span class="k">if</span> <span class="n">check_tracer_collect_complete</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">process_method</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">sample_dict</span> <span class="o">=</span> <span class="n">sample_to_dict</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_batched_op</span><span class="p">:</span>
+            <span class="c1"># Batched processing: sample is dict of lists</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sample_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_dict</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+
+            <span class="c1"># Make a deep copy of original samples for comparison</span>
+            <span class="n">original_samples</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples</span><span class="p">):</span>
+                <span class="n">orig_sample</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">sample_dict</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
+                <span class="n">original_samples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">orig_sample</span><span class="p">))</span>
+
+            <span class="c1"># Process the batch</span>
+            <span class="n">processed_batch</span> <span class="o">=</span> <span class="n">process_method</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="n">processed_batch_dict</span> <span class="o">=</span> <span class="n">sample_to_dict</span><span class="p">(</span><span class="n">processed_batch</span><span class="p">)</span>
+
+            <span class="c1"># Collect changes for each sample</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">check_tracer_collect_complete</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">):</span>
+                    <span class="k">break</span>
+
+                <span class="n">orig_sample</span> <span class="o">=</span> <span class="n">original_samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">proc_sample</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">processed_batch_dict</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">processed_batch_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+                <span class="n">collect_for_mapper</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">,</span> <span class="n">orig_sample</span><span class="p">,</span> <span class="n">proc_sample</span><span class="p">,</span> <span class="n">text_key</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">processed_batch</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Single sample processing</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+
+            <span class="n">original_sample_dict</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">sample_dict</span><span class="p">)</span>
+            <span class="n">processed_sample</span> <span class="o">=</span> <span class="n">process_method</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">processed_sample_dict</span> <span class="o">=</span> <span class="n">sample_to_dict</span><span class="p">(</span><span class="n">processed_sample</span><span class="p">)</span>
+
+            <span class="c1"># Collect sample-level change</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">check_tracer_collect_complete</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">):</span>
+                <span class="n">collect_for_mapper</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">,</span> <span class="n">original_sample_dict</span><span class="p">,</span> <span class="n">processed_sample_dict</span><span class="p">,</span> <span class="n">text_key</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">processed_sample</span>
+
+    <span class="k">return</span> <span class="n">wrapped_process</span></div>
+
+
+
+<div class="viewcode-block" id="wrap_filter_with_tracer">
+<a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.wrap_filter_with_tracer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">wrap_filter_with_tracer</span><span class="p">(</span><span class="n">process_method</span><span class="p">,</span> <span class="n">op_name</span><span class="p">,</span> <span class="n">tracer</span><span class="p">,</span> <span class="n">is_batched_op</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrap a filter&#39;s process method to collect sample-level changes.</span>
+
+<span class="sd">    :param process_method: the original process method (single or batched)</span>
+<span class="sd">    :param op_name: the operator name</span>
+<span class="sd">    :param tracer: the tracer instance</span>
+<span class="sd">    :param is_batched_op: whether this is a batched operator</span>
+<span class="sd">    :return: wrapped process method</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.tracer</span><span class="w"> </span><span class="kn">import</span> <span class="n">should_trace_op</span>
+
+    <span class="k">if</span> <span class="n">tracer</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">should_trace_op</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">process_method</span>
+
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">process_method</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapped_process</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.tracer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">check_tracer_collect_complete</span><span class="p">,</span>
+            <span class="n">collect_for_filter</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Check if collection is already complete (early exit for performance)</span>
+        <span class="k">if</span> <span class="n">check_tracer_collect_complete</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">process_method</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_batched_op</span><span class="p">:</span>
+            <span class="c1"># Batched processing: process returns iterable of booleans</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">process_method</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">results_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="n">results</span>
+
+            <span class="c1"># Collect filtered samples</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">check_tracer_collect_complete</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">):</span>
+                    <span class="k">break</span>
+
+                <span class="n">should_keep</span> <span class="o">=</span> <span class="n">results_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">results_list</span><span class="p">)</span> <span class="k">else</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">should_keep</span><span class="p">:</span>
+                    <span class="n">sample_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">sample</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
+                    <span class="n">collect_for_filter</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">,</span> <span class="n">sample_dict</span><span class="p">,</span> <span class="n">should_keep</span><span class="p">)</span>
+
+            <span class="c1"># return the results_list because the map object results</span>
+            <span class="c1"># has been calculated and empty when getting results_list</span>
+            <span class="k">return</span> <span class="n">results_list</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Single sample processing</span>
+            <span class="n">should_keep</span> <span class="o">=</span> <span class="n">process_method</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="c1"># Collect filtered sample</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">check_tracer_collect_complete</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">should_keep</span><span class="p">:</span>
+                <span class="n">collect_for_filter</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="n">op_name</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">should_keep</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">should_keep</span>
+
+    <span class="k">return</span> <span class="n">wrapped_process</span></div>
+
+
+
 <div class="viewcode-block" id="catch_map_single_exception">
 <a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.catch_map_single_exception">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">catch_map_single_exception</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">return_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">skip_op_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">op_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -1140,15 +1295,32 @@
 <a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.Mapper.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">exporter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tracer</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
-        <span class="n">new_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">,</span>
-            <span class="n">num_proc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">runtime_np</span><span class="p">(),</span>
-            <span class="n">with_rank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">use_cuda</span><span class="p">(),</span>
-            <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
-            <span class="n">desc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="s2">&quot;_process&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">tracer</span><span class="p">:</span>
-            <span class="n">tracer</span><span class="o">.</span><span class="n">trace_mapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">new_dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_key</span><span class="p">)</span>
+
+        <span class="c1"># Wrap process method with tracer for sample-level collection</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.tracer</span><span class="w"> </span><span class="kn">import</span> <span class="n">should_trace_op</span>
+
+        <span class="n">original_process</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">tracer</span> <span class="ow">and</span> <span class="n">should_trace_op</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">):</span>
+            <span class="c1"># Store original process method</span>
+            <span class="n">original_process</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process</span>
+            <span class="c1"># Wrap with tracer</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">process</span> <span class="o">=</span> <span class="n">wrap_mapper_with_tracer</span><span class="p">(</span>
+                <span class="n">original_process</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_key</span><span class="p">,</span> <span class="n">tracer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_batched_op</span><span class="p">()</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">,</span>
+                <span class="n">num_proc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">runtime_np</span><span class="p">(),</span>
+                <span class="n">with_rank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">use_cuda</span><span class="p">(),</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">desc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="s2">&quot;_process&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Restore original process method</span>
+            <span class="k">if</span> <span class="n">tracer</span> <span class="ow">and</span> <span class="n">should_trace_op</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span> <span class="ow">and</span> <span class="n">original_process</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">process</span> <span class="o">=</span> <span class="n">original_process</span>
+
         <span class="n">free_models</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">new_dataset</span></div>
 </div>
@@ -1304,11 +1476,25 @@
         <span class="k">if</span> <span class="n">exporter</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">stats_export_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">exporter</span><span class="o">.</span><span class="n">export_compute_stats</span><span class="p">(</span><span class="n">new_dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stats_export_path</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">reduce</span><span class="p">:</span>
-            <span class="n">new_dataset</span> <span class="o">=</span> <span class="n">new_dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">,</span> <span class="n">num_proc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">runtime_np</span><span class="p">(),</span> <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="s2">&quot;_process&quot;</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="n">tracer</span><span class="p">:</span>
-                <span class="n">tracer</span><span class="o">.</span><span class="n">trace_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">new_dataset</span><span class="p">)</span>
+            <span class="c1"># Wrap process method with tracer for sample-level collection</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.tracer</span><span class="w"> </span><span class="kn">import</span> <span class="n">should_trace_op</span>
+
+            <span class="n">original_process</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">tracer</span> <span class="ow">and</span> <span class="n">should_trace_op</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">):</span>
+                <span class="c1"># Store original process method</span>
+                <span class="n">original_process</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process</span>
+                <span class="c1"># Wrap with tracer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">process</span> <span class="o">=</span> <span class="n">wrap_filter_with_tracer</span><span class="p">(</span><span class="n">original_process</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">tracer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_batched_op</span><span class="p">())</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">new_dataset</span> <span class="o">=</span> <span class="n">new_dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">,</span> <span class="n">num_proc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">runtime_np</span><span class="p">(),</span> <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="s2">&quot;_process&quot;</span>
+                <span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="c1"># Restore original process method</span>
+                <span class="k">if</span> <span class="n">tracer</span> <span class="ow">and</span> <span class="n">should_trace_op</span><span class="p">(</span><span class="n">tracer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span> <span class="ow">and</span> <span class="n">original_process</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">process</span> <span class="o">=</span> <span class="n">original_process</span>
+
         <span class="n">free_models</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">new_dataset</span></div>
 </div>
@@ -1441,7 +1627,9 @@
         <span class="n">dataset</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Selector</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
         <span class="n">new_dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">tracer</span><span class="p">:</span>
-            <span class="n">tracer</span><span class="o">.</span><span class="n">trace_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">new_dataset</span><span class="p">)</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Selector OPs are not supported for tracing for now.&quot;</span><span class="p">)</span>
         <span class="n">free_models</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">new_dataset</span></div>
 </div>
@@ -1496,7 +1684,9 @@
 
         <span class="n">new_dataset</span> <span class="o">=</span> <span class="n">NestedDataset</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="n">batched_samples</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">tracer</span><span class="p">:</span>
-            <span class="n">tracer</span><span class="o">.</span><span class="n">trace_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">new_dataset</span><span class="p">)</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Grouper OPs are not supported for tracing for now.&quot;</span><span class="p">)</span>
         <span class="n">free_models</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">new_dataset</span></div>
 </div>
@@ -1569,7 +1759,9 @@
             <span class="n">desc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="s2">&quot;_process&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">tracer</span><span class="p">:</span>
-            <span class="n">tracer</span><span class="o">.</span><span class="n">trace_mapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">new_dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_key</span><span class="p">)</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">loguru</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Aggregator OPs are not supported for tracing for now.&quot;</span><span class="p">)</span>
         <span class="n">free_models</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">new_dataset</span></div>
 </div>
@@ -1669,7 +1861,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

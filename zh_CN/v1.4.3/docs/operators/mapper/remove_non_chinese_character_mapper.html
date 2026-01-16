@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/operators/mapper/remove_non_chinese_character_mapper';</script>
     <script src="../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../search.html" />
@@ -764,7 +764,7 @@
 
 
   <section id="remove-non-chinese-character-mapper">
-<h1>remove_non_chinese_character_mapper<a class="headerlink" href="#remove-non-chinese-character-mapper" title="Link to this heading">#</a></h1>
+<h1>remove_non_chinese_character_mapper<a class="headerlink" href="#remove-non-chinese-character-mapper" title="链接到此标题。">#</a></h1>
 <p>Removes non-Chinese characters from text samples.</p>
 <p>This mapper removes all characters that are not part of the Chinese character set.</p>
 <ul class="simple">
@@ -786,7 +786,7 @@
 <p>Type 算子类型: <strong>mapper</strong></p>
 <p>Tags 标签: cpu, text</p>
 <section id="parameter-configuration">
-<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
+<h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>name 参数名</p></th>
@@ -826,48 +826,48 @@
 </div>
 </section>
 <section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
+<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
 <section id="test-remove-non-chinese-character">
-<h3>test_remove_non_chinese_character<a class="headerlink" href="#test-remove-non-chinese-character" title="Link to this heading">#</a></h3>
+<h3>test_remove_non_chinese_character<a class="headerlink" href="#test-remove-non-chinese-character" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RemoveNonChineseCharacterlMapper</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="input-data">
-<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#input-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> list</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">[&#x27;特殊的康熙部首或者扩展部首会被去除，⼏几⺇&#x27;, &#x27;请问你是谁dasoidhao@1264fg.45om&#x27;, &#x27;ftp://exam匹配ple汉字ma-niè包括rdas繁體字h@hqbchd.ckdhnfes.cds&#x27;, &#x27;👊    所有的非汉字a44sh都12@46h会被*&amp;……*qb^4525去掉&#x27;]</pre></div>
 </section>
 <section id="output-data">
-<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#output-data" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> list</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">[&#x27;特殊的康熙部首或者扩展部首会被去除几&#x27;, &#x27;请问你是谁&#x27;, &#x27;匹配汉字包括繁體字&#x27;, &#x27;所有的非汉字都会被去掉&#x27;]</pre></div>
 </section>
 <section id="explanation">
-<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#explanation" title="链接到此标题。">#</a></h4>
 <p>This example shows the operator removing all non-Chinese characters, including alphabets, numbers, and punctuation. The result contains only Chinese characters, which is useful when you want to keep only the Chinese text.
 这个例子展示了算子移除所有非汉字字符，包括字母、数字和标点符号。结果只包含汉字，这在你只想保留中文文本时非常有用。</p>
 </section>
 </section>
 <section id="test-remove-non-chinese-character5">
-<h3>test_remove_non_chinese_character5<a class="headerlink" href="#test-remove-non-chinese-character5" title="Link to this heading">#</a></h3>
+<h3>test_remove_non_chinese_character5<a class="headerlink" href="#test-remove-non-chinese-character5" title="链接到此标题。">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RemoveNonChineseCharacterlMapper</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="id1">
-<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="Link to this heading">#</a></h4>
+<h4>📥 input data 输入数据<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> list</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">[&#x27;特殊的康熙部首或者扩展部首会被去除，⼏几⺇&#x27;, &#x27;请问你是谁dasoidhao@1264fg.45om&#x27;, &#x27;f://exam匹配ple汉12字ma-niè包括rdas繁88體字h@hqbchd.ds1&#x27;, &#x27;👊    所有的非汉字a44sh都12@46h会被*&amp;……*qb^4525去掉&#x27;]</pre></div>
 </section>
 <section id="id2">
-<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
+<h4>📤 output data 输出数据<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h4>
 <div class="sample-card" style="border:1px solid #ddd; padding:12px; margin:8px 0; border-radius:6px; background:#fafafa; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div class="sample-header" style="background:#f8f9fa; padding:4px 8px; margin-bottom:6px; border-radius:3px; font-size:0.9em; color:#666; border-left:3px solid #007acc;"><strong>Sample 1:</strong> list</div><pre style="padding:6px; background:#f6f8fa; border-radius:4px; overflow-x:auto; white-space:pre; word-wrap:normal;">[&#x27;特殊的康熙部首或者扩展部首会被去除几&#x27;, &#x27;请问你是谁dasoidhao1264fg45om&#x27;, &#x27;fexam匹配ple汉12字mani包括rdas繁88體字hhqbchdds1&#x27;, &#x27;所有的非汉字a44sh都1246h会被qb4525去掉&#x27;]</pre></div>
 </section>
 <section id="id3">
-<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<h4>✨ explanation 解释<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h4>
 <p>In this example, the operator keeps both alphabets and numbers while removing all other non-Chinese characters. This is useful for cases where you want to preserve some additional information along with the Chinese text, such as alphanumeric codes or file paths.
 在这个例子中，算子保留了字母和数字，同时移除了其他所有非汉字字符。这在你想在中文文本之外还保留一些额外信息（如字母数字代码或文件路径）时非常有用。</p>
 </section>
 </section>
 </section>
 <section id="related-links">
-<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
+<h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.3/data_juicer/ops/mapper/remove_non_chinese_character_mapper.py">source code 源代码</a></p></li>
 <li><p><a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.3/tests/ops/mapper/test_remove_non_chinese_character_mapper.py">unit test 单元测试</a></p></li>
@@ -993,7 +993,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

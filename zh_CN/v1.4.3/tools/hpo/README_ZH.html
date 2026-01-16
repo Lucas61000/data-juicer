@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'tools/hpo/README_ZH';</script>
     <script src="../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../genindex.html" />
     <link rel="search" title="搜索" href="../../search.html" />
@@ -676,9 +676,9 @@
 
 
   <section id="id1">
-<h1>数据菜谱的自动化超参优化<a class="headerlink" href="#id1" title="Link to this heading">#</a></h1>
+<h1>数据菜谱的自动化超参优化<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h1>
 <section id="sigmaauto-hpo">
-<h2>基于3-Sigma原则进行Auto-HPO<a class="headerlink" href="#sigmaauto-hpo" title="Link to this heading">#</a></h2>
+<h2>基于3-Sigma原则进行Auto-HPO<a class="headerlink" href="#sigmaauto-hpo" title="链接到此标题。">#</a></h2>
 <p>一种简单的数据菜谱自动调参方法是假设outlier数据对训练有害，那么我们可以引入3-sigma原则来自动确定超参，过滤数据。具体来说，假设原始数据的某个分析维度服从正态分布且存在随机误差，我们可以基于Analyzer产出的stats，在该维度上
 把算子过滤的上下界设为三倍标准差。</p>
 <p>$$P(|x-\mu| &gt; 3\sigma) \leq 0.003$$</p>
@@ -697,7 +697,7 @@ python<span class="w"> </span>execute_hpo_3sigma.py<span class="w"> </span>--con
 </div>
 </section>
 <section id="wandbauto-hpo">
-<h2>基于WandB进行Auto-HPO<a class="headerlink" href="#wandbauto-hpo" title="Link to this heading">#</a></h2>
+<h2>基于WandB进行Auto-HPO<a class="headerlink" href="#wandbauto-hpo" title="链接到此标题。">#</a></h2>
 <p>我们将自动化 HPO (hyper-parameters optimization) 工具 WandB <a class="reference external" href="https://docs.wandb.ai/guides/sweeps">Sweep</a> 结合到
 Data-Juicer 中，以简化改良数据处理超参数的过程。
 使用此工具，用户可以研究探索 <em>数据配方的特定超参数</em> 和 <em>指定目标度量（如数据质量分、模型loss等）</em> 之间的 相关性和重要性得分。</p>
@@ -705,7 +705,7 @@ Data-Juicer 中，以简化改良数据处理超参数的过程。
 一个极大的探索空间，暂无标准做法。 欢迎大家提出更多的建议、讨论、
 并通过新的 PR 做出贡献！</p>
 <section id="id2">
-<h3>前置条件<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<h3>前置条件<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h3>
 <p>您需要先安装 data-juicer。
 此外，该工具利用了 WandB，通过<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">wandb</span></code>安装它。
 在使用此工具之前，您需要运行<code class="docutils literal notranslate"><span class="pre">wandb</span> <span class="pre">login</span></code>并输入您的 WandB
@@ -717,7 +717,7 @@ API 密钥。
 </div>
 </section>
 <section id="id3">
-<h3>使用和定制化<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<h3>使用和定制化<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h3>
 <p>给定一个数据配方，以指定的配置文件所定义<code class="docutils literal notranslate"><span class="pre">&lt;data-process-cfg-file-path&gt;</span></code>，您可以使用 <code class="docutils literal notranslate"><span class="pre">execute_hpo_wandb.py</span></code> 来搜索
 由<code class="docutils literal notranslate"><span class="pre">&lt;hpo-cfg-file-path&gt;</span></code>定义的超参数空间。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># cd tools/hpo</span>
@@ -850,7 +850,7 @@ python<span class="w"> </span>execute_hpo_wandb.py<span class="w"> </span>--conf
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

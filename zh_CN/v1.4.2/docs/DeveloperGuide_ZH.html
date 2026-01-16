@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
-    <script src="../_static/translations.js?v=beaddf03"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/DeveloperGuide_ZH';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
@@ -664,7 +664,7 @@
 
 
   <section id="id1">
-<h1>开发者指南<a class="headerlink" href="#id1" title="Link to this heading">#</a></h1>
+<h1>开发者指南<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="#id1">开发者指南</a></p>
 <ul>
@@ -701,7 +701,7 @@
 </li>
 </ul>
 <section id="id2">
-<h2>1. 构建自己的算子<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>1. 构建自己的算子<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>Data-Juicer 支持每个人灵活、便捷定义自己的算子。</p></li>
 <li><p>在实现新的算子之前，请参考已有 <a class="reference internal" href="Operators.html"><span class="std std-doc">算子池</span></a> 以避免不必要的重复。</p></li>
@@ -710,7 +710,7 @@
 <div><p>以下示例的开发过程以直接在源码对应模块中添加算子为例。如果外部添加算子，可以通过传参<code class="docutils literal notranslate"><span class="pre">--custom-operator-paths</span></code> 或 yaml配置文件中配置<code class="docutils literal notranslate"><span class="pre">custom_operator_paths</span></code>参数注册新算子，例如：<code class="docutils literal notranslate"><span class="pre">custom_operator_paths:</span> <span class="pre">['/path/to/new/op.py',</span> <span class="pre">'/path/to/new/ops/directory/]</span></code>。</p>
 </div></blockquote>
 <section id="id3">
-<h3>1.1 快速构建算子<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<h3>1.1 快速构建算子<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h3>
 <p>下面以 &quot;TextLengthFilter&quot; 的算子（过滤仅包含预期文本长度的样本语料）为例，展示相应开发构建过程。</p>
 <ol class="arabic simple">
 <li><p>(可选) 如果该算子定义了某个统计变量，那么请在 <code class="docutils literal notranslate"><span class="pre">data_juicer/utils/constant.py</span></code> 文件中添加一个新的<code class="docutils literal notranslate"><span class="pre">StatsKeys</span></code>属性来统一保存管理。</p></li>
@@ -805,7 +805,7 @@
 </div>
 </section>
 <section id="id4">
-<h3>1.2 将你的新算子贡献到开源社区<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<h3>1.2 将你的新算子贡献到开源社区<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h3>
 <ul class="simple">
 <li><p>根据实现完整性，算子会被分类为3类：</p>
 <ul>
@@ -817,11 +817,11 @@
 <li><p>📣📣📣 社区贡献者可在alpha状态后就提相应算子PR。此后该贡献者可以与Data-Juicer团队一起在后续PR中，将其渐进完善到beta和stable版本。我们非常欢迎共建，并会高亮<a class="reference external" href="https://github.com/modelscope/data-juicer?tab=readme-ov-file#acknowledgement">致谢</a>！</p></li>
 </ul>
 <section id="alpha">
-<h4>1.2.1 提供算子基本功能（alpha版本）<a class="headerlink" href="#alpha" title="Link to this heading">#</a></h4>
+<h4>1.2.1 提供算子基本功能（alpha版本）<a class="headerlink" href="#alpha" title="链接到此标题。">#</a></h4>
 <p>在前一个章节1.1中，我们实现的算子已经完整实现了基本功能，因此它已经满足<img alt="alpha" src="https://img.shields.io/badge/alpha-red?style=plastic" />版本的要求。接下来，我们将介绍如何将这个算子进行扩展，使其更可用、更规范。</p>
 </section>
 <section id="beta">
-<h4>1.2.2 使算子更可用（beta版本）<a class="headerlink" href="#beta" title="Link to this heading">#</a></h4>
+<h4>1.2.2 使算子更可用（beta版本）<a class="headerlink" href="#beta" title="链接到此标题。">#</a></h4>
 <ul class="simple">
 <li><p>（<img alt="beta" src="https://img.shields.io/badge/beta-yellow?style=plastic" /> 强烈推荐）为了增强代码鲁棒性、验证正确性和直观展示如何使用其功能，最好为新添加的算子进行单元测试。对于上面的 <code class="docutils literal notranslate"><span class="pre">TextLengthFilter</span></code> 算子，在 <code class="docutils literal notranslate"><span class="pre">tests/ops/filter/</span></code> 中实现如 <code class="docutils literal notranslate"><span class="pre">test_text_length_filter.py</span></code> 的测试文件：</p></li>
 </ul>
@@ -874,7 +874,7 @@
 </ul>
 </section>
 <section id="stable">
-<h4>1.2.3 使算子更快更完备（stable版本）<a class="headerlink" href="#stable" title="Link to this heading">#</a></h4>
+<h4>1.2.3 使算子更快更完备（stable版本）<a class="headerlink" href="#stable" title="链接到此标题。">#</a></h4>
 <ul>
 <li><p>(<img alt="stable" src="https://img.shields.io/badge/stable-green?style=plastic" />) 如果在算子中使用了 Hugging Face 模型，您可能希望利用 GPU 加速。为了实现这一点，请在算子的构造函数中声明 <code class="docutils literal notranslate"><span class="pre">_accelerator</span> <span class="pre">=</span> <span class="pre">'cuda'</span></code>，并确保 <code class="docutils literal notranslate"><span class="pre">compute_stats_single/batched</span></code> 和 <code class="docutils literal notranslate"><span class="pre">process_single/batched</span></code> 方法接受一个额外的位置参数 <code class="docutils literal notranslate"><span class="pre">rank</span></code>。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ... (same as above)</span>
@@ -1079,14 +1079,14 @@
 </section>
 </section>
 <section id="id5">
-<h2>2. 构建自己的数据菜谱和配置<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<h2>2. 构建自己的数据菜谱和配置<a class="headerlink" href="#id5" title="链接到此标题。">#</a></h2>
 <ul class="simple">
 <li><p>我们提供基于 <a class="reference external" href="https://github.com/omni-us/jsonargparse/">jsonargparse</a> 的简单配置以降低样板代码的成本。</p></li>
 <li><p>我们提供大量的示例性菜谱以供参阅复用和扩展，<a class="reference internal" href="RecipeGallery_ZH.html"><span class="std std-doc">数据菜谱Gallery</span></a>。</p></li>
 <li><p>📣📣📣 社区贡献者可提PR在<em>数据菜谱Gallery</em>中添加自定义的数据菜谱，促进传播、复用和相关技术演进。我们非常欢迎共建，并会高亮<a class="reference external" href="https://github.com/modelscope/data-juicer?tab=readme-ov-file#acknowledgement">致谢</a>！</p></li>
 </ul>
 <section id="id6">
-<h3>2.1 丰富的配置源和类型提示<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<h3>2.1 丰富的配置源和类型提示<a class="headerlink" href="#id6" title="链接到此标题。">#</a></h3>
 <ul class="simple">
 <li><p>全局配置对象可以通过以下方式初始化</p></li>
 </ul>
@@ -1109,7 +1109,7 @@
 包含 Python内置类型、来自 <a class="reference external" href="https://docs.python.org/3/library/typing.html">Lib/typing</a> 的类型，以及来自 jsonargparse 的 <a class="reference external" href="https://jsonargparse.readthedocs.io/en/stable/#type-hints">扩展类型</a>，例如具有自定义限制的 <code class="docutils literal notranslate"><span class="pre">restricted</span> <span class="pre">types</span></code> 和 <code class="docutils literal notranslate"><span class="pre">Paths</span></code>。</p>
 </section>
 <section id="id7">
-<h3>2.2 层次化的配置和帮助<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<h3>2.2 层次化的配置和帮助<a class="headerlink" href="#id7" title="链接到此标题。">#</a></h3>
 <ul class="simple">
 <li><p>您可以在参数名称中自由使用点符号来定义层次结构， 例如 <code class="docutils literal notranslate"><span class="pre">maximum_line_length_filter.min</span></code>.
 更重要的是，默认情况下，我们自动注册已实现的运算符的 docstring。 也就是说，所有的结构配置始终与代码同步。</p></li>
@@ -1165,10 +1165,10 @@ optional arguments:
 </section>
 </section>
 <section id="id8">
-<h2>3. 依赖管理<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
+<h2>3. 依赖管理<a class="headerlink" href="#id8" title="链接到此标题。">#</a></h2>
 <p>Data-Juicer 使用基于 <code class="docutils literal notranslate"><span class="pre">uv</span></code> 和 <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> 的现代依赖管理系统。依赖通过标准的 Python 打包格式 (PEP 621) 进行管理，并使用延迟加载系统按需安装。</p>
 <section id="uv">
-<h3>3.1 安装 uv<a class="headerlink" href="#uv" title="Link to this heading">#</a></h3>
+<h3>3.1 安装 uv<a class="headerlink" href="#uv" title="链接到此标题。">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">uv</span></code> 是一个快速的 Python 包安装器和解析器，用于替代 pip。您可以通过以下方式安装：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 使用 curl 安装</span>
 curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
@@ -1180,7 +1180,7 @@ pip<span class="w"> </span>install<span class="w"> </span>uv
 <p>安装完成后，您可以使用 <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">--version</span></code> 验证安装是否成功。</p>
 </section>
 <section id="id9">
-<h3>3.2 虚拟环境管理<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<h3>3.2 虚拟环境管理<a class="headerlink" href="#id9" title="链接到此标题。">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">uv</span></code> 提供了虚拟环境管理功能，可以替代 <code class="docutils literal notranslate"><span class="pre">venv</span></code> 和 <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code>。以下是常用命令：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 创建新的虚拟环境</span>
 uv<span class="w"> </span>venv
@@ -1200,7 +1200,7 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 </div>
 </section>
 <section id="id10">
-<h3>3.3 添加新依赖<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
+<h3>3.3 添加新依赖<a class="headerlink" href="#id10" title="链接到此标题。">#</a></h3>
 <p>添加新依赖的方法：</p>
 <ol class="arabic simple">
 <li><p>将依赖添加到 <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> 的相应部分：</p>
@@ -1226,7 +1226,7 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 </div>
 </section>
 <section id="id11">
-<h3>3.4 开发环境设置<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
+<h3>3.4 开发环境设置<a class="headerlink" href="#id11" title="链接到此标题。">#</a></h3>
 <ol class="arabic simple">
 <li><p>安装所有依赖：</p></li>
 </ol>
@@ -1243,7 +1243,7 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 </div>
 </section>
 <section id="id12">
-<h3>3.5 延迟加载<a class="headerlink" href="#id12" title="Link to this heading">#</a></h3>
+<h3>3.5 延迟加载<a class="headerlink" href="#id12" title="链接到此标题。">#</a></h3>
 <p>延迟加载系统在首次使用时自动安装依赖。这意味着：</p>
 <ul class="simple">
 <li><p>初始安装更快</p></li>
@@ -1254,7 +1254,7 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 </section>
 </section>
 <section id="id13">
-<h2>4. 编码规范<a class="headerlink" href="#id13" title="Link to this heading">#</a></h2>
+<h2>4. 编码规范<a class="headerlink" href="#id13" title="链接到此标题。">#</a></h2>
 <p>我们将编码规范定义在 <code class="docutils literal notranslate"><span class="pre">.pre-commit-config.yaml</span></code> 中。在向仓库贡献代码之前，请使用 <code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> 工具对代码进行自动规范化。</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># ===========install pre-commit tool===========</span>
 uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>pre-commit
@@ -1275,7 +1275,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 <p><strong>注意</strong>：我们在github workflow配置了pre-commit的检查。如果您的PR中该检查没通过，请在本地①确保pre-commit 的相关依赖与项目配置一致（可通过<code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">clean</span></code>和<code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span></code>完成）；②push前执行了<code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">run</span> <span class="pre">--all-files</span></code>.</p>
 </section>
 <section id="id14">
-<h2>5. 文档规范<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
+<h2>5. 文档规范<a class="headerlink" href="#id14" title="链接到此标题。">#</a></h2>
 <p>我们使用 Sphinx 进行文档管理。为保证开发文档顺利集成到 Sphinx 文档系统中，请在编写时注意以下规范：</p>
 <ol class="arabic simple">
 <li><p>标题层级</p>
@@ -1418,7 +1418,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
-    <script src="../_static/translations.js?v=beaddf03"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.utils.s3_utils';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
@@ -602,13 +602,13 @@
                 <article class="bd-article">
                   
   <section id="module-data_juicer.utils.s3_utils">
-<span id="data-juicer-utils-s3-utils-module"></span><h1>data_juicer.utils.s3_utils module<a class="headerlink" href="#module-data_juicer.utils.s3_utils" title="Link to this heading">#</a></h1>
+<span id="data-juicer-utils-s3-utils-module"></span><h1>data_juicer.utils.s3_utils module<a class="headerlink" href="#module-data_juicer.utils.s3_utils" title="链接到此标题。">#</a></h1>
 <p>S3 utilities for Data-Juicer.</p>
 <p>Provides unified S3 authentication and filesystem creation for both
 s3fs (default executor) and PyArrow (Ray executor) backends.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.s3_utils.get_aws_credentials">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.s3_utils.</span></span><span class="sig-name descname"><span class="pre">get_aws_credentials</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/s3_utils.html#get_aws_credentials"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.s3_utils.get_aws_credentials" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.s3_utils.</span></span><span class="sig-name descname"><span class="pre">get_aws_credentials</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/s3_utils.html#get_aws_credentials"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.s3_utils.get_aws_credentials" title="链接到此定义。">#</a></dt>
 <dd><p>Get AWS credentials with priority order:
 1. Environment variables (e.g., AWS_ACCESS_KEY_ID)
 2. Explicit config parameters (e.g., in a dataset config dict)</p>
@@ -625,7 +625,7 @@ If not provided, an empty dict is used.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.s3_utils.create_pyarrow_s3_filesystem">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.s3_utils.</span></span><span class="sig-name descname"><span class="pre">create_pyarrow_s3_filesystem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">S3FileSystem</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/s3_utils.html#create_pyarrow_s3_filesystem"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.s3_utils.create_pyarrow_s3_filesystem" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.s3_utils.</span></span><span class="sig-name descname"><span class="pre">create_pyarrow_s3_filesystem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">S3FileSystem</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/s3_utils.html#create_pyarrow_s3_filesystem"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.s3_utils.create_pyarrow_s3_filesystem" title="链接到此定义。">#</a></dt>
 <dd><p>Create a PyArrow S3FileSystem with proper authentication.</p>
 <p>Authentication priority:
 1. Environment variables (most secure, recommended for production)
@@ -643,7 +643,7 @@ If not provided, an empty dict is used.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.s3_utils.validate_s3_path">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.s3_utils.</span></span><span class="sig-name descname"><span class="pre">validate_s3_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/s3_utils.html#validate_s3_path"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.s3_utils.validate_s3_path" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.s3_utils.</span></span><span class="sig-name descname"><span class="pre">validate_s3_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/s3_utils.html#validate_s3_path"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.s3_utils.validate_s3_path" title="链接到此定义。">#</a></dt>
 <dd><p>Validate that a path is a valid S3 path.</p>
 <dl class="field-list simple">
 <dt class="field-odd">参数<span class="colon">:</span></dt>
@@ -741,7 +741,7 @@ If not provided, an empty dict is used.</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

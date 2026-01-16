@@ -42,16 +42,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/data_juicer/ops/deduplicator/ray_video_deduplicator';</script>
     <script src="../../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../../../genindex.html" />
     <link rel="search" title="搜索" href="../../../../search.html" />
@@ -612,7 +612,7 @@
 
 
 <div class="viewcode-block" id="RayVideoDeduplicator">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.RayVideoDeduplicator">[文档]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.ray_video_deduplicator.RayVideoDeduplicator">[文档]</a>
 <span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="nd">@LOADED_VIDEOS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RayVideoDeduplicator</span><span class="p">(</span><span class="n">RayBasicDeduplicator</span><span class="p">):</span>
@@ -625,7 +625,7 @@
 <span class="sd">    operator supports &#39;ray_actor&#39; or &#39;redis&#39; backends for deduplication.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="RayVideoDeduplicator.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.RayVideoDeduplicator.__init__">[文档]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.ray_video_deduplicator.RayVideoDeduplicator.__init__">[文档]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ray_actor&quot;</span><span class="p">,</span> <span class="n">redis_address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialization.</span>
@@ -638,7 +638,7 @@
 
 
 <div class="viewcode-block" id="RayVideoDeduplicator.calculate_hash">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.RayVideoDeduplicator.calculate_hash">[文档]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.ray_video_deduplicator.RayVideoDeduplicator.calculate_hash">[文档]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">calculate_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sample</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]:</span>
             <span class="k">return</span> <span class="n">RayBasicDeduplicator</span><span class="o">.</span><span class="n">EMPTY_HASH_VALUE</span>
@@ -716,7 +716,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

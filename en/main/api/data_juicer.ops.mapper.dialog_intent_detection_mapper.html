@@ -43,15 +43,15 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=8a448e45"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.ops.mapper.dialog_intent_detection_mapper';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -604,7 +604,7 @@
 <span id="data-juicer-ops-mapper-dialog-intent-detection-mapper-module"></span><h1>data_juicer.ops.mapper.dialog_intent_detection_mapper module<a class="headerlink" href="#module-data_juicer.ops.mapper.dialog_intent_detection_mapper" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.dialog_intent_detection_mapper.</span></span><span class="sig-name descname"><span class="pre">DialogIntentDetectionMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/dialog_intent_detection_mapper.html#DialogIntentDetectionMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.mapper.dialog_intent_detection_mapper.</span></span><span class="sig-name descname"><span class="pre">DialogIntentDetectionMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/mapper/dialog_intent_detection_mapper.html#DialogIntentDetectionMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="data_juicer.ops.base_op.html#data_juicer.ops.base_op.Mapper" title="data_juicer.ops.base_op.Mapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapper</span></code></a></p>
 <p>Generates user’s intent labels in a dialog by analyzing the history, query, and
 response.</p>
@@ -618,42 +618,42 @@ provided, they are included in the input prompt. The operator retries the API ca
 a specified number of times if there are errors.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_SYSTEM_PROMPT">
-<span class="sig-name descname"><span class="pre">DEFAULT_SYSTEM_PROMPT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'请判断用户和LLM多轮对话中用户的意图。\n要求：\n-</span> <span class="pre">需要先进行分析，然后列出用户所具有的意图，下面是一个样例，请模仿样例格式输出。\n用户：你好，我最近对人工智能很感兴趣，能给我讲讲什么是机器学习吗？\n意图分析：用户在请求信息，希望了解有关机器学习的基础知识。\n意图类别：信息查找\nLLM：你好！当然可以。机器学习是一种人工智能方法，允许计算机通过数据自动改进和学习。\n用户：听起来很有趣，有没有推荐的入门书籍或资料？\n意图分析：用户在请求建议，希望获取关于机器学习的入门资源。\n意图类别：请求建议\nLLM：有很多不错的入门书籍和资源。一本常被推荐的书是《Python机器学习实践》（Python</span> <span class="pre">Machine</span> <span class="pre">Learning），它涵盖了基础知识和一些实际案例。此外，您还可以参考Coursera或edX上的在线课程，这些课程提供了系统的学习路径。\n用户：谢谢你的建议！我还想知道，学习机器学习需要什么样的数学基础？\n意图分析：用户在寻求信息，希望了解学习机器学习所需的前提条件，特别是在数学方面。\n意图类别：信息查找\nLLM：学习机器学习通常需要一定的数学基础，特别是线性代数、概率论和统计学。这些数学领域帮助理解算法的工作原理和数据模式分析。如果您对这些主题不太熟悉，建议先从相关基础书籍或在线资源开始学习。\n用户：明白了，我会先补习这些基础知识。再次感谢你的帮助！\n意图分析：用户表达感谢，并表示计划付诸行动来补充所需的基础知识。\n意图类别：其他'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_SYSTEM_PROMPT" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_SYSTEM_PROMPT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'请判断用户和LLM多轮对话中用户的意图。\n要求：\n-</span> <span class="pre">需要先进行分析，然后列出用户所具有的意图，下面是一个样例，请模仿样例格式输出。\n用户：你好，我最近对人工智能很感兴趣，能给我讲讲什么是机器学习吗？\n意图分析：用户在请求信息，希望了解有关机器学习的基础知识。\n意图类别：信息查找\nLLM：你好！当然可以。机器学习是一种人工智能方法，允许计算机通过数据自动改进和学习。\n用户：听起来很有趣，有没有推荐的入门书籍或资料？\n意图分析：用户在请求建议，希望获取关于机器学习的入门资源。\n意图类别：请求建议\nLLM：有很多不错的入门书籍和资源。一本常被推荐的书是《Python机器学习实践》（Python</span> <span class="pre">Machine</span> <span class="pre">Learning），它涵盖了基础知识和一些实际案例。此外，您还可以参考Coursera或edX上的在线课程，这些课程提供了系统的学习路径。\n用户：谢谢你的建议！我还想知道，学习机器学习需要什么样的数学基础？\n意图分析：用户在寻求信息，希望了解学习机器学习所需的前提条件，特别是在数学方面。\n意图类别：信息查找\nLLM：学习机器学习通常需要一定的数学基础，特别是线性代数、概率论和统计学。这些数学领域帮助理解算法的工作原理和数据模式分析。如果您对这些主题不太熟悉，建议先从相关基础书籍或在线资源开始学习。\n用户：明白了，我会先补习这些基础知识。再次感谢你的帮助！\n意图分析：用户表达感谢，并表示计划付诸行动来补充所需的基础知识。\n意图类别：其他'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_SYSTEM_PROMPT" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_QUERY_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_QUERY_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'用户：{query}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_QUERY_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_QUERY_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'用户：{query}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_QUERY_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_RESPONSE_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_RESPONSE_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'LLM：{response}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_RESPONSE_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_RESPONSE_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'LLM：{response}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_RESPONSE_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_CANDIDATES_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_CANDIDATES_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'备选意图类别：[{candidate_str}]'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_CANDIDATES_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_CANDIDATES_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'备选意图类别：[{candidate_str}]'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_CANDIDATES_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_ANALYSIS_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_ANALYSIS_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'意图分析：{analysis}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_ANALYSIS_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_ANALYSIS_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'意图分析：{analysis}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_ANALYSIS_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_LABELS_TEMPLATE">
-<span class="sig-name descname"><span class="pre">DEFAULT_LABELS_TEMPLATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'意图类别：{labels}\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_LABELS_TEMPLATE" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_LABELS_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'意图类别：{labels}\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_LABELS_TEMPLATE" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_ANALYSIS_PATTERN">
-<span class="sig-name descname"><span class="pre">DEFAULT_ANALYSIS_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'意图分析：(.*?)\n'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_ANALYSIS_PATTERN" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_ANALYSIS_PATTERN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'意图分析：(.*?)\n'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_ANALYSIS_PATTERN" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_LABELS_PATTERN">
-<span class="sig-name descname"><span class="pre">DEFAULT_LABELS_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'意图类别：(.*?)($|\n)'</span></em><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_LABELS_PATTERN" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DEFAULT_LABELS_PATTERN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'意图类别：(.*?)($|\n)'</span></span><a class="headerlink" href="#data_juicer.ops.mapper.dialog_intent_detection_mapper.DialogIntentDetectionMapper.DEFAULT_LABELS_PATTERN" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -826,7 +826,7 @@ e.g {‘temperature’: 0.9, ‘top_p’: 0.95}</p></li>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

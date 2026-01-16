@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
-    <script src="../_static/translations.js?v=beaddf03"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/Sandbox_ZH';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
@@ -676,17 +676,17 @@
 
 
   <section id="id1">
-<h1>沙盒实验室<a class="headerlink" href="#id1" title="Link to this heading">#</a></h1>
+<h1>沙盒实验室<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h1>
 <section id="id2">
-<h2>用户指南<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>用户指南<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <section id="dj-sandbox">
-<h3>什么是沙盒实验室（DJ-Sandbox）？<a class="headerlink" href="#dj-sandbox" title="Link to this heading">#</a></h3>
+<h3>什么是沙盒实验室（DJ-Sandbox）？<a class="headerlink" href="#dj-sandbox" title="链接到此标题。">#</a></h3>
 <p>Data-Juicer 中的 DJ-Sandbox 是一个连接数据和模型反馈的中间件，能够在各种任务中实现高性能和低成本的验证。它旨在为用户提供持续增强数据模型方案的最佳实践，具有低开销、可移植性和指导性等特点。在沙盒中，用户可以基于小规模数据集和模型快速实验、迭代和优化方案，然后迁移到更大尺度上，以生成高质量数据，服务于大规模模型。</p>
 <p>除了 Data-Juicer 提供的基本数据优化和方案优化功能外，用户还可以无缝使用可配置组件，例如数据探测和分析、模型训练和评估以及基于数据和模型反馈的方案优化，从而形成数据模型研发的最佳流水线。</p>
 <p>更多详细信息，请参阅我们的<a class="reference external" href="http://arxiv.org/abs/2407.11784">论文</a>（ICML'25 Spotlight）。</p>
 </section>
 <section id="id3">
-<h3>应用<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<h3>应用<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h3>
 <p>我们将沙盒应用于到了众多前沿模型，例如 Mini-Gemini 和 InternVL-2.0（两个受 LLaVA 启发的图像转文本生成模型），EasyAnimate 和 T2V-Turbo（两个基于 Diffusion Transformer 的文本转视频生成模型），以及一个用于图文预训练的 CLIP 模型。在此之上，我们曾在<a class="reference external" href="https://huggingface.co/spaces/Vchitect/VBench_Leaderboard">VBench</a>文生视频排行榜取得了新的榜一。
 <img alt="top-1_in_vbench" src="https://img.alicdn.com/imgextra/i1/O1CN01I9wHW91UNnX9wtCWu_!!6000000002506-2-tps-1275-668.png" /></p>
 <p>相关模型已在ModelScope和HuggingFace平台发布，训练模型的数据集也已开源。</p>
@@ -750,9 +750,9 @@
 <img alt="bench_bottom_up" src="https://img.alicdn.com/imgextra/i2/O1CN01xvu2fo1HU80biR6Q5_!!6000000000760-2-tps-7756-3693.png" /></p>
 </section>
 <section id="id4">
-<h3>快速上手<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<h3>快速上手<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h3>
 <section id="id5">
-<h4>依赖准备<a class="headerlink" href="#id5" title="Link to this heading">#</a></h4>
+<h4>依赖准备<a class="headerlink" href="#id5" title="链接到此标题。">#</a></h4>
 <p>在使用沙盒实验室前，你可能需要使用如下命令安装沙盒相关的依赖：</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>sandbox<span class="o">]</span>
 </pre></div>
@@ -777,7 +777,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <p>如果使用沙盒过程中，这些第三方依赖抛出了一些&quot;未找到模块（Module-Not-Found）&quot;的报错时，用户需要先检查这些库的文档以寻求帮助。</p>
 </section>
 <section id="id6">
-<h4>准备沙盒配置文件<a class="headerlink" href="#id6" title="Link to this heading">#</a></h4>
+<h4>准备沙盒配置文件<a class="headerlink" href="#id6" title="链接到此标题。">#</a></h4>
 <p>沙盒实验总共会依次执行四类任务：数据/模型洞察（<code class="docutils literal notranslate"><span class="pre">probe_job_configs</span></code>）、基于洞察结果的数据菜谱微调迭代（<code class="docutils literal notranslate"><span class="pre">refine_recipe_job_configs</span></code>）、数据处理与模型训练（<code class="docutils literal notranslate"><span class="pre">execution_job_configs</span></code>）和数据/模型评估（<code class="docutils literal notranslate"><span class="pre">evaluation_job_configs</span></code>）。每类任务中，任务按照配置的任务列表依次执行。每个任务需要指定：挂载这个任务的钩子（<code class="docutils literal notranslate"><span class="pre">hook</span></code>），用于识别钩子的标记名(<code class="docutils literal notranslate"><span class="pre">meta_name</span></code>)，Data-Juicer数据处理参数（<code class="docutils literal notranslate"><span class="pre">dj_configs</span></code>），以及该任务其他的特定参数（<code class="docutils literal notranslate"><span class="pre">extra_configs</span></code>）。这些参数中<code class="docutils literal notranslate"><span class="pre">hook</span></code>是必须指定的，其他允许置空。<code class="docutils literal notranslate"><span class="pre">dj_configs</span></code>可以参考完整的Data-Juicer数据处理参数 <a class="reference external" href="https://github.com/modelscope/data-juicer/blob/main/configs/config_all.yaml">config_all.yaml</a>。<code class="docutils literal notranslate"><span class="pre">extra_configs</span></code>为任务特定的参数，没有限定，可以是模型训练、推理、评测等参数，比如用<code class="docutils literal notranslate"><span class="pre">path_k_sigma_recipe</span></code>指定利用k-sigma方法微调后的数据菜谱保存路径。一个sandbox的配置文件示例可参考<code class="docutils literal notranslate"><span class="pre">configs/demo/sandbox/sandbox.yaml</span></code>：</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sandbox config example</span>
 
@@ -862,7 +862,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </div></blockquote>
 </section>
 <section id="id7">
-<h4>运行沙盒<a class="headerlink" href="#id7" title="Link to this heading">#</a></h4>
+<h4>运行沙盒<a class="headerlink" href="#id7" title="链接到此标题。">#</a></h4>
 <p>沙盒的运行入口为<code class="docutils literal notranslate"><span class="pre">tools/sandbox_starter.py</span></code>，使用方法和数据处理与分析工具类似，需要指定沙盒配置文件：</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">python tools/sandbox_starter.py --config configs/demo/sandbox/sandbox.yaml</span>
 </pre></div>
@@ -879,7 +879,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </section>
 </section>
 <section id="id8">
-<h3>组件工厂<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
+<h3>组件工厂<a class="headerlink" href="#id8" title="链接到此标题。">#</a></h3>
 <p>在沙盒流水线的单次运行中，包括了四个大的步骤，其中涉及到如下一些可配置组件，他们分别对应了一个用于初始化这些组件的工厂类：</p>
 <ul class="simple">
 <li><p><strong>数据处理（DataExecutor）</strong>：数据处理的执行器，即Data-Juicer的Executor</p></li>
@@ -1183,15 +1183,15 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <p>详细定义可参考<code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/factories.py</span></code>。</p>
 </section>
 <section id="id9">
-<h3>上下文共享<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<h3>上下文共享<a class="headerlink" href="#id9" title="链接到此标题。">#</a></h3>
 <p>有时不同的 hook 之间需要共享信息。例如，<code class="docutils literal notranslate"><span class="pre">TrainModelHook</span></code> 需要与 <code class="docutils literal notranslate"><span class="pre">EvaluateModelHook</span></code> 共享模型检查点路径，以便在训练后对模型进行评估。</p>
 <p>为了实现这一点，我们集成了一个全局的、跨 hook 和跨 pipeline 的信息容器，名为 <code class="docutils literal notranslate"><span class="pre">context_infos</span></code>，用于存储每个 pipeline 中 hook 的执行结果。<code class="docutils literal notranslate"><span class="pre">context_infos</span></code> 会在管道执行时自动构建。</p>
 <section id="resume">
-<h4>Resume 模式<a class="headerlink" href="#resume" title="Link to this heading">#</a></h4>
+<h4>Resume 模式<a class="headerlink" href="#resume" title="链接到此标题。">#</a></h4>
 <p>每个 pipeline 完成后，<code class="docutils literal notranslate"><span class="pre">context_infos</span></code> 都会保存在磁盘上。基于此，Sandbox 允许 pipeline 级别的 Resume 模式，从上一个 pipeline 的检查点继续执行沙盒。我们只需在沙盒配置文件中将 <code class="docutils literal notranslate"><span class="pre">resume</span></code> 参数设置为 <code class="docutils literal notranslate"><span class="pre">true</span></code> 即可。</p>
 </section>
 <section id="hooks">
-<h4>Hooks 的输入、输出和本地参数<a class="headerlink" href="#hooks" title="Link to this heading">#</a></h4>
+<h4>Hooks 的输入、输出和本地参数<a class="headerlink" href="#hooks" title="链接到此标题。">#</a></h4>
 <p>为了获取上下文信息，Hooks 新增了三个参数：</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">input</span></code>：用于获取存储在上下文信息中之前的 Hook 的执行结果，并将其更新到当前 hook 的配置中。</p>
@@ -1249,11 +1249,11 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </section>
 </section>
 <section id="id10">
-<h2>开发者指南<a class="headerlink" href="#id10" title="Link to this heading">#</a></h2>
+<h2>开发者指南<a class="headerlink" href="#id10" title="链接到此标题。">#</a></h2>
 <p>正如上一章节所说，开发者可开发更多的可配置组件并将它们添加到对应的工厂类中，并用参数<code class="docutils literal notranslate"><span class="pre">type</span></code>进行实例化方法分配。实现了组件后，开发者可以将它们封装为钩子，并将钩子注册到工作列表中，工作列表在流水线中进行编排后，沙盒流水线执行时，会依次在每个步骤执行每个工作列表中的工作。这其中的每一个部分：组件、组件工厂、钩子、工作列表、流水线注册与执行流程编排，都可以由开发者自定义。各个部分的关系由下图示意。
 <img alt="sandbox-pipeline" src="https://img.alicdn.com/imgextra/i3/O1CN01ERmGre1uz3luKOn4n_!!6000000006107-2-tps-4655-1918.png" /></p>
 <section id="id11">
-<h3>组件内部实现<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
+<h3>组件内部实现<a class="headerlink" href="#id11" title="链接到此标题。">#</a></h3>
 <p>目前组件主要分为三个大类：</p>
 <ul class="simple">
 <li><p><strong>执行器（Executor）</strong>：由于数据执行器已经由Data-Juicer的Executor承担，因此此处的执行器特指模型的执行器，包括模型训练、推理、评估等执行器。代码位于<code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/model_executors.py</span></code></p></li>
@@ -1261,7 +1261,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <li><p><strong>数据池操作器（DataPoolManipulator）</strong>：用于操作数据池，例如构建、组合、采样等。代码位于 <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/data_pool_manipulators.py</span></code></p></li>
 </ul>
 <section id="id12">
-<h4>执行器<a class="headerlink" href="#id12" title="Link to this heading">#</a></h4>
+<h4>执行器<a class="headerlink" href="#id12" title="链接到此标题。">#</a></h4>
 <p>模型执行器核心功能为对配置文件中指定的模型用指定的数据集进行训练、推理或评测。模型执行器需继承<code class="docutils literal notranslate"><span class="pre">BaseModelExecutor</span></code>并实现若干核心方法：</p>
 <ul class="simple">
 <li><p>模型执行器的具体行为（训练、推理、评测等）需要在<code class="docutils literal notranslate"><span class="pre">_run</span></code>方法中进行定义</p></li>
@@ -1275,7 +1275,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </ul>
 </section>
 <section id="id13">
-<h4>评估器<a class="headerlink" href="#id13" title="Link to this heading">#</a></h4>
+<h4>评估器<a class="headerlink" href="#id13" title="链接到此标题。">#</a></h4>
 <p>评估器核心功能为对待评估对象使用某种方法进行质量、性能等维度的评估，并最终返回一个评估结果，通常为数值型结果。评估器需继承基类<code class="docutils literal notranslate"><span class="pre">BaseEvaluator</span></code>并实现<code class="docutils literal notranslate"><span class="pre">run</span></code>方法。<code class="docutils literal notranslate"><span class="pre">run</span></code>方法默认接受两个必要参数：</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">eval_type</span></code>：评估类型，用于在某种评估器内部进行评估类型选择</p></li>
@@ -1284,13 +1284,13 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <p>用户也可根据自己的实现方式对这两个参数进行扩展使用。</p>
 </section>
 <section id="id14">
-<h4>数据池操作器<a class="headerlink" href="#id14" title="Link to this heading">#</a></h4>
+<h4>数据池操作器<a class="headerlink" href="#id14" title="链接到此标题。">#</a></h4>
 <p>数据池操作器的核心功能是操作数据池，例如构造、组合、采样等。数据池操作器需要继承自基类 <code class="docutils literal notranslate"><span class="pre">BaseDataPoolManipulator</span></code>，并实现 <code class="docutils literal notranslate"><span class="pre">run</span></code> 方法。<code class="docutils literal notranslate"><span class="pre">run</span></code> 方法所需的参数通常来自 <code class="docutils literal notranslate"><span class="pre">__init__</span></code> 方法中的输入数据池配置，涵盖输入数据池、导出路径以及每种操作器的具体参数。</p>
 <p>用户可以参考 <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/data_pool_manipulators.py</span></code> 中每种操作器的 <code class="docutils literal notranslate"><span class="pre">run</span></code> 方法的 doc string 了解更多详细信息。</p>
 </section>
 </section>
 <section id="id15">
-<h3>流水线钩子<a class="headerlink" href="#id15" title="Link to this heading">#</a></h3>
+<h3>流水线钩子<a class="headerlink" href="#id15" title="链接到此标题。">#</a></h3>
 <p>正如章节开始部分所说，在流水线中，我们需要实现若干钩子将组件与流水线执行步骤通过工作列表连接起来。被激活的钩子会在流水线的工作列表中进行注册，然后在流水线执行时依次对各个步骤工作列表中的钩子执行。四个步骤对应的工作列表分别如下：</p>
 <ol class="arabic simple">
 <li><p><strong>数据/模型洞察</strong>：洞察工作列表 -- probe_jobs</p></li>
@@ -1387,11 +1387,11 @@ bash<span class="w"> </span>setup_easyanimate.sh
 <p>值得注意的是，一个钩子可以在多个工作列表进行注册，因为这个钩子在不同的流水线阶段可以扮演不同的角色，比如我们可以对处理前后的数据集都进行分析，以比较数据集处理前后的质量、多样性等维度的变化情况。</p>
 </section>
 <section id="id16">
-<h3>自定义沙盒流水线<a class="headerlink" href="#id16" title="Link to this heading">#</a></h3>
+<h3>自定义沙盒流水线<a class="headerlink" href="#id16" title="链接到此标题。">#</a></h3>
 <p>用户直接在参数配置文件中修改任务配置列表即可实现任务修改和编排。</p>
 </section>
 <section id="id17">
-<h3>监测器<a class="headerlink" href="#id17" title="Link to this heading">#</a></h3>
+<h3>监测器<a class="headerlink" href="#id17" title="链接到此标题。">#</a></h3>
 <p>在上述章节中，反复提到“监测”这个概念。流水线会对各个步骤中产生的若干指标都进行监测，这些监测过程都依靠沙盒监测器<code class="docutils literal notranslate"><span class="pre">SandboxWatcher</span></code>实现的。</p>
 <p><code class="docutils literal notranslate"><span class="pre">SandboxWatcher</span></code>基于wandb实现，主要包括4个方法：</p>
 <ul class="simple">
@@ -1402,7 +1402,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </ul>
 </section>
 <section id="id18">
-<h3>上下文信息实现细节<a class="headerlink" href="#id18" title="Link to this heading">#</a></h3>
+<h3>上下文信息实现细节<a class="headerlink" href="#id18" title="链接到此标题。">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">context_infos</span></code> 包含两个级别：</p>
 <ul class="simple">
 <li><p>pipeline 级别：它是 <code class="docutils literal notranslate"><span class="pre">context_infos</span></code> 的第一级，它是一个字典，键是 pipeline 名称，值是该 pipeline 中每个 job 的上下文信息列表。</p></li>
@@ -1438,7 +1438,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </div>
 </section>
 <section id="id19">
-<h3>环境管理器<a class="headerlink" href="#id19" title="Link to this heading">#</a></h3>
+<h3>环境管理器<a class="headerlink" href="#id19" title="链接到此标题。">#</a></h3>
 <p>Sandbox 支持不同类型的第三方库，用于训练、评估等。如果将它们全部放在一个环境中，一些重要且复杂的依赖项可能会发生版本冲突。因此，我们提供了一个易于使用的环境管理器，用于将不同第三方库在不同环境中分别进行管理，允许用户在独立的环境中运行命令。</p>
 <p>环境的基本类是 <code class="docutils literal notranslate"><span class="pre">Env</span></code>，位于 <code class="docutils literal notranslate"><span class="pre">data_juicer/core/sandbox/env_manager.py</span></code> 中，其实现如下：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Env</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
@@ -1531,7 +1531,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
 </section>
 </section>
 <section id="q-a">
-<h2>Q&amp;A<a class="headerlink" href="#q-a" title="Link to this heading">#</a></h2>
+<h2>Q&amp;A<a class="headerlink" href="#q-a" title="链接到此标题。">#</a></h2>
 <ol class="arabic simple">
 <li><p>训练 InternVL 时发生 <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code>：</p></li>
 </ol>
@@ -1705,7 +1705,7 @@ bash<span class="w"> </span>setup_easyanimate.sh
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

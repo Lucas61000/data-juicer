@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
-    <script src="../_static/translations.js?v=beaddf03"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/data_juicer.core.monitor';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
@@ -604,15 +604,15 @@
 
 
   <section id="module-data_juicer.core.monitor">
-<span id="data-juicer-core-monitor-module"></span><h1>data_juicer.core.monitor module<a class="headerlink" href="#module-data_juicer.core.monitor" title="Link to this heading">#</a></h1>
+<span id="data-juicer-core-monitor-module"></span><h1>data_juicer.core.monitor module<a class="headerlink" href="#module-data_juicer.core.monitor" title="链接到此标题。">#</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.resource_monitor">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.core.monitor.</span></span><span class="sig-name descname"><span class="pre">resource_monitor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#resource_monitor"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.resource_monitor" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.core.monitor.</span></span><span class="sig-name descname"><span class="pre">resource_monitor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#resource_monitor"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.resource_monitor" title="链接到此定义。">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_juicer.core.monitor.</span></span><span class="sig-name descname"><span class="pre">Monitor</span></span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.core.monitor.</span></span><span class="sig-name descname"><span class="pre">Monitor</span></span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor" title="链接到此定义。">#</a></dt>
 <dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Monitor resource utilization and other information during the data
 processing.</p>
@@ -644,7 +644,7 @@ processing.</p>
 <p>]</p>
 </div></blockquote>
 <section id="id1">
-<h2>}<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<h2>}<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h2>
 <p>Based on the structure above, the resource utilization analysis result will
 add several extra fields on the first level:
 '''python
@@ -666,27 +666,27 @@ add several extra fields on the first level:
 </div></blockquote>
 </section>
 <section id="id2">
-<h2>}<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>}<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <p>Only those fields in DYNAMIC_FIELDS will be analyzed.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor.DYNAMIC_FIELDS">
-<span class="sig-name descname"><span class="pre">DYNAMIC_FIELDS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'Available</span> <span class="pre">mem.',</span> <span class="pre">'CPU</span> <span class="pre">util.',</span> <span class="pre">'Free</span> <span class="pre">mem.',</span> <span class="pre">'GPU</span> <span class="pre">free</span> <span class="pre">mem.',</span> <span class="pre">'GPU</span> <span class="pre">used</span> <span class="pre">mem.',</span> <span class="pre">'GPU</span> <span class="pre">util.',</span> <span class="pre">'Mem.</span> <span class="pre">util.',</span> <span class="pre">'Used</span> <span class="pre">mem.'}</span></em><a class="headerlink" href="#data_juicer.core.monitor.Monitor.DYNAMIC_FIELDS" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">DYNAMIC_FIELDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'Available</span> <span class="pre">mem.',</span> <span class="pre">'CPU</span> <span class="pre">util.',</span> <span class="pre">'Free</span> <span class="pre">mem.',</span> <span class="pre">'GPU</span> <span class="pre">free</span> <span class="pre">mem.',</span> <span class="pre">'GPU</span> <span class="pre">used</span> <span class="pre">mem.',</span> <span class="pre">'GPU</span> <span class="pre">util.',</span> <span class="pre">'Mem.</span> <span class="pre">util.',</span> <span class="pre">'Used</span> <span class="pre">mem.'}</span></span><a class="headerlink" href="#data_juicer.core.monitor.Monitor.DYNAMIC_FIELDS" title="链接到此定义。">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.__init__"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.__init__" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.__init__"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.__init__" title="链接到此定义。">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor.monitor_all_resources">
-<span class="sig-name descname"><span class="pre">monitor_all_resources</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.monitor_all_resources"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.monitor_all_resources" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">monitor_all_resources</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.monitor_all_resources"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.monitor_all_resources" title="链接到此定义。">#</a></dt>
 <dd><p>Detect the resource utilization of all distributed nodes.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor.monitor_current_resources">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitor_current_resources</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.monitor_current_resources"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.monitor_current_resources" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">monitor_current_resources</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.monitor_current_resources"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.monitor_current_resources" title="链接到此定义。">#</a></dt>
 <dd><p>Detect the resource utilization of the current environment/machine.
 All data of &quot;util.&quot; is ratios in the range of [0.0, 1.0]. All data of
 &quot;mem.&quot; is in MB.</p>
@@ -694,26 +694,26 @@ All data of &quot;util.&quot; is ratios in the range of [0.0, 1.0]. All data of
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor.draw_resource_util_graph">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">draw_resource_util_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_util_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.draw_resource_util_graph"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.draw_resource_util_graph" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">draw_resource_util_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_util_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.draw_resource_util_graph"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.draw_resource_util_graph" title="链接到此定义。">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor.analyze_resource_util_list">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">analyze_resource_util_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_util_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.analyze_resource_util_list"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.analyze_resource_util_list" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">analyze_resource_util_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_util_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.analyze_resource_util_list"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.analyze_resource_util_list" title="链接到此定义。">#</a></dt>
 <dd><p>Analyze the resource utilization for a given resource util list.
 Compute {'max', 'min', 'avg'} of resource metrics for each dict item.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor.analyze_single_resource_util">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">analyze_single_resource_util</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_util_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.analyze_single_resource_util"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.analyze_single_resource_util" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">analyze_single_resource_util</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_util_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.analyze_single_resource_util"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.analyze_single_resource_util" title="链接到此定义。">#</a></dt>
 <dd><p>Analyze the resource utilization for a single resource util dict.
 Compute {'max', 'min', 'avg'} of each resource metrics.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.monitor.Monitor.monitor_func">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitor_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.monitor_func"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.monitor_func" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">monitor_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/monitor.html#Monitor.monitor_func"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.core.monitor.Monitor.monitor_func" title="链接到此定义。">#</a></dt>
 <dd><p>Process the input dataset and probe related information for each OP in
 the specified operator list.</p>
 <p>For now, we support the following targets to probe:
@@ -822,7 +822,7 @@ result for each OP.</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

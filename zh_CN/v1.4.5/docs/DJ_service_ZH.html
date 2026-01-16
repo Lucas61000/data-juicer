@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
-    <script src="../_static/translations.js?v=beaddf03"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/DJ_service_ZH';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
@@ -669,32 +669,32 @@
                 <article class="bd-article">
                   
   <section id="dj">
-<h1>DJ_服务化<a class="headerlink" href="#dj" title="Link to this heading">#</a></h1>
+<h1>DJ_服务化<a class="headerlink" href="#dj" title="链接到此标题。">#</a></h1>
 <p>为了进一步提升Data-Juicer用户体验，我们新增了基于 API 的服务功能（Service API）和 MCP 服务，使用户能够以更便捷的方式集成和使用 Data-Juicer 的强大算子池。通过服务功能，用户无需深入了解框架的底层实现细节，即可快速构建数据处理流水线，并与现有系统无缝对接。用户也可通过该服务实现不同project之间的环境隔离。本文档将详细介绍如何启动和使用这两种服务功能，帮助您快速上手并充分发挥 Data-Juicer 的潜力。</p>
 <section id="api">
-<h2>API服务化<a class="headerlink" href="#api" title="Link to this heading">#</a></h2>
+<h2>API服务化<a class="headerlink" href="#api" title="链接到此标题。">#</a></h2>
 <section id="id1">
-<h3>启动服务<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<h3>启动服务<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h3>
 <p>执行如下代码：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uvicorn<span class="w"> </span>service:app
 </pre></div>
 </div>
 </section>
 <section id="id2">
-<h3>API调用<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<h3>API调用<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h3>
 <p>API支持调用Data-Juicer所有<code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>中的函数和类（调用类的某个函数）。函数调用GET调用，类通过POST调用。</p>
 <section id="id3">
-<h4>协议<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<h4>协议<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h4>
 </section>
 <section id="url">
-<h4>url路径<a class="headerlink" href="#url" title="Link to this heading">#</a></h4>
+<h4>url路径<a class="headerlink" href="#url" title="链接到此标题。">#</a></h4>
 <p>采用GET调用函数，url路径与Data-Juicer库中函数引用路径一致，如<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">data_juicer.config</span> <span class="pre">import</span> <span class="pre">init_configs</span></code>对应路径为<code class="docutils literal notranslate"><span class="pre">data_juicer/config/init_configs</span></code>。采用POST调用类的某个函数，url路径与Data-Juicer库中类路径拼接上函数名，如调用<code class="docutils literal notranslate"><span class="pre">TextLengthFIlter</span></code>算子的<code class="docutils literal notranslate"><span class="pre">compute_stats_batched</span></code>函数，对应路径为<code class="docutils literal notranslate"><span class="pre">data_juicer/ops/filter/TextLengthFilter/compute_stats_batched</span></code>。</p>
 <section id="id4">
-<h5>参数<a class="headerlink" href="#id4" title="Link to this heading">#</a></h5>
+<h5>参数<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h5>
 <p>进行GET和POST调用时，会自动将参数转化为list，同时，查询参数不支持字典传输。于是，如果传递的参数的value是list或dict，我们统一用<code class="docutils literal notranslate"><span class="pre">json.dumps</span></code>传输，并在前面添加特殊符号<code class="docutils literal notranslate"><span class="pre">&lt;json_dumps&gt;</span></code>与一般的string进行区分。</p>
 </section>
 <section id="id5">
-<h5>特例<a class="headerlink" href="#id5" title="Link to this heading">#</a></h5>
+<h5>特例<a class="headerlink" href="#id5" title="链接到此标题。">#</a></h5>
 <ol class="arabic simple">
 <li><p>针对<code class="docutils literal notranslate"><span class="pre">cfg</span></code>参数，我们默认采用<code class="docutils literal notranslate"><span class="pre">json.dumps</span></code>传输，无需添加特殊符号<code class="docutils literal notranslate"><span class="pre">&lt;json_dumps&gt;</span></code>。</p></li>
 <li><p>针对<code class="docutils literal notranslate"><span class="pre">dataset</span></code>参数，允许用户传输<code class="docutils literal notranslate"><span class="pre">dataset</span></code>在服务器上的路径，sever将加载dataset。</p></li>
@@ -703,7 +703,7 @@
 </section>
 </section>
 <section id="id6">
-<h4>函数调用<a class="headerlink" href="#id6" title="Link to this heading">#</a></h4>
+<h4>函数调用<a class="headerlink" href="#id6" title="链接到此标题。">#</a></h4>
 <p>采用GET调用，url路径与Data-Juicer库中函数引用路径一致，查询参数用来传递函数的参数。</p>
 <p>例如，可用如下python代码调用Data-Juicer的参数init函数<code class="docutils literal notranslate"><span class="pre">init_configs</span></code>，获取Data-Juicer所有参数。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
@@ -724,7 +724,7 @@
 </div>
 </section>
 <section id="id7">
-<h4>类的函数调用<a class="headerlink" href="#id7" title="Link to this heading">#</a></h4>
+<h4>类的函数调用<a class="headerlink" href="#id7" title="链接到此标题。">#</a></h4>
 <p>采用POST调用，url路径与Data-Juicer库中类路径拼接上函数名，查询参数用来传递函数的参数，JSON字段用来传递类构造函数所需参数。</p>
 <p>例如，可用如下python代码调用Data-Juicer的<code class="docutils literal notranslate"><span class="pre">TextLengthFIlter</span></code>算子。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
@@ -749,14 +749,14 @@
 </section>
 </section>
 <section id="id8">
-<h3>演示<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
+<h3>演示<a class="headerlink" href="#id8" title="链接到此标题。">#</a></h3>
 <p>我们结合<a class="reference external" href="https://github.com/agentscope-ai/agentscope">AgentScope</a>实现了用户通过自然语言调用Data-Juicer算子进行数据清洗的功能，算子采用API服务的方式进行调用。具体代码请参考<a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.5/demos/api_service">这里</a>。</p>
 </section>
 </section>
 <section id="mcp">
-<h2>MCP服务器<a class="headerlink" href="#mcp" title="Link to this heading">#</a></h2>
+<h2>MCP服务器<a class="headerlink" href="#mcp" title="链接到此标题。">#</a></h2>
 <section id="id9">
-<h3>概览<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<h3>概览<a class="headerlink" href="#id9" title="链接到此标题。">#</a></h3>
 <p>Data-Juicer MCP 服务器提供数据处理算子，以协助完成数据清洗、过滤、去重等任务。为了适应不同的使用场景，我们提供两种服务器供选用：</p>
 <ul class="simple">
 <li><p><strong>Recipe-Flow（数据菜谱）</strong>：允许根据算子的类型和标签进行筛选，并支持将多个算子组合成一个数据菜谱来运行。</p></li>
@@ -766,9 +766,9 @@
 <p>支持两种部署方式：stdio 和 SSE。stdio 方法不支持多进程。如果需要多进程或多线程功能，则必须使用 SSE 部署方法。以下提供了每种方法的配置详细信息。</p>
 </section>
 <section id="recipe-flow">
-<h3>Recipe-Flow<a class="headerlink" href="#recipe-flow" title="Link to this heading">#</a></h3>
+<h3>Recipe-Flow<a class="headerlink" href="#recipe-flow" title="链接到此标题。">#</a></h3>
 <section id="get-data-processing-ops">
-<h4>1. get_data_processing_ops<a class="headerlink" href="#get-data-processing-ops" title="Link to this heading">#</a></h4>
+<h4>1. get_data_processing_ops<a class="headerlink" href="#get-data-processing-ops" title="链接到此标题。">#</a></h4>
 <ul class="simple">
 <li><p>根据指定的类型和标签检索可用的数据处理算子列表（若不指定，则返回全部算子）</p></li>
 <li><p>输入：</p>
@@ -782,7 +782,7 @@
 </ul>
 </section>
 <section id="run-data-recipe">
-<h4>2. run_data_recipe<a class="headerlink" href="#run-data-recipe" title="Link to this heading">#</a></h4>
+<h4>2. run_data_recipe<a class="headerlink" href="#run-data-recipe" title="链接到此标题。">#</a></h4>
 <ul class="simple">
 <li><p>执行数据菜谱</p></li>
 <li><p>输入：</p>
@@ -798,7 +798,7 @@
 </section>
 </section>
 <section id="granular-operators">
-<h3>Granular-Operators<a class="headerlink" href="#granular-operators" title="Link to this heading">#</a></h3>
+<h3>Granular-Operators<a class="headerlink" href="#granular-operators" title="链接到此标题。">#</a></h3>
 <p>默认情况下，该 MCP 服务器将返回所有Data-Juicer算子工具，每个工具都独立运行。</p>
 <p>可通过指定环境变量 <code class="docutils literal notranslate"><span class="pre">DJ_OPS_LIST_PATH</span></code> 控制 MCP 服务器返回的算子工具：</p>
 <ol class="arabic simple">
@@ -816,13 +816,13 @@ text_pair_similarity_filter
 </ol>
 </section>
 <section id="id10">
-<h3>配置<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
+<h3>配置<a class="headerlink" href="#id10" title="链接到此标题。">#</a></h3>
 <p>以下配置示例演示了如何使用 stdio 和 SSE 方法设置两种不同的 MCP 服务器。这些示例仅用于说明目的，应根据特定 MCP 客户端的配置格式进行调整。</p>
 <section id="stdio">
-<h4>stdio<a class="headerlink" href="#stdio" title="Link to this heading">#</a></h4>
+<h4>stdio<a class="headerlink" href="#stdio" title="链接到此标题。">#</a></h4>
 <p>适用于快速本地测试和简单场景。将以下内容添加到 MCP 客户端的配置文件中（例如，claude_desktop_config.json 或类似的配置文件）：</p>
 <section id="uvx">
-<h5>使用 uvx<a class="headerlink" href="#uvx" title="Link to this heading">#</a></h5>
+<h5>使用 uvx<a class="headerlink" href="#uvx" title="链接到此标题。">#</a></h5>
 <p>直接从存储库运行最新版本的 Data-Juicer MCP，无需手动进行本地安装。</p>
 <ul>
 <li><p><strong>Recipe-Flow模式</strong>：</p>
@@ -868,7 +868,7 @@ text_pair_similarity_filter
 </ul>
 </section>
 <section id="id11">
-<h5>本地安装<a class="headerlink" href="#id11" title="Link to this heading">#</a></h5>
+<h5>本地安装<a class="headerlink" href="#id11" title="链接到此标题。">#</a></h5>
 <ol class="arabic">
 <li><p>将 Data-Juicer 仓库克隆到本地：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/datajuicer/data-juicer.git
@@ -923,7 +923,7 @@ text_pair_similarity_filter
 </section>
 </section>
 <section id="sse">
-<h4>SSE<a class="headerlink" href="#sse" title="Link to this heading">#</a></h4>
+<h4>SSE<a class="headerlink" href="#sse" title="链接到此标题。">#</a></h4>
 <p>要使用 SSE 部署，首先需要单独启动 MCP 服务器。</p>
 <ol class="arabic">
 <li><p>运行 MCP 服务器：执行 MCP 服务器脚本，指定端口号：</p>
@@ -1097,7 +1097,7 @@ text_pair_similarity_filter
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

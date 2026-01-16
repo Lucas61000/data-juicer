@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=f281be69"></script>
-    <script src="../_static/translations.js?v=beaddf03"></script>
+    <script src="../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'docs/DJ_service_ZH';</script>
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="索引" href="../genindex.html" />
     <link rel="search" title="搜索" href="../search.html" />
@@ -663,30 +663,30 @@
 
 
   <section id="api">
-<h1>API服务化<a class="headerlink" href="#api" title="Link to this heading">#</a></h1>
+<h1>API服务化<a class="headerlink" href="#api" title="链接到此标题。">#</a></h1>
 <p>为了进一步提升Data-Juicer用户体验，我们新增了基于 API 的服务功能（Service API），使用户能够以更便捷的方式集成和使用 Data-Juicer 的强大算子池。通过该服务功能，用户无需深入了解框架的底层实现细节，即可快速构建数据处理流水线，并与现有系统无缝对接。用户也可通过该服务实现不同project之间的环境隔离。本文档将详细介绍如何启动和使用这一服务功能，帮助您快速上手并充分发挥 Data-Juicer 的潜力。</p>
 <section id="id1">
-<h2>启动服务<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<h2>启动服务<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h2>
 <p>执行如下代码：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uvicorn<span class="w"> </span>service:app
 </pre></div>
 </div>
 </section>
 <section id="id2">
-<h2>API调用<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>API调用<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <p>API支持调用Data-Juicer所有<code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>中的函数和类（调用类的某个函数）。函数调用GET调用，类通过POST调用。</p>
 <section id="id3">
-<h3>协议<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<h3>协议<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h3>
 <section id="url">
-<h4>url路径<a class="headerlink" href="#url" title="Link to this heading">#</a></h4>
+<h4>url路径<a class="headerlink" href="#url" title="链接到此标题。">#</a></h4>
 <p>采用GET调用函数，url路径与Data-Juicer库中函数引用路径一致，如<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">data_juicer.config</span> <span class="pre">import</span> <span class="pre">init_configs</span></code>对应路径为<code class="docutils literal notranslate"><span class="pre">data_juicer/config/init_configs</span></code>。采用POST调用类的某个函数，url路径与Data-Juicer库中类路径拼接上函数名，如调用<code class="docutils literal notranslate"><span class="pre">TextLengthFIlter</span></code>算子的<code class="docutils literal notranslate"><span class="pre">compute_stats_batched</span></code>函数，对应路径为<code class="docutils literal notranslate"><span class="pre">data_juicer/ops/filter/TextLengthFilter/compute_stats_batched</span></code>。</p>
 </section>
 <section id="id4">
-<h4>参数<a class="headerlink" href="#id4" title="Link to this heading">#</a></h4>
+<h4>参数<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h4>
 <p>进行GET和POST调用时，会自动将参数转化为list，同时，查询参数不支持字典传输。于是，如果传递的参数的value是list或dict，我们统一用<code class="docutils literal notranslate"><span class="pre">json.dumps</span></code>传输，并在前面添加特殊符号<code class="docutils literal notranslate"><span class="pre">&lt;json_dumps&gt;</span></code>与一般的string进行区分。</p>
 </section>
 <section id="id5">
-<h4>特例<a class="headerlink" href="#id5" title="Link to this heading">#</a></h4>
+<h4>特例<a class="headerlink" href="#id5" title="链接到此标题。">#</a></h4>
 <ol class="arabic simple">
 <li><p>针对<code class="docutils literal notranslate"><span class="pre">cfg</span></code>参数，我们默认采用<code class="docutils literal notranslate"><span class="pre">json.dumps</span></code>传输，无需添加特殊符号<code class="docutils literal notranslate"><span class="pre">&lt;json_dumps&gt;</span></code>。</p></li>
 <li><p>针对<code class="docutils literal notranslate"><span class="pre">dataset</span></code>参数，允许用户传输<code class="docutils literal notranslate"><span class="pre">dataset</span></code>在服务器上的路径，sever将加载dataset。</p></li>
@@ -695,7 +695,7 @@
 </section>
 </section>
 <section id="id6">
-<h3>函数调用<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<h3>函数调用<a class="headerlink" href="#id6" title="链接到此标题。">#</a></h3>
 <p>采用GET调用，url路径与Data-Juicer库中函数引用路径一致，查询参数用来传递函数的参数。</p>
 <p>例如，可用如下python代码调用Data-Juicer的参数init函数<code class="docutils literal notranslate"><span class="pre">init_configs</span></code>，获取Data-Juicer所有参数。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
@@ -716,7 +716,7 @@
 </div>
 </section>
 <section id="id7">
-<h3>类的函数调用<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<h3>类的函数调用<a class="headerlink" href="#id7" title="链接到此标题。">#</a></h3>
 <p>采用POST调用，url路径与Data-Juicer库中类路径拼接上函数名，查询参数用来传递函数的参数，JSON字段用来传递类构造函数所需参数。</p>
 <p>例如，可用如下python代码调用Data-Juicer的<code class="docutils literal notranslate"><span class="pre">TextLengthFIlter</span></code>算子。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
@@ -741,7 +741,7 @@
 </section>
 </section>
 <section id="id8">
-<h2>演示<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
+<h2>演示<a class="headerlink" href="#id8" title="链接到此标题。">#</a></h2>
 <p>我们结合<a class="reference external" href="https://github.com/modelscope/agentscope">AgentScope</a>实现了用户通过自然语言调用Data-Juicer算子进行数据清洗的功能，算子采用API服务的方式进行调用。具体代码请参考<a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/v1.4.0/demos/api_service">这里</a>。</p>
 </section>
 </section>
@@ -859,7 +859,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>

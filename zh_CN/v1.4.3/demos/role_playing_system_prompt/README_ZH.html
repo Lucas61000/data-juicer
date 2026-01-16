@@ -43,16 +43,16 @@
 
     <script>window.JUICER_API_URL = 'https://datajuicer.online:443';</script>
     <script src="../../_static/documentation_options.js?v=91bfbbb6"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=f281be69"></script>
-    <script src="../../_static/translations.js?v=beaddf03"></script>
+    <script src="../../_static/translations.js?v=540d3cec"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'demos/role_playing_system_prompt/README_ZH';</script>
     <script src="../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../_static/ask-ai-widget.js?v=ed755f82"></script>
+    <script src="../../_static/ask-ai-widget.js?v=dc122734"></script>
     <link rel="icon" href="../../_static/icon.png"/>
     <link rel="index" title="索引" href="../../genindex.html" />
     <link rel="search" title="搜索" href="../../search.html" />
@@ -676,14 +676,14 @@
 
 
   <section id="llmsystem-prompt">
-<h1>为LLM构造角色扮演的system prompt<a class="headerlink" href="#llmsystem-prompt" title="Link to this heading">#</a></h1>
+<h1>为LLM构造角色扮演的system prompt<a class="headerlink" href="#llmsystem-prompt" title="链接到此标题。">#</a></h1>
 <p>在该Demo中，我们展示了如何通过Data-Juicer的菜谱，生成让LLM扮演剧本中给定角色的system prompt。我们这里以《西游记》为例。下面是在少量剧本上的演示：</p>
 <p><video controls width="100%" height="auto" playsinline>
   <source src="https://github.com/user-attachments/assets/20499385-1791-4089-8074-cebefe8c7e80" type="video/mp4">
   Your browser does not support the video tag.
 </video></p>
 <section id="id1">
-<h2>数据准备<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<h2>数据准备<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h2>
 <p>将《西游记》按章节划分，按顺序每个章节对应Data-Juicer的一个sample，放到“text”关键字下。如下json格式：</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span><span class="err">&#39;</span><span class="kc">te</span><span class="err">x</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="err">&#39;第一章内容&#39;</span><span class="p">},</span>
@@ -695,13 +695,13 @@
 </div>
 </section>
 <section id="id2">
-<h2>执行<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<h2>执行<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/process_data.py<span class="w"> </span>--config<span class="w"> </span>./demos/role_playing_system_prompt/role_playing_system_prompt_test.yaml
 </pre></div>
 </div>
 </section>
 <section id="id3">
-<h2>生成样例<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<h2>生成样例<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h2>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span># 角色身份
 花果山水帘洞美猴王，拜须菩提祖师学艺，得名孙悟空，号称齐天大圣。
 # 角色经历
@@ -832,7 +832,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3创建。
+    由 <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4创建。
     <br/>
   </p>
 </div>
