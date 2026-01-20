@@ -12,6 +12,7 @@ from data_juicer.core.executor import ExecutorBase
 from data_juicer.core.executor.dag_execution_mixin import DAGExecutionMixin
 from data_juicer.core.executor.event_logging_mixin import EventLoggingMixin
 from data_juicer.core.ray_exporter import RayExporter
+from data_juicer.core.tracer.ray_tracer import RayTracer
 from data_juicer.ops import load_ops
 from data_juicer.ops.op_fusion import fuse_operators
 from data_juicer.utils.lazy_loader import LazyLoader
@@ -41,7 +42,7 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
 
         1. Support Filter, Mapper and Exact Deduplicator operators for now.
         2. Only support loading `.json` files.
-        3. Advanced functions such as checkpoint, tracer are not supported.
+        3. Advanced functions, such as checkpoint, are not supported.
 
     """
 
@@ -108,6 +109,18 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
             keep_hashes_in_res_ds=self.cfg.keep_hashes_in_res_ds,
             **export_extra_args,
         )
+
+        # setup tracer
+        self.tracer = None
+        self.open_tracer = self.cfg.open_tracer
+        if self.open_tracer:
+            logger.info("Preparing tracer...")
+            self.tracer = RayTracer.remote(
+                self.work_dir,
+                self.cfg.op_list_to_trace,
+                show_num=self.cfg.trace_num,
+                trace_keys=self.cfg.trace_keys,
+            )
 
     def run(self, load_data_np: Optional[PositiveInt] = None, skip_export: bool = False, skip_return: bool = False):
         """
@@ -180,6 +193,7 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
             if self.pipeline_dag:
                 metrics = {"duration": duration, "input_rows": input_rows, "output_rows": output_rows}
                 self._post_execute_operations_with_dag_monitoring(ops, metrics=metrics)
+            dataset.process(ops, tracer=self.tracer)
 
             # 4. data export
             if not skip_export:
@@ -191,6 +205,11 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
         # Log job completion with DAG context
         job_duration = time.time() - tstart
         self.log_job_complete(job_duration, self.cfg.export_path)
+
+        # 5. finalize the tracer results
+        # Finalize sample-level traces after all operators have finished
+        if self.tracer:
+            ray.get(self.tracer.finalize_traces.remote())
 
         if not skip_return:
             return dataset
