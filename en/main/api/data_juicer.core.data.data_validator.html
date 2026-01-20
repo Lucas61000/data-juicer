@@ -835,6 +835,15 @@ missing values allowed. Defaults to 0.0.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
+<p>Or from YAML:
+.. code-block:: yaml</p>
+<blockquote>
+<div><dl class="simple">
+<dt>field_types:</dt><dd><p>field1: ‘str’
+field2: ‘int’</p>
+</dd>
+</dl>
+</div></blockquote>
 </dd>
 </dl>
 <dl class="field-list simple">
@@ -842,16 +851,27 @@ missing values allowed. Defaults to 0.0.</p>
 <dd class="field-odd"><p><a class="reference internal" href="#data_juicer.core.data.data_validator.DataValidationError" title="data_juicer.core.data.data_validator.DataValidationError"><strong>DataValidationError</strong></a> – If validation fails</p>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_juicer.core.data.data_validator.RequiredFieldsValidator.TYPE_NAME_MAPPING">
+<span class="sig-name descname"><span class="pre">TYPE_NAME_MAPPING</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">type</span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'bool':</span> <span class="pre">&lt;class</span> <span class="pre">'bool'&gt;,</span> <span class="pre">'boolean':</span> <span class="pre">&lt;class</span> <span class="pre">'bool'&gt;,</span> <span class="pre">'bytes':</span> <span class="pre">&lt;class</span> <span class="pre">'bytes'&gt;,</span> <span class="pre">'dict':</span> <span class="pre">&lt;class</span> <span class="pre">'dict'&gt;,</span> <span class="pre">'float':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;,</span> <span class="pre">'int':</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">'integer':</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">'list':</span> <span class="pre">&lt;class</span> <span class="pre">'list'&gt;,</span> <span class="pre">'set':</span> <span class="pre">&lt;class</span> <span class="pre">'set'&gt;,</span> <span class="pre">'str':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'string':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">'tuple':</span> <span class="pre">&lt;class</span> <span class="pre">'tuple'&gt;}</span></span><a class="headerlink" href="#data_juicer.core.data.data_validator.RequiredFieldsValidator.TYPE_NAME_MAPPING" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.data.data_validator.RequiredFieldsValidator.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/data/data_validator.html#RequiredFieldsValidator.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.data.data_validator.RequiredFieldsValidator.__init__" title="Link to this definition">#</a></dt>
 <dd><p>Initialize validator with config</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> – Dict containing:
+<dd class="field-odd"><p><strong>config</strong> – <p>Dict containing:
 - required_fields: List of field names that must exist
-- field_types: Optional map of field names to expected types
-- allow_missing: Optional float for max ratio missing allowed</p>
+- field_types: Optional map of field names to expected types</p>
+<blockquote>
+<div><p>(can be type objects or type name strings)</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>allow_missing: Optional float for max ratio missing allowed</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
@@ -934,6 +954,7 @@ missing values allowed. Defaults to 0.0.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.data.data_validator.RequiredFieldsValidator"><code class="docutils literal notranslate"><span class="pre">RequiredFieldsValidator</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.data.data_validator.RequiredFieldsValidator.TYPE_NAME_MAPPING"><code class="docutils literal notranslate"><span class="pre">RequiredFieldsValidator.TYPE_NAME_MAPPING</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.data.data_validator.RequiredFieldsValidator.__init__"><code class="docutils literal notranslate"><span class="pre">RequiredFieldsValidator.__init__()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.data.data_validator.RequiredFieldsValidator.validate"><code class="docutils literal notranslate"><span class="pre">RequiredFieldsValidator.validate()</span></code></a></li>
 </ul>

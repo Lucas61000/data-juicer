@@ -899,9 +899,32 @@
 <span class="sd">                &quot;allow_missing&quot;: 0.0</span>
 <span class="sd">            }</span>
 
+<span class="sd">        Or from YAML:</span>
+<span class="sd">        .. code-block:: yaml</span>
+
+<span class="sd">            field_types:</span>
+<span class="sd">              field1: &#39;str&#39;</span>
+<span class="sd">              field2: &#39;int&#39;</span>
+
 <span class="sd">    Raises:</span>
 <span class="sd">        DataValidationError: If validation fails</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Mapping from type name strings to actual Python types</span>
+    <span class="n">TYPE_NAME_MAPPING</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;str&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="s2">&quot;string&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="s2">&quot;int&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="s2">&quot;integer&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="s2">&quot;float&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="s2">&quot;bool&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="s2">&quot;boolean&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="s2">&quot;dict&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="s2">&quot;tuple&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span>
+        <span class="s2">&quot;set&quot;</span><span class="p">:</span> <span class="nb">set</span><span class="p">,</span>
+        <span class="s2">&quot;bytes&quot;</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="p">}</span>
 
 <div class="viewcode-block" id="RequiredFieldsValidator.__init__">
 <a class="viewcode-back" href="../../../../api/data_juicer.core.data.data_validator.html#data_juicer.core.data.data_validator.RequiredFieldsValidator.__init__">[docs]</a>
@@ -913,16 +936,50 @@
 <span class="sd">            config: Dict containing:</span>
 <span class="sd">                - required_fields: List of field names that must exist</span>
 <span class="sd">                - field_types: Optional map of field names to expected types</span>
+<span class="sd">                  (can be type objects or type name strings)</span>
 <span class="sd">                - allow_missing: Optional float for max ratio missing allowed</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">required_fields</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;required_fields&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">field_types</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;field_types&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_field_types</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;field_types&quot;</span><span class="p">,</span> <span class="p">{}))</span>
         <span class="c1"># Default no missing allowed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">allow_missing</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;allow_missing&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sample_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sample_size&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_normalize_field_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert field type specifications to actual Python type objects.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            field_types: Dictionary mapping field names to types (as type</span>
+<span class="sd">                objects or strings)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary mapping field names to Python type objects</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            DataValidationError: If an unknown type name string is provided</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">normalized</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">type_spec</span> <span class="ow">in</span> <span class="n">field_types</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">type_spec</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+                <span class="n">normalized</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">type_spec</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">type_spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">type_name</span> <span class="o">=</span> <span class="n">type_spec</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">type_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">TYPE_NAME_MAPPING</span><span class="p">:</span>
+                    <span class="n">supported_types</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TYPE_NAME_MAPPING</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+                    <span class="k">raise</span> <span class="n">DataValidationError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Unknown type name &#39;</span><span class="si">{</span><span class="n">type_spec</span><span class="si">}</span><span class="s2">&#39; for field &quot;</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">&#39;. Supported types: </span><span class="si">{</span><span class="n">supported_types</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">normalized</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TYPE_NAME_MAPPING</span><span class="p">[</span><span class="n">type_name</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DataValidationError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid type specification for field &#39;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;expected type object or string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">type_spec</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">normalized</span>
 
 <div class="viewcode-block" id="RequiredFieldsValidator.validate">
 <a class="viewcode-back" href="../../../../api/data_juicer.core.data.data_validator.html#data_juicer.core.data.data_validator.RequiredFieldsValidator.validate">[docs]</a>
