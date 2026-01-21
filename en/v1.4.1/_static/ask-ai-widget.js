@@ -443,43 +443,60 @@ var AskAIWidget = (function () {
         // ✨ Fetch from memory to get verified messages with complete metadata
         console.log('Stream ended, fetching latest messages from memory...');
         const recentMessages = await this.getMemory(2); // Get last 2 messages (user + assistant)
-        
+
         if (recentMessages.length >= 2) {
           const userMessage = recentMessages[recentMessages.length - 2];
           const assistantMessage = recentMessages[recentMessages.length - 1];
           
           // Validate these are the messages we expect
           if (userMessage.role === 'user' && assistantMessage.role === 'assistant') {
-            console.log('✓ Memory sync successful');
-            console.log('  User message ID:', userMessage.id);
-            console.log('  Assistant message ID:', assistantMessage.id);
             
-            // Extract assistant content
-            let verifiedContent = '';
-            if (Array.isArray(assistantMessage.content)) {
-              verifiedContent = assistantMessage.content
-                .filter(c => c.type === "text")
-                .map(c => c.text)
-                .join('');
-            }
-            
-            // Use verified content if stream was incomplete or network was unstable
-            if (verifiedContent && (!streamCompletedSuccessfully || verifiedContent !== currentStreamContent)) {
-              console.log('⚠ Stream content differs from server, using server version');
-              currentStreamContent = verifiedContent;
-              // Update UI with correct content
-              if (onContentUpdate) {
-                onContentUpdate(currentStreamContent);
+            const extractText = (content) => {
+              if (Array.isArray(content)) {
+                return content.filter(c => c.type === 'text').map(c => c.text).join('').trim();
               }
-            }
+              return (content || '').trim();
+            };
             
-            if (onComplete) {
-              onComplete(userMessage, assistantMessage);
+            const userContent = extractText(userMessage.content);
+            const expectedContent = message.trim();
+            
+            if (userContent === expectedContent) {
+              console.log('✓ Memory sync successful');
+              console.log('  User message ID:', userMessage.id);
+              console.log('  Assistant message ID:', assistantMessage.id);
+              
+              // Extract assistant content
+              let verifiedContent = '';
+              if (Array.isArray(assistantMessage.content)) {
+                verifiedContent = assistantMessage.content
+                  .filter(c => c.type === "text")
+                  .map(c => c.text)
+                  .join('');
+              }
+              
+              // Use verified content if stream was incomplete or network was unstable
+              if (verifiedContent && (!streamCompletedSuccessfully || verifiedContent !== currentStreamContent)) {
+                console.log('⚠ Stream content differs from server, using server version');
+                currentStreamContent = verifiedContent;
+                // Update UI with correct content
+                if (onContentUpdate) {
+                  onContentUpdate(currentStreamContent);
+                }
+              }
+              
+              if (onComplete) {
+                onComplete(userMessage, assistantMessage);
+              }
+              return;
+            } else {
+              console.warn('⚠ User message content mismatch - memory may not be synced yet');
+              console.log('  Expected:', expectedContent.substring(0, 50));
+              console.log('  Found in memory:', userContent.substring(0, 50));
             }
-            return;
           }
         }
-        
+
         // Fallback: memory sync failed, use stream data
         console.warn('⚠ Could not verify messages from memory, using stream data');
         if (onComplete) {
