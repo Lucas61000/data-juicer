@@ -855,6 +855,21 @@
     <span class="n">total_gpu</span> <span class="o">=</span> <span class="n">ray_gpu_count</span><span class="p">()</span>
     <span class="n">available_mem</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ray_available_memories</span><span class="p">())</span> <span class="o">*</span> <span class="n">_OPS_MEMORY_LIMIT_FRACTION</span> <span class="o">/</span> <span class="mi">1024</span>  <span class="c1"># Convert MB to GB</span>
     <span class="n">available_gpu_mem</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ray_available_gpu_memories</span><span class="p">())</span> <span class="o">*</span> <span class="n">_OPS_MEMORY_LIMIT_FRACTION</span> <span class="o">/</span> <span class="mi">1024</span>  <span class="c1"># Convert MB to GB</span>
+
+    <span class="c1"># Validate cluster resources to prevent divide-by-zero</span>
+    <span class="k">if</span> <span class="n">total_cpu</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">&quot;Ray cluster has no CPU resources available (ray_cpu_count() returned 0). &quot;</span>
+            <span class="s2">&quot;This typically indicates the Ray cluster is not properly initialized. &quot;</span>
+            <span class="s2">&quot;Please ensure the Ray cluster has active worker nodes.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">available_mem</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">&quot;Ray cluster has no memory resources available. &quot;</span>
+            <span class="s2">&quot;Please verify the Ray cluster status with ray.cluster_resources().&quot;</span>
+        <span class="p">)</span>
+
     <span class="n">resource_configs</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">for</span> <span class="n">op_idx</span><span class="p">,</span> <span class="n">op</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">operators</span><span class="p">):</span>
@@ -881,6 +896,18 @@
         <span class="n">cpu_required_frac</span><span class="p">,</span> <span class="n">gpu_required_frac</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
         <span class="c1"># GPU operator calculations</span>
         <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">use_cuda</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">total_gpu</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Op[</span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">] requires GPU but no GPUs are available in Ray cluster &quot;</span>
+                    <span class="s2">&quot;(ray_gpu_count() returned 0). &quot;</span>
+                    <span class="s2">&quot;Please ensure GPU nodes are configured in the Ray cluster.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">available_gpu_mem</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Op[</span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">] requires GPU but no GPU memory is available. &quot;</span>
+                    <span class="s2">&quot;Please verify GPU nodes are properly configured.&quot;</span>
+                <span class="p">)</span>
+
             <span class="n">gpu_req</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">num_gpus</span>
             <span class="n">gpu_mem_req</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">memory</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">gpu_req</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">gpu_mem_req</span><span class="p">:</span>
