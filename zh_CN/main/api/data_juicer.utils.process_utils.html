@@ -604,6 +604,20 @@
   <section id="module-data_juicer.utils.process_utils">
 <span id="data-juicer-utils-process-utils-module"></span><h1>data_juicer.utils.process_utils module<a class="headerlink" href="#module-data_juicer.utils.process_utils" title="链接到此标题。">#</a></h1>
 <dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.utils.process_utils.setup_worker_threads">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.process_utils.</span></span><span class="sig-name descname"><span class="pre">setup_worker_threads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/process_utils.html#setup_worker_threads"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.process_utils.setup_worker_threads" title="链接到此定义。">#</a></dt>
+<dd><p>Configure thread limits for worker processes to prevent thread over-subscription.</p>
+<p>When running with multiple worker processes (e.g., num_proc &gt; 1), each worker
+using multiple threads leads to severe performance degradation due to thread
+contention. This function limits threads per worker to prevent this issue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_threads</strong> -- Number of threads per worker process (default: 1)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.process_utils.setup_mp">
 <span class="sig-prename descclassname"><span class="pre">data_juicer.utils.process_utils.</span></span><span class="sig-name descname"><span class="pre">setup_mp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/process_utils.html#setup_mp"><span class="viewcode-link"><span class="pre">[源代码]</span></span></a><a class="headerlink" href="#data_juicer.utils.process_utils.setup_mp" title="链接到此定义。">#</a></dt>
 <dd></dd></dl>
@@ -715,6 +729,7 @@ operator when others are idle</p></li>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.process_utils.setup_worker_threads"><code class="docutils literal notranslate"><span class="pre">setup_worker_threads()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.process_utils.setup_mp"><code class="docutils literal notranslate"><span class="pre">setup_mp()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.process_utils.get_min_cuda_memory"><code class="docutils literal notranslate"><span class="pre">get_min_cuda_memory()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.process_utils.calculate_np"><code class="docutils literal notranslate"><span class="pre">calculate_np()</span></code></a></li>

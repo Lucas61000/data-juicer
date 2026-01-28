@@ -619,6 +619,44 @@
 <span class="c1"># This leaves some memory for Ray&#39;s overhead and other system processes.</span>
 <span class="n">_OPS_MEMORY_LIMIT_FRACTION</span> <span class="o">=</span> <span class="mf">1.0</span>
 
+<span class="c1"># Track whether worker threads have been configured</span>
+<span class="n">_WORKER_THREADS_CONFIGURED</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="setup_worker_threads">
+<a class="viewcode-back" href="../../../api/data_juicer.utils.process_utils.html#data_juicer.utils.process_utils.setup_worker_threads">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_worker_threads</span><span class="p">(</span><span class="n">num_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configure thread limits for worker processes to prevent thread over-subscription.</span>
+
+<span class="sd">    When running with multiple worker processes (e.g., num_proc &gt; 1), each worker</span>
+<span class="sd">    using multiple threads leads to severe performance degradation due to thread</span>
+<span class="sd">    contention. This function limits threads per worker to prevent this issue.</span>
+
+<span class="sd">    :param num_threads: Number of threads per worker process (default: 1)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_WORKER_THREADS_CONFIGURED</span>
+
+    <span class="c1"># Only configure once per process</span>
+    <span class="k">if</span> <span class="n">_WORKER_THREADS_CONFIGURED</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Set PyTorch thread limits directly (works even after torch is imported)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+        <span class="n">torch</span><span class="o">.</span><span class="n">set_num_threads</span><span class="p">(</span><span class="n">num_threads</span><span class="p">)</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">set_num_interop_threads</span><span class="p">(</span><span class="n">num_threads</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Set torch threads to </span><span class="si">{</span><span class="n">num_threads</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># torch.set_num_interop_threads can only be called once</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not set torch interop threads: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">_WORKER_THREADS_CONFIGURED</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
 
 <div class="viewcode-block" id="setup_mp">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.process_utils.html#data_juicer.utils.process_utils.setup_mp">[docs]</a>
