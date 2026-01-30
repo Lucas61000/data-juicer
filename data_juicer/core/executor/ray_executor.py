@@ -179,7 +179,7 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
                 self._pre_execute_operations_with_dag_monitoring(ops)
 
             # Execute operations (Ray executor uses simple dataset.process)
-            dataset = dataset.process(ops)
+            dataset = dataset.process(ops, tracer=self.tracer)
 
             # Force materialization to get real execution
             logger.info("Materializing dataset to collect real metrics...")
@@ -193,7 +193,6 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
             if self.pipeline_dag:
                 metrics = {"duration": duration, "input_rows": input_rows, "output_rows": output_rows}
                 self._post_execute_operations_with_dag_monitoring(ops, metrics=metrics)
-            dataset.process(ops, tracer=self.tracer)
 
             # 4. data export
             if not skip_export:

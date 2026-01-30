@@ -59,7 +59,6 @@ dependencies = [
     "gitpython",
     "mcp[cli]>=1.7.0",
     "pylance",
-    "boto3",
 ]
 
 [project.optional-dependencies]
@@ -224,7 +223,7 @@ profile = "black"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-python_classes = ["*Test"]
+python_classes = ["*Test", "Test*"]
 python_functions = ["test_*"]
 addopts = "-v"
 filterwarnings = [
