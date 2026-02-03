@@ -66,7 +66,8 @@
 # 分区配置
 partition:
   size: 1000  # 每个分区的样本数
-  max_size_mb: 64  # 分区最大大小（MB）
+  max_size_mb: 256  # 分区最大大小（MB）
+  target_size_mb: 256  # 目标分区大小（128、256、512 或 1024）
 
 
 
@@ -91,7 +92,7 @@ intermediate_storage:
 ```yaml
 # 传统扁平配置（仍有效）
 partition_size: 1000
-max_partition_size_mb: 64
+max_partition_size_mb: 256
 preserve_intermediate_data: true
 storage_format: "parquet"
 use_arrow_batches: true

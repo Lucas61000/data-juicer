@@ -554,7 +554,7 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         # Group operations based on checkpoint strategy
         op_groups = self.ckpt_manager.group_operations_for_checkpointing(ops)
         logger.info(f"Grouped {len(ops)} operations into {len(op_groups)} groups for checkpointing")
-        logger.info(f"Detailed op gruops: {op_groups}")
+        logger.info(f"Detailed op groups: {op_groups}")
 
         current_dataset = dataset
 

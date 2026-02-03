@@ -143,7 +143,7 @@ The Resource-Aware Partitioning system automatically optimizes partition sizes a
 - **Automatic Resource Detection**: Analyzes local and cluster resources
 - **Data-Driven Optimization**: Samples data to determine optimal partition sizes
 - **Modality-Aware**: Different optimization strategies for text, image, audio, video, and multimodal data
-- **64MB Target**: Optimizes partitions to target 64MB per partition
+- **256MB Target**: Optimizes partitions to target 256MB per partition (configurable via `partition.target_size_mb`)
 - **Worker Count Optimization**: Automatically determines optimal number of Ray workers
 
 ### Configuration
@@ -167,7 +167,7 @@ resource_optimization:
 1. **Resource Detection**: Analyzes CPU, memory, GPU, and cluster resources
 2. **Data Sampling**: Samples dataset to understand data characteristics
 3. **Modality Analysis**: Determines data modality and applies appropriate optimizations
-4. **Partition Calculation**: Calculates optimal partition size targeting 64MB
+4. **Partition Calculation**: Calculates optimal partition size targeting 256MB (configurable)
 5. **Worker Optimization**: Determines optimal number of Ray workers
 6. **Application**: Applies optimizations to the processing pipeline
 

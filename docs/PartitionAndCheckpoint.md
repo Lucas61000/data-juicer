@@ -109,7 +109,7 @@ Controls how the dataset is split and how failures are handled:
 
 1. **Auto Mode** (Recommended - `mode: "auto"`):
    - Automatically analyzes your data characteristics and system resources
-   - Calculates optimal partition size targeting ~64MB per partition
+   - Calculates optimal partition size targeting ~256MB per partition (configurable via `partition.target_size_mb`)
    - Determines optimal number of partitions based on dataset size
    - Configures optimal worker count based on available CPU cores
    - No manual tuning required - adapts to your hardware and data
@@ -205,7 +205,7 @@ intermediate_storage:
 **Benefits:**
 - ✅ Automatically adapts to your data characteristics (text length, modality, etc.)
 - ✅ Optimizes for your system resources (CPU, memory, GPU)
-- ✅ Targets ~64MB per partition for optimal memory usage
+- ✅ Targets ~256MB per partition for optimal memory usage (configurable via `partition.target_size_mb`)
 - ✅ Calculates optimal number of partitions based on dataset size
 - ✅ No manual tuning required
 
@@ -216,7 +216,7 @@ intermediate_storage:
   Total samples: 10000
   Recommended partition size: 5000 samples
   Calculated partitions: 2
-  Recommended max size: 64 MB
+  Recommended max size: 256 MB
   Recommended workers: 4
 ```
 
@@ -645,20 +645,21 @@ DataJuicer now includes an intelligent auto-configuration system that automatica
 
 | Modality | Default Size | Max Size | Memory Multiplier | Use Case |
 |----------|--------------|----------|-------------------|----------|
-| **Text** | 5000 samples | 20000 | 1.0x | Efficient processing, low memory, target 64MB partitions |
-| **Image** | 1000 samples | 5000 | 5.0x | Moderate memory, image processing, target 64MB partitions |
-| **Audio** | 500 samples | 2000 | 8.0x | High memory, audio processing, target 64MB partitions |
-| **Video** | 200 samples | 1000 | 20.0x | Very high memory, complex processing, target 64MB partitions |
-| **Multimodal** | 800 samples | 3000 | 10.0x | Multiple modalities, moderate complexity, target 64MB partitions |
+| **Text** | 10000 samples | 50000 | 1.0x | Efficient processing, low memory, target 256MB partitions |
+| **Image** | 2000 samples | 10000 | 5.0x | Moderate memory, image processing, target 256MB partitions |
+| **Audio** | 1000 samples | 4000 | 8.0x | High memory, audio processing, target 256MB partitions |
+| **Video** | 400 samples | 2000 | 20.0x | Very high memory, complex processing, target 256MB partitions |
+| **Multimodal** | 1600 samples | 6000 | 10.0x | Multiple modalities, moderate complexity, target 256MB partitions |
 
 #### **Enable Auto-Configuration**
 
 ```yaml
 partition:
   mode: "auto"  # Enable automatic optimization
+  target_size_mb: 256  # Target partition size (128, 256, 512, or 1024)
   # Fallback values used if auto-analysis fails
-  size: 5000
-  max_size_mb: 64
+  size: 10000
+  max_size_mb: 256
 ```
 
 #### **Manual Override**
