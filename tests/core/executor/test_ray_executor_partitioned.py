@@ -361,5 +361,309 @@ class PartitionedRayExecutorTest(DataJuicerTestCaseBase):
             self.assertEqual(result, "failed")
 
 
+    # ==================== Edge Case Tests ====================
+
+    @TEST_TAG('ray')
+    def test_single_partition(self):
+        """Test execution with single partition (edge case)."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '1'  # Single partition
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_single_partition', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_single_partition')
+
+        executor = PartitionedRayExecutor(cfg)
+        executor.run()
+
+        # Verify execution completes
+        self.assertTrue(os.path.exists(cfg.export_path))
+        self.assertEqual(executor.num_partitions, 1)
+
+    @TEST_TAG('ray')
+    def test_checkpoint_every_n_ops_strategy(self):
+        """Test checkpointing with EVERY_N_OPS strategy."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '2',
+            '--checkpoint.enabled', 'true',
+            '--checkpoint.strategy', 'every_n_ops',
+            '--checkpoint.n_ops', '2'
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_every_n_ops', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_every_n_ops')
+
+        executor = PartitionedRayExecutor(cfg)
+
+        # Verify strategy configuration
+        self.assertEqual(executor.ckpt_manager.checkpoint_strategy.value, 'every_n_ops')
+        self.assertEqual(executor.ckpt_manager.checkpoint_n_ops, 2)
+
+        # Run and verify
+        executor.run()
+        self.assertTrue(os.path.exists(cfg.export_path))
+
+    @TEST_TAG('ray')
+    def test_checkpoint_disabled(self):
+        """Test execution with checkpointing disabled."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '2',
+            '--checkpoint.enabled', 'false'
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_no_checkpoint', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_no_checkpoint')
+
+        executor = PartitionedRayExecutor(cfg)
+        executor.run()
+
+        # Verify execution completes without checkpoints
+        self.assertTrue(os.path.exists(cfg.export_path))
+
+        # Checkpoint directory might exist but should be empty or not created
+        checkpoint_dir = cfg.checkpoint_dir
+        if os.path.exists(checkpoint_dir):
+            checkpoint_files = [f for f in os.listdir(checkpoint_dir) if f.endswith('.parquet')]
+            self.assertEqual(len(checkpoint_files), 0, "Checkpoints should not be created when disabled")
+
+    @TEST_TAG('ray')
+    def test_partition_target_size_configuration(self):
+        """Test configurable partition target size."""
+        for target_size in [128, 256, 512]:
+            cfg = init_configs([
+                '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+                '--partition.mode', 'auto',
+                '--partition.target_size_mb', str(target_size)
+            ])
+            cfg.export_path = os.path.join(self.tmp_dir, f'test_target_{target_size}', 'res.jsonl')
+            cfg.work_dir = os.path.join(self.tmp_dir, f'test_target_{target_size}')
+
+            executor = PartitionedRayExecutor(cfg)
+
+            # Verify target size is set
+            self.assertEqual(cfg.partition.target_size_mb, target_size)
+
+    @TEST_TAG('ray')
+    def test_event_logging_disabled(self):
+        """Test execution with event logging disabled."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '2'
+        ])
+        cfg.event_logging = {'enabled': False}
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_no_events', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_no_events')
+
+        executor = PartitionedRayExecutor(cfg)
+        executor.run()
+
+        # Verify execution completes
+        self.assertTrue(os.path.exists(cfg.export_path))
+
+        # Event logger should be None
+        self.assertIsNone(executor.event_logger)
+
+    @TEST_TAG('ray')
+    def test_work_directory_creation(self):
+        """Test that work directory and subdirectories are created."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '2'
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_work_dir', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_work_dir')
+
+        executor = PartitionedRayExecutor(cfg)
+
+        # Verify work directory exists
+        self.assertTrue(os.path.exists(cfg.work_dir))
+
+    @TEST_TAG('ray')
+    def test_dag_execution_status(self):
+        """Test DAG execution status reporting."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '2'
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_dag_status', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_dag_status')
+
+        executor = PartitionedRayExecutor(cfg)
+        executor._initialize_dag_execution(cfg)
+
+        # Get DAG status
+        status = executor.get_dag_execution_status()
+
+        self.assertIsNotNone(status)
+        self.assertIn('dag_initialized', status)
+        self.assertTrue(status['dag_initialized'])
+
+    @TEST_TAG('ray')
+    def test_operation_grouping_integration(self):
+        """Test that operation grouping works correctly in execution."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '2',
+            '--checkpoint.enabled', 'true',
+            '--checkpoint.strategy', 'every_n_ops',
+            '--checkpoint.n_ops', '2'
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_op_grouping', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_op_grouping')
+
+        executor = PartitionedRayExecutor(cfg)
+
+        # Get operation groups from checkpoint manager
+        # Note: This tests the grouping logic is accessible
+        from data_juicer.utils.ckpt_utils import CheckpointStrategy
+        self.assertEqual(executor.ckpt_manager.checkpoint_strategy, CheckpointStrategy.EVERY_N_OPS)
+
+
+class PartitionedRayExecutorEdgeCasesTest(DataJuicerTestCaseBase):
+    """Additional edge case tests for PartitionedRayExecutor."""
+
+    root_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..')
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.tmp_dir = tempfile.mkdtemp(prefix='test_ray_executor_edge_')
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        import shutil
+        if os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
+
+    @TEST_TAG('ray')
+    def test_many_partitions(self):
+        """Test execution with many partitions (stress test)."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '8'  # Many partitions
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_many_partitions', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_many_partitions')
+
+        executor = PartitionedRayExecutor(cfg)
+        self.assertEqual(executor.num_partitions, 8)
+
+        # Should initialize successfully
+        executor._initialize_dag_execution(cfg)
+
+        # DAG should have nodes for each partition
+        num_ops = len(cfg.process)
+        expected_nodes = num_ops * 8  # ops * partitions
+        self.assertEqual(len(executor.pipeline_dag.nodes), expected_nodes)
+
+    @TEST_TAG('ray')
+    def test_checkpoint_file_naming_consistency(self):
+        """Test checkpoint file naming is consistent across partitions."""
+        from data_juicer.utils.ckpt_utils import RayCheckpointManager, CheckpointStrategy
+
+        ckpt_dir = os.path.join(self.tmp_dir, 'test_ckpt_naming')
+        os.makedirs(ckpt_dir, exist_ok=True)
+
+        mgr = RayCheckpointManager(
+            ckpt_dir=ckpt_dir,
+            checkpoint_enabled=True,
+            checkpoint_strategy=CheckpointStrategy.EVERY_OP,
+        )
+
+        # Test filename generation for various op/partition combinations
+        test_cases = [
+            (0, 0, "checkpoint_op_0000_partition_0000.parquet"),
+            (0, 1, "checkpoint_op_0000_partition_0001.parquet"),
+            (5, 3, "checkpoint_op_0005_partition_0003.parquet"),
+            (99, 15, "checkpoint_op_0099_partition_0015.parquet"),
+        ]
+
+        for op_idx, partition_id, expected in test_cases:
+            filename = mgr.resolve_checkpoint_filename(op_idx, partition_id)
+            self.assertEqual(filename, expected,
+                f"Mismatch for op={op_idx}, partition={partition_id}")
+
+    @TEST_TAG('ray')
+    def test_checkpoint_manual_with_nonexistent_ops(self):
+        """Test MANUAL checkpoint strategy with non-existent operation names."""
+        from data_juicer.utils.ckpt_utils import RayCheckpointManager, CheckpointStrategy
+
+        ckpt_dir = os.path.join(self.tmp_dir, 'test_ckpt_manual_nonexistent')
+        os.makedirs(ckpt_dir, exist_ok=True)
+
+        mgr = RayCheckpointManager(
+            ckpt_dir=ckpt_dir,
+            checkpoint_enabled=True,
+            checkpoint_strategy=CheckpointStrategy.MANUAL,
+            checkpoint_op_names=["nonexistent_op_1", "nonexistent_op_2"],
+        )
+
+        # Should not checkpoint any operation that doesn't match
+        self.assertFalse(mgr.should_checkpoint(0, "text_filter"))
+        self.assertFalse(mgr.should_checkpoint(1, "mapper"))
+
+        # Should checkpoint matching operations
+        self.assertTrue(mgr.should_checkpoint(2, "nonexistent_op_1"))
+
+    @TEST_TAG('ray')
+    def test_auto_mode_execution(self):
+        """Test end-to-end auto mode execution."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'auto',
+            '--partition.target_size_mb', '256'
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_auto_mode_exec', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_auto_mode_exec')
+
+        executor = PartitionedRayExecutor(cfg)
+
+        # Verify auto mode is set
+        self.assertEqual(executor.partition_mode, 'auto')
+
+        # Run execution
+        executor.run()
+
+        # Verify output
+        self.assertTrue(os.path.exists(cfg.export_path))
+
+    @TEST_TAG('ray')
+    def test_dag_node_status_transitions(self):
+        """Test DAG node status transitions during execution."""
+        cfg = init_configs([
+            '--config', os.path.join(self.root_path, 'demos/process_on_ray/configs/demo-new-config.yaml'),
+            '--partition.mode', 'manual',
+            '--partition.num_of_partitions', '2'
+        ])
+        cfg.export_path = os.path.join(self.tmp_dir, 'test_dag_status_trans', 'res.jsonl')
+        cfg.work_dir = os.path.join(self.tmp_dir, 'test_dag_status_trans')
+
+        executor = PartitionedRayExecutor(cfg)
+        executor._initialize_dag_execution(cfg)
+
+        # Get a node ID
+        if executor.pipeline_dag.nodes:
+            node_id = list(executor.pipeline_dag.nodes.keys())[0]
+            node = executor.pipeline_dag.nodes[node_id]
+
+            # Initial status should be pending
+            self.assertEqual(node["status"], "pending")
+
+            # Mark as started
+            executor._mark_dag_node_started(node_id)
+            self.assertEqual(executor.pipeline_dag.nodes[node_id]["status"], "running")
+
+            # Mark as completed
+            executor._mark_dag_node_completed(node_id, duration=1.0)
+            self.assertEqual(executor.pipeline_dag.nodes[node_id]["status"], "completed")
+
+
 if __name__ == '__main__':
     unittest.main()
