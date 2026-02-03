@@ -39,6 +39,8 @@ class BenchmarkResult:
     num_operations: int
     checkpoint_count: int
     storage_used_mb: float
+    input_rows: int
+    output_rows: int
     success: bool
     error_message: Optional[str] = None
 
@@ -65,6 +67,25 @@ def get_dir_size_mb(path: str) -> float:
             if os.path.exists(fp):
                 total += os.path.getsize(fp)
     return total / (1024 * 1024)
+
+
+def count_jsonl_rows(path: str) -> int:
+    """Count rows in a JSONL file or directory of JSON files."""
+    if not os.path.exists(path):
+        return 0
+
+    if os.path.isfile(path):
+        with open(path) as f:
+            return sum(1 for _ in f)
+
+    # Directory (Ray's sharded output format)
+    total = 0
+    for filename in os.listdir(path):
+        if filename.endswith(".json") or filename.endswith(".jsonl"):
+            filepath = os.path.join(path, filename)
+            with open(filepath) as f:
+                total += sum(1 for _ in f)
+    return total
 
 
 def create_test_dataset(output_path: str, num_samples: int = 10000) -> str:
@@ -137,7 +158,7 @@ def create_benchmark_config(
     return config_path
 
 
-def run_benchmark(config_path: str, job_id: str, work_dir: str) -> BenchmarkResult:
+def run_benchmark(config_path: str, job_id: str, work_dir: str, input_rows: int) -> BenchmarkResult:
     """Run a single benchmark and collect metrics."""
 
     # Parse config to get settings
@@ -191,11 +212,17 @@ def run_benchmark(config_path: str, job_id: str, work_dir: str) -> BenchmarkResu
     if os.path.exists(checkpoint_dir):
         checkpoint_count = len(list(Path(checkpoint_dir).glob("checkpoint_op_*.parquet")))
 
+    # Count output rows
+    output_path = config.get("export_path", "")
+    output_rows = count_jsonl_rows(output_path) if success else 0
+
     # Get partition count from events
     num_partitions = partition_config.get("num_of_partitions", 1) if partition_config else 1
     num_operations = len(config.get("process", []))
 
-    print(f"  Time: {total_time:.1f}s | Storage: {storage_mb:.1f}MB | Checkpoints: {checkpoint_count}")
+    # Row verification status
+    row_status = "OK" if output_rows == input_rows else f"MISMATCH (expected {input_rows})"
+    print(f"  Time: {total_time:.1f}s | Storage: {storage_mb:.1f}MB | Checkpoints: {checkpoint_count} | Rows: {output_rows} {row_status}")
 
     return BenchmarkResult(
         config_name=job_id,
@@ -209,6 +236,8 @@ def run_benchmark(config_path: str, job_id: str, work_dir: str) -> BenchmarkResu
         num_operations=num_operations,
         checkpoint_count=checkpoint_count,
         storage_used_mb=storage_mb,
+        input_rows=input_rows,
+        output_rows=output_rows,
         success=success,
         error_message=error_msg,
     )
@@ -221,6 +250,10 @@ def run_overhead_benchmark(dataset_path: str, output_base: str, num_partitions: 
     print("OVERHEAD BENCHMARK")
     print("Comparing execution time across configurations")
     print("=" * 60)
+
+    # Count input rows once
+    input_rows = count_jsonl_rows(dataset_path)
+    print(f"\nInput dataset: {input_rows} rows")
 
     results = {}
 
@@ -246,7 +279,7 @@ def run_overhead_benchmark(dataset_path: str, output_base: str, num_partitions: 
             checkpoint_n_ops=2,
         )
 
-        result = run_benchmark(config_path, name, work_dir)
+        result = run_benchmark(config_path, name, work_dir, input_rows)
         results[name] = result
 
     return results
@@ -266,9 +299,10 @@ def print_overhead_report(results: Dict[str, BenchmarkResult]):
     else:
         baseline_time = baseline.total_time_seconds
 
-    print(f"\n{'Config':<30} {'Time (s)':<10} {'Overhead':<10} {'Storage (MB)':<12} {'Checkpoints':<12}")
-    print("-" * 74)
+    print(f"\n{'Config':<30} {'Time (s)':<10} {'Overhead':<10} {'Rows':<15} {'Checkpoints':<12}")
+    print("-" * 77)
 
+    row_mismatches = []
     for name, result in results.items():
         if not result.success:
             print(f"{name:<30} FAILED: {result.error_message[:40] if result.error_message else 'unknown'}")
@@ -280,9 +314,26 @@ def print_overhead_report(results: Dict[str, BenchmarkResult]):
         else:
             overhead_str = "N/A"
 
+        # Row verification
+        if result.output_rows == result.input_rows:
+            row_str = f"{result.output_rows} OK"
+        else:
+            row_str = f"{result.output_rows} MISMATCH"
+            row_mismatches.append((name, result.input_rows, result.output_rows))
+
         print(
-            f"{name:<30} {result.total_time_seconds:<10.1f} {overhead_str:<10} {result.storage_used_mb:<12.1f} {result.checkpoint_count:<12}"
+            f"{name:<30} {result.total_time_seconds:<10.1f} {overhead_str:<10} {row_str:<15} {result.checkpoint_count:<12}"
         )
+
+    # Report row verification results
+    print("\nRow verification:")
+    if row_mismatches:
+        print("  FAILED - Row count mismatches detected:")
+        for name, expected, actual in row_mismatches:
+            print(f"    - {name}: expected {expected}, got {actual}")
+    else:
+        first_result = next(iter(results.values()))
+        print(f"  PASSED - All configurations produced {first_result.input_rows} rows")
 
     print("\nKey findings:")
     if baseline_time:
