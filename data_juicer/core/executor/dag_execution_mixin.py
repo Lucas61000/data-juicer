@@ -40,9 +40,16 @@ class DAGExecutionMixin:
         self.current_dag_node: Optional[str] = None
         self.dag_execution_start_time: Optional[float] = None
         self.dag_execution_strategy: Optional[DAGExecutionStrategy] = None
+        self._dag_ops: Optional[List] = None  # Cached operations for DAG planning
 
-    def _initialize_dag_execution(self, cfg) -> None:
+    def _initialize_dag_execution(self, cfg, ops: List = None) -> None:
         """Initialize DAG execution planning with appropriate strategy.
+
+        Args:
+            cfg: Configuration object
+            ops: Optional list of already-loaded operations. If provided, avoids
+                 redundant operation loading. If None, operations will be loaded
+                 from cfg.process.
 
         Note: For standalone mode (default executor), DAG execution can be disabled
         by setting cfg.use_dag = False. DAG execution is primarily useful for
@@ -64,6 +71,9 @@ class DAGExecutionMixin:
             return
 
         logger.info("Initializing DAG execution planning...")
+
+        # Store ops for reuse (avoid redundant loading)
+        self._dag_ops = ops
 
         # Determine execution strategy based on executor type
         self.dag_execution_strategy = self._create_execution_strategy(cfg)
@@ -156,8 +166,16 @@ class DAGExecutionMixin:
                 log_method(plan_path, dag_info)
 
     def _get_operations_from_config(self, cfg) -> List:
-        """Get operations from configuration - can be overridden by executors."""
-        # Default implementation - create operation instances
+        """Get operations for DAG planning.
+
+        Returns cached operations if available (passed to _initialize_dag_execution),
+        otherwise loads from configuration.
+        """
+        # Use cached ops if available (avoids redundant loading)
+        if hasattr(self, "_dag_ops") and self._dag_ops is not None:
+            return self._dag_ops
+
+        # Fallback: load from configuration
         operations = []
         for op_config in cfg.process:
             op_name = list(op_config.keys())[0]

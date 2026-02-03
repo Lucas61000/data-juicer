@@ -140,8 +140,8 @@ class RayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
         logger.info("Preparing process operators...")
         ops = load_ops(self.cfg.process)
 
-        # Initialize DAG execution planning
-        self._initialize_dag_execution(self.cfg)
+        # Initialize DAG execution planning (pass ops to avoid redundant loading)
+        self._initialize_dag_execution(self.cfg, ops=ops)
 
         # Log job start with DAG context
         # Handle both dataset_path (string) and dataset (dict) configurations

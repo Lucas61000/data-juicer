@@ -350,7 +350,8 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
             self._configure_auto_partitioning(dataset, ops)
 
         # Initialize DAG execution planning with final partition count
-        self._initialize_dag_execution(self.cfg)
+        # Pass ops to avoid redundant loading
+        self._initialize_dag_execution(self.cfg, ops=ops)
 
         # Log job start with DAG context
         # Handle both dataset_path (string) and dataset (dict) configurations
