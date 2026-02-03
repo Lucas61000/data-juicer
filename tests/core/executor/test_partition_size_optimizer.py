@@ -513,6 +513,34 @@ class PartitionSizeOptimizerTest(DataJuicerTestCaseBase):
         self.assertGreater(size, 0)
         self.assertIsInstance(size, float)
 
+    def test_estimate_sample_size_deep_calculation(self):
+        """Test that sample size estimation uses deep calculation for nested content."""
+        from data_juicer.core.executor.partition_size_optimizer import PartitionSizeOptimizer
+
+        optimizer = PartitionSizeOptimizer(self.cfg)
+
+        # Small sample with short text
+        small_sample = {"text": "Hello", "id": 1}
+
+        # Large sample with long text and nested metadata
+        large_sample = {
+            "text": "A" * 10000,  # 10KB of text
+            "id": 2,
+            "meta": {
+                "source": "test",
+                "tags": ["tag1", "tag2", "tag3"],
+                "nested": {"deep": "value" * 100}
+            }
+        }
+
+        small_size = optimizer.estimate_sample_size_mb(small_sample)
+        large_size = optimizer.estimate_sample_size_mb(large_sample)
+
+        # Deep sizing should show large sample is significantly bigger
+        self.assertGreater(large_size, small_size)
+        # Large sample should be at least 10x bigger due to 10KB text
+        self.assertGreater(large_size, small_size * 5)
+
 
 class ModalityTypeEnumTest(DataJuicerTestCaseBase):
     """Tests for ModalityType enum."""

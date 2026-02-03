@@ -492,10 +492,58 @@ class PartitionSizeOptimizer:
         return characteristics
 
     def estimate_sample_size_mb(self, sample: Dict) -> float:
-        """Measure actual memory size of a sample in MB using sys.getsizeof."""
+        """Measure actual memory size of a sample in MB.
+
+        Uses deep size calculation to include all nested objects (strings, lists, etc.)
+        rather than just the shallow dict overhead.
+        """
+        return self._deep_getsizeof(sample) / (1024 * 1024)
+
+    def _deep_getsizeof(self, obj, seen: set = None) -> int:
+        """Recursively calculate the deep memory size of an object.
+
+        This properly accounts for nested objects like strings in dicts,
+        lists of values, etc. Uses a seen set to avoid counting shared
+        objects multiple times.
+
+        Args:
+            obj: Object to measure
+            seen: Set of object ids already counted (for cycle detection)
+
+        Returns:
+            Total memory size in bytes
+        """
         import sys
 
-        return sys.getsizeof(sample) / (1024 * 1024)
+        if seen is None:
+            seen = set()
+
+        obj_id = id(obj)
+        if obj_id in seen:
+            return 0
+        seen.add(obj_id)
+
+        size = sys.getsizeof(obj)
+
+        if isinstance(obj, dict):
+            size += sum(self._deep_getsizeof(k, seen) + self._deep_getsizeof(v, seen) for k, v in obj.items())
+        elif isinstance(obj, (list, tuple, set, frozenset)):
+            size += sum(self._deep_getsizeof(item, seen) for item in obj)
+        elif isinstance(obj, str):
+            # String size is already included in getsizeof
+            pass
+        elif isinstance(obj, bytes):
+            # Bytes size is already included in getsizeof
+            pass
+        elif hasattr(obj, "__dict__"):
+            size += self._deep_getsizeof(obj.__dict__, seen)
+        elif hasattr(obj, "__iter__") and not isinstance(obj, (str, bytes)):
+            try:
+                size += sum(self._deep_getsizeof(item, seen) for item in obj)
+            except TypeError:
+                pass  # Not iterable after all
+
+        return size
 
     def analyze_processing_complexity(self, process_pipeline: List) -> float:
         """Analyze the complexity of the processing pipeline using linear scoring."""
