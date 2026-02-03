@@ -782,6 +782,11 @@ if <cite>return_processor</cite> is True.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_deepcalib_model">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_deepcalib_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_deepcalib_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_deepcalib_model" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_diffusion_model">
 <span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_diffusion_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diffusion_type</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_diffusion_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_diffusion_model" title="Link to this definition">#</a></dt>
 <dd><p>Prepare and load an Diffusion model from HuggingFace.</p>
@@ -860,6 +865,11 @@ otherwise, only the processor is returned.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_moge_model">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">prepare_moge_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/model_utils.html#prepare_moge_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.model_utils.prepare_moge_model" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.utils.model_utils.prepare_nltk_model">
@@ -1176,12 +1186,14 @@ It is used to load a mmdeploy model and run inference on given images.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_api_model"><code class="docutils literal notranslate"><span class="pre">prepare_api_model()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_deepcalib_model"><code class="docutils literal notranslate"><span class="pre">prepare_deepcalib_model()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_diffusion_model"><code class="docutils literal notranslate"><span class="pre">prepare_diffusion_model()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_dwpose_model"><code class="docutils literal notranslate"><span class="pre">prepare_dwpose_model()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_fastsam_model"><code class="docutils literal notranslate"><span class="pre">prepare_fastsam_model()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_fasttext_model"><code class="docutils literal notranslate"><span class="pre">prepare_fasttext_model()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_huggingface_model"><code class="docutils literal notranslate"><span class="pre">prepare_huggingface_model()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_kenlm_model"><code class="docutils literal notranslate"><span class="pre">prepare_kenlm_model()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_moge_model"><code class="docutils literal notranslate"><span class="pre">prepare_moge_model()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_nltk_model"><code class="docutils literal notranslate"><span class="pre">prepare_nltk_model()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_nltk_pos_tagger"><code class="docutils literal notranslate"><span class="pre">prepare_nltk_pos_tagger()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.model_utils.prepare_opencv_classifier"><code class="docutils literal notranslate"><span class="pre">prepare_opencv_classifier()</span></code></a></li>

@@ -741,7 +741,7 @@ Data-Juicer 中的算子分为以下 8 种类型。</p>
 <td><p>Group samples to batched samples. 将样本分组，每一组组成一个批量样本。</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#mapper"><span class="xref myst">mapper</span></a></p></td>
-<td class="text-center"><p>98</p></td>
+<td class="text-center"><p>101</p></td>
 <td><p>Edits and transforms samples. 对数据样本进行编辑和转换。</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#pipeline"><span class="xref myst">pipeline</span></a></p></td>
@@ -1829,6 +1829,18 @@ Data-Juicer 中的算子分为以下 8 种类型。</p>
 <td><p><a class="reference internal" href="operators/mapper/vggt_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
+<tr class="row-odd"><td><p>video_camera_calibration_static_deepcalib_mapper</p></td>
+<td><p>🎬Video 🚀GPU 🟡Beta</p></td>
+<td><p>Compute the camera intrinsics and field of view (FOV) for a static camera using DeepCalib. 使用DeepCalib计算静态摄像机的摄像机内部和视场 (FOV)。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>video_camera_calibration_static_moge_mapper</p></td>
+<td><p>🎬Video 🚀GPU 🟡Beta</p></td>
+<td><p>Compute the camera intrinsics and field of view (FOV) for a static camera using Moge-2 (more accurate than DeepCalib). 使用Moge-2 (比DeepCalib更准确) 计算静态摄像机的摄像机内部函数和视场 (FOV)。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
 <tr class="row-odd"><td><p>video_captioning_from_audio_mapper</p></td>
 <td><p>🔮Multimodal 🚀GPU 🧩HF 🟢Stable</p></td>
 <td><p>Mapper to caption a video according to its audio streams based on Qwen-Audio model. 映射器根据基于qwen-audio模型的音频流为视频添加字幕。</p></td>
@@ -1943,13 +1955,19 @@ Data-Juicer 中的算子分为以下 8 种类型。</p>
 <td><p><a class="reference internal" href="operators/mapper/video_tagging_from_frames_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>video_whole_body_pose_estimation_mapper</p></td>
+<tr class="row-even"><td><p>video_undistort_mapper</p></td>
+<td><p>🎬Video 💻CPU 🟡Beta</p></td>
+<td><p>Undistort raw videos with corresponding camera intrinsics and distortion coefficients. 使用相应的相机固有特性和失真系数对原始视频进行失真。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-odd"><td><p>video_whole_body_pose_estimation_mapper</p></td>
 <td><p>🎬Video 🚀GPU 🟡Beta</p></td>
 <td><p>Input a video containing people, and use the DWPose model to extract the body, hand, feet, and face keypoints of the human subjects in the video, i.e., 2D Whole-body Pose Estimation. 输入包含人的视频，并使用DWPose模型来提取视频中人类主体的身体、手、脚和面部关键点，即2D全身姿态估计。</p></td>
 <td><p>-</p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>whitespace_normalization_mapper</p></td>
+<tr class="row-even"><td><p>whitespace_normalization_mapper</p></td>
 <td><p>🔤Text 💻CPU 🟢Stable</p></td>
 <td><p>Normalizes various types of whitespace characters to standard spaces in text samples. 将文本样本中各种类型的空白字符规范化为标准空格。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/whitespace_normalization_mapper.html"><span class="std std-doc">info</span></a></p></td>
