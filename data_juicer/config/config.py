@@ -865,10 +865,6 @@ def init_setup_from_cfg(cfg: Namespace, load_configs_only=False):
         if cfg.work_dir is None:
             cfg.work_dir = os.path.dirname(cfg.export_path)
 
-    cfg.export_path = os.path.abspath(cfg.export_path)
-    if cfg.work_dir is None:
-        cfg.work_dir = os.path.dirname(cfg.export_path)
-
     # Call resolve_job_directories to finalize all job-related paths
     cfg = resolve_job_id(cfg)
     cfg = resolve_job_directories(cfg)
