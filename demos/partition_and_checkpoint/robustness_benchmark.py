@@ -18,18 +18,18 @@ Usage:
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 
 @dataclass
 class BenchmarkResult:
     """Results from a single benchmark run."""
+
     config_name: str
     executor_type: str
     checkpoint_strategy: str
@@ -46,6 +46,7 @@ class BenchmarkResult:
 @dataclass
 class RecoveryResult:
     """Results from a failure/recovery test."""
+
     config_name: str
     failure_point_percent: float
     time_before_failure: float
@@ -70,12 +71,12 @@ def create_test_dataset(output_path: str, num_samples: int = 10000) -> str:
     """Create a test dataset for benchmarking."""
     print(f"Creating test dataset with {num_samples} samples...")
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         for i in range(num_samples):
             sample = {
                 "text": f"Sample {i}: " + "This is test content. " * 20,
                 "id": i,
-                "meta": {"source": "benchmark", "index": i}
+                "meta": {"source": "benchmark", "index": i},
             }
             f.write(json.dumps(sample) + "\n")
 
@@ -91,7 +92,7 @@ def create_benchmark_config(
     num_partitions: int = 4,
     checkpoint_enabled: bool = True,
     checkpoint_strategy: str = "every_op",
-    checkpoint_n_ops: int = 2
+    checkpoint_n_ops: int = 2,
 ) -> str:
     """Create a config file for benchmarking."""
 
@@ -102,18 +103,16 @@ def create_benchmark_config(
         "executor_type": executor_type,
         "ray_address": "local",  # Start local Ray cluster
         "np": 2,
-
         "event_logging": {
             "enabled": True,
         },
-
         # Simple pipeline for benchmarking
         "process": [
             {"whitespace_normalization_mapper": None},
             {"clean_email_mapper": None},
             {"clean_links_mapper": None},
             {"fix_unicode_mapper": None},
-        ]
+        ],
     }
 
     # Only add partition config for ray_partitioned executor
@@ -131,21 +130,19 @@ def create_benchmark_config(
     config_path = os.path.join(output_dir, "benchmark_config.yaml")
 
     import yaml
-    with open(config_path, 'w') as f:
+
+    with open(config_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
 
     return config_path
 
 
-def run_benchmark(
-    config_path: str,
-    job_id: str,
-    work_dir: str
-) -> BenchmarkResult:
+def run_benchmark(config_path: str, job_id: str, work_dir: str) -> BenchmarkResult:
     """Run a single benchmark and collect metrics."""
 
     # Parse config to get settings
     import yaml
+
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
@@ -155,12 +152,14 @@ def run_benchmark(
 
     cmd = [
         "dj-process",
-        "--config", config_path,
-        "--job_id", job_id,
+        "--config",
+        config_path,
+        "--job_id",
+        job_id,
     ]
 
-    ckpt_str = checkpoint_config.get('strategy', 'disabled') if checkpoint_config.get('enabled') else 'disabled'
-    part_str = partition_config.get('mode', 'none') if partition_config else 'none'
+    ckpt_str = checkpoint_config.get("strategy", "disabled") if checkpoint_config.get("enabled") else "disabled"
+    part_str = partition_config.get("mode", "none") if partition_config else "none"
 
     print(f"\nRunning: {job_id}")
     print(f"  Executor: {executor_type}")
@@ -176,9 +175,12 @@ def run_benchmark(
     error_msg = None
     if not success:
         # Filter for actual error lines
-        error_lines = [line for line in result.stderr.split('\n')
-                       if 'ERROR' in line or 'error:' in line.lower() or 'exception' in line.lower()]
-        error_msg = '\n'.join(error_lines[:5]) if error_lines else result.stderr[:500]
+        error_lines = [
+            line
+            for line in result.stderr.split("\n")
+            if "ERROR" in line or "error:" in line.lower() or "exception" in line.lower()
+        ]
+        error_msg = "\n".join(error_lines[:5]) if error_lines else result.stderr[:500]
 
     # Collect metrics from work directory (checkpoints are stored directly in work_dir)
     storage_mb = get_dir_size_mb(work_dir) if os.path.exists(work_dir) else 0
@@ -198,7 +200,9 @@ def run_benchmark(
     return BenchmarkResult(
         config_name=job_id,
         executor_type=executor_type,
-        checkpoint_strategy=checkpoint_config.get("strategy", "disabled") if checkpoint_config.get("enabled") else "disabled",
+        checkpoint_strategy=(
+            checkpoint_config.get("strategy", "disabled") if checkpoint_config.get("enabled") else "disabled"
+        ),
         partition_mode=partition_config.get("mode", "none") if partition_config else "none",
         total_time_seconds=total_time,
         num_partitions=num_partitions,
@@ -206,15 +210,11 @@ def run_benchmark(
         checkpoint_count=checkpoint_count,
         storage_used_mb=storage_mb,
         success=success,
-        error_message=error_msg
+        error_message=error_msg,
     )
 
 
-def run_overhead_benchmark(
-    dataset_path: str,
-    output_base: str,
-    num_partitions: int = 4
-) -> Dict[str, BenchmarkResult]:
+def run_overhead_benchmark(dataset_path: str, output_base: str, num_partitions: int = 4) -> Dict[str, BenchmarkResult]:
     """Run overhead comparison benchmark."""
 
     print("\n" + "=" * 60)
@@ -243,7 +243,7 @@ def run_overhead_benchmark(
             num_partitions=num_partitions,
             checkpoint_enabled=ckpt_enabled,
             checkpoint_strategy=ckpt_strategy,
-            checkpoint_n_ops=2
+            checkpoint_n_ops=2,
         )
 
         result = run_benchmark(config_path, name, work_dir)
@@ -280,7 +280,9 @@ def print_overhead_report(results: Dict[str, BenchmarkResult]):
         else:
             overhead_str = "N/A"
 
-        print(f"{name:<30} {result.total_time_seconds:<10.1f} {overhead_str:<10} {result.storage_used_mb:<12.1f} {result.checkpoint_count:<12}")
+        print(
+            f"{name:<30} {result.total_time_seconds:<10.1f} {overhead_str:<10} {result.storage_used_mb:<12.1f} {result.checkpoint_count:<12}"
+        )
 
     print("\nKey findings:")
     if baseline_time:
@@ -295,8 +297,10 @@ def print_overhead_report(results: Dict[str, BenchmarkResult]):
         print("\nCheckpoint overhead (vs partitioned without checkpoint):")
         for name in ["partitioned_ckpt_every_op", "partitioned_ckpt_every_2"]:
             if name in results and results[name].success:
-                ckpt_overhead = ((results[name].total_time_seconds - partitioned_base.total_time_seconds)
-                                / partitioned_base.total_time_seconds) * 100
+                ckpt_overhead = (
+                    (results[name].total_time_seconds - partitioned_base.total_time_seconds)
+                    / partitioned_base.total_time_seconds
+                ) * 100
                 print(f"  - {name}: {ckpt_overhead:+.1f}%")
 
 
@@ -317,7 +321,9 @@ def print_summary(results: Dict[str, BenchmarkResult]):
         ckpt_every_op = results.get("partitioned_ckpt_every_op")
 
         if baseline and baseline.success and ckpt_every_op and ckpt_every_op.success:
-            overhead = ((ckpt_every_op.total_time_seconds - baseline.total_time_seconds) / baseline.total_time_seconds) * 100
+            overhead = (
+                (ckpt_every_op.total_time_seconds - baseline.total_time_seconds) / baseline.total_time_seconds
+            ) * 100
 
             print(f"\nCheckpointing overhead (every_op): {overhead:+.1f}%")
             print(f"Storage cost: {ckpt_every_op.storage_used_mb:.1f} MB")
@@ -326,7 +332,9 @@ def print_summary(results: Dict[str, BenchmarkResult]):
             print(f"Without checkpointing, failures lose all work")
 
     # Save results to JSON
-    results_path = os.path.join(os.path.dirname(list(results.values())[0].config_name if results else "."), "benchmark_results.json")
+    results_path = os.path.join(
+        os.path.dirname(list(results.values())[0].config_name if results else "."), "benchmark_results.json"
+    )
 
     print(f"\nResults interpretation:")
     print(f"  - Overhead < 10%: Acceptable for production use")
@@ -368,9 +376,7 @@ def main():
     # Run benchmarks
     try:
         results = run_overhead_benchmark(
-            dataset_path=dataset_path,
-            output_base=output_base,
-            num_partitions=args.partitions
+            dataset_path=dataset_path, output_base=output_base, num_partitions=args.partitions
         )
 
         print_overhead_report(results)
@@ -378,7 +384,7 @@ def main():
 
         # Save results
         results_file = os.path.join(output_base, "benchmark_results.json")
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump({k: asdict(v) for k, v in results.items()}, f, indent=2)
         print(f"\nDetailed results saved to: {results_file}")
 
