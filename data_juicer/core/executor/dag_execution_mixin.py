@@ -825,7 +825,10 @@ class DAGExecutionMixin:
             node_state = dag_state["node_states"][resume_from_node]
             execution_order = node_state["execution_order"]
 
-            # Execute operations starting from the resume point
+            # Collect remaining operations to execute (batch for efficiency)
+            remaining_ops = []
+            remaining_op_info = []  # (op_idx, op_name, node_id)
+
             for op_idx, op in enumerate(ops):
                 if op_idx >= execution_order:
                     op_name = op._name
@@ -839,25 +842,48 @@ class DAGExecutionMixin:
                                 logger.info(f"Skipping completed node: {node_id}")
                                 continue
 
-                        # Execute the operation with DAG monitoring
-                        self._mark_dag_node_started(node_id)
-                        self._log_operation_with_dag_context(op_name, op_idx, "op_start")
+                        remaining_ops.append(op)
+                        remaining_op_info.append((op_idx, op_name, node_id))
 
-                        start_time = time.time()
-                        try:
-                            dataset.process([op])
-                            duration = time.time() - start_time
-                            self._mark_dag_node_completed(node_id, duration)
-                            self._log_operation_with_dag_context(
-                                op_name, op_idx, "op_complete", duration=duration, input_rows=0, output_rows=0
-                            )
-                        except Exception as e:
-                            duration = time.time() - start_time
-                            error_message = str(e)
-                            self._mark_dag_node_failed(node_id, error_message, duration)
-                            self._log_operation_with_dag_context(
-                                op_name, op_idx, "op_failed", error=error_message, duration=duration
-                            )
-                            raise
+            if not remaining_ops:
+                logger.info("No remaining operations to execute")
+                return True
+
+            # Mark all nodes as started
+            for op_idx, op_name, node_id in remaining_op_info:
+                self._mark_dag_node_started(node_id)
+                self._log_operation_with_dag_context(op_name, op_idx, "op_start")
+
+            # Execute all remaining operations in one batch for efficiency
+            # This allows Ray to optimize the execution plan across operations
+            start_time = time.time()
+            try:
+                dataset.process(remaining_ops)
+                total_duration = time.time() - start_time
+
+                # Estimate per-operation duration (evenly distributed)
+                per_op_duration = total_duration / len(remaining_ops)
+
+                # Mark all nodes as completed
+                for op_idx, op_name, node_id in remaining_op_info:
+                    self._mark_dag_node_completed(node_id, per_op_duration)
+                    self._log_operation_with_dag_context(
+                        op_name, op_idx, "op_complete", duration=per_op_duration, input_rows=0, output_rows=0
+                    )
+
+                logger.info(f"Resumed execution: {len(remaining_ops)} operations in {total_duration:.2f}s")
+
+            except Exception as e:
+                duration = time.time() - start_time
+                error_message = str(e)
+                # Mark remaining nodes as failed (we don't know exactly which one failed)
+                for op_idx, op_name, node_id in remaining_op_info:
+                    node = self.pipeline_dag.nodes.get(node_id)
+                    if node and node.status != DAGNodeStatus.COMPLETED:
+                        self._mark_dag_node_failed(node_id, error_message, duration)
+                        self._log_operation_with_dag_context(
+                            op_name, op_idx, "op_failed", error=error_message, duration=duration
+                        )
+                raise
 
         return True
