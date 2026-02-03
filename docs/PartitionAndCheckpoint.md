@@ -65,7 +65,7 @@ The configuration uses a **logical nested structure** that groups related settin
 # Partitioning configuration
 partition:
   size: 1000  # Number of samples per partition
-  max_size_mb: 64  # Maximum partition size in MB
+  max_size_mb: 256  # Maximum partition size in MB
 
 
 
@@ -90,7 +90,7 @@ intermediate_storage:
 ```yaml
 # Legacy flat configuration (still works)
 partition_size: 1000
-max_partition_size_mb: 64
+max_partition_size_mb: 256
 preserve_intermediate_data: true
 storage_format: "parquet"
 use_arrow_batches: true
@@ -169,7 +169,7 @@ event_logging:
 partition:
   mode: "auto"          # Auto mode - optimal partitioning based on data analysis
   size: 5000            # Fallback partition size (samples) - used if auto-analysis fails
-  max_size_mb: 64       # Fallback max partition size (MB) - used if auto-analysis fails
+  max_size_mb: 256      # Fallback max partition size (MB) - used if auto-analysis fails
   # Note: num_of_partitions is calculated automatically in auto mode
 
 # Alternative: Manual partition mode

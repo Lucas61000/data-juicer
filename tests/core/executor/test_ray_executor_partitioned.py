@@ -501,8 +501,12 @@ class PartitionedRayExecutorTest(DataJuicerTestCaseBase):
         status = executor.get_dag_execution_status()
 
         self.assertIsNotNone(status)
-        self.assertIn('dag_initialized', status)
-        self.assertTrue(status['dag_initialized'])
+        # Check that status is not "not_initialized" (meaning DAG is initialized)
+        self.assertIn('status', status)
+        self.assertNotEqual(status['status'], 'not_initialized')
+        # Check expected keys exist in initialized status
+        self.assertIn('summary', status)
+        self.assertIn('execution_plan_length', status)
 
     @TEST_TAG('ray')
     def test_operation_grouping_integration(self):

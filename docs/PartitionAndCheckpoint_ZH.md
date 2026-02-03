@@ -605,7 +605,7 @@ partition:
 partition:
   auto_configure: false  # 禁用自动配置
   size: 100  # 使用您自己的分区大小
-  max_size_mb: 64
+  max_size_mb: 256
 ```
 
 ## 📊 分区大小指南
