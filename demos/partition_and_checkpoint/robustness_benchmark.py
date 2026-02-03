@@ -222,7 +222,9 @@ def run_benchmark(config_path: str, job_id: str, work_dir: str, input_rows: int)
 
     # Row verification status
     row_status = "OK" if output_rows == input_rows else f"MISMATCH (expected {input_rows})"
-    print(f"  Time: {total_time:.1f}s | Storage: {storage_mb:.1f}MB | Checkpoints: {checkpoint_count} | Rows: {output_rows} {row_status}")
+    print(
+        f"  Time: {total_time:.1f}s | Storage: {storage_mb:.1f}MB | Checkpoints: {checkpoint_count} | Rows: {output_rows} {row_status}"
+    )
 
     return BenchmarkResult(
         config_name=job_id,
