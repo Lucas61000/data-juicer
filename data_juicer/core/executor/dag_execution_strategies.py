@@ -283,29 +283,37 @@ class PartitionedDAGStrategy(DAGExecutionStrategy):
             if node.get("node_type") == DAGNodeType.SCATTER_GATHER.value
         }
 
+        # First, build scatter-gather dependencies (only once, not per-partition)
+        for op_idx in convergence_points:
+            if op_idx >= len(operations):
+                continue
+
+            # Find the scatter-gather node for this operation
+            sg_node_id = None
+            for nid, node in sg_nodes.items():
+                if node.get("operation_index") == op_idx:
+                    sg_node_id = nid
+                    break
+
+            if sg_node_id and op_idx > 0:
+                # Scatter-gather depends on PREVIOUS operation's partition outputs
+                prev_op = operations[op_idx - 1]
+                for pid in range(self.num_partitions):
+                    dep_node = self.get_dag_node_id(prev_op._name, op_idx - 1, partition_id=pid)
+                    if dep_node in nodes:
+                        nodes[sg_node_id]["dependencies"].append(dep_node)
+
         # Build partition-specific dependencies
         for partition_id in range(self.num_partitions):
             prev_node_id = None
             for op_idx, op in enumerate(operations):
-                # Skip operations that are scatter-gather points
+                # Skip convergence points - they're handled by scatter-gather nodes
                 if op_idx in convergence_points:
-                    # Find the scatter-gather node for this operation
-                    sg_node_id = None
+                    # Find the scatter-gather node to use as prev_node for next op
                     for nid, node in sg_nodes.items():
                         if node.get("operation_index") == op_idx:
-                            sg_node_id = nid
+                            prev_node_id = nid
                             break
-
-                    if sg_node_id:
-                        # Scatter-gather node depends on all partitions from previous op
-                        if prev_node_id:
-                            for pid in range(self.num_partitions):
-                                dep_node = self.get_dag_node_id(operations[op_idx]._name, op_idx, partition_id=pid)
-                                if dep_node in nodes:
-                                    nodes[sg_node_id]["dependencies"].append(dep_node)
-
-                        # Update prev_node for next iteration
-                        prev_node_id = sg_node_id
                     continue
 
                 # Regular partition operation
