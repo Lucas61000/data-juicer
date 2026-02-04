@@ -944,11 +944,14 @@
         <span class="k">if</span> <span class="n">show_num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)):</span>
                 <span class="n">cluster_idx</span> <span class="o">=</span> <span class="n">union_find</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">cluster_idx</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dup_pairs</span> <span class="ow">and</span> <span class="n">cluster_idx</span> <span class="o">!=</span> <span class="n">i</span><span class="p">:</span>
-                    <span class="n">dup_pairs</span><span class="p">[</span><span class="n">cluster_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-                        <span class="n">dataset</span><span class="p">[</span><span class="n">cluster_idx</span><span class="p">],</span>
-                        <span class="n">dataset</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
-                    <span class="p">]</span>
+                <span class="k">if</span> <span class="n">cluster_idx</span> <span class="o">!=</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">cluster_idx</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dup_pairs</span><span class="p">:</span>
+                        <span class="n">dup_pairs</span><span class="p">[</span><span class="n">cluster_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="n">dataset</span><span class="p">[</span><span class="n">cluster_idx</span><span class="p">],</span>
+                            <span class="n">dataset</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                        <span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">dup_pairs</span><span class="p">[</span><span class="n">cluster_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dup_pairs</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">show_num</span><span class="p">:</span>
                     <span class="k">break</span>
 
