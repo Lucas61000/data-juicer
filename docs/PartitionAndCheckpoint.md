@@ -7,10 +7,10 @@ This document describes DataJuicer's fault-tolerant processing system with parti
 The `ray_partitioned` executor splits datasets into partitions and processes them with configurable checkpointing. Failed jobs can resume from the last checkpoint.
 
 **Checkpointing strategies:**
-- `every_op` - checkpoint after every operation (most resilient)
-- `every_n_ops` - checkpoint every N operations
-- `manual` - checkpoint only after specified operations
-- `disabled` - no checkpointing
+- `every_n_ops` - checkpoint every N operations (default, balanced)
+- `every_op` - checkpoint after every operation (max protection, impacts performance)
+- `manual` - checkpoint only after specified operations (best for known expensive ops)
+- `disabled` - no checkpointing (best performance)
 
 ## Directory Structure
 
@@ -54,11 +54,11 @@ partition:
 ```yaml
 checkpoint:
   enabled: true
-  strategy: every_op     # every_op, every_n_ops, manual, disabled
-  n_ops: 2               # For every_n_ops
-  op_names:              # For manual strategy
-    - clean_links_mapper
-    - whitespace_normalization_mapper
+  strategy: every_n_ops  # every_n_ops (default), every_op, manual, disabled
+  n_ops: 5               # Default: checkpoint every 5 operations
+  op_names:              # For manual strategy - checkpoint after expensive ops
+    - document_deduplicator
+    - embedding_mapper
 ```
 
 ### Intermediate Storage
@@ -184,20 +184,79 @@ events = job_utils.load_event_logs()
 
 ## Performance Considerations
 
-**Checkpointing overhead:**
-- `every_op`: highest overhead, maximum resilience
-- `every_n_ops`: configurable balance
-- `manual`: minimal overhead
-- `disabled`: no overhead
+### Checkpoint vs Ray Optimization Trade-off
 
-**Storage recommendations:**
+**Key insight: Checkpointing interferes with Ray's automatic optimization.**
+
+Ray optimizes execution by fusing operations together and pipelining data. Each checkpoint forces materialization, which breaks the optimization window:
+
+```
+Without checkpoints:     op1 → op2 → op3 → op4 → op5
+                         |___________________________|
+                              Ray optimizes entire window
+
+With every_op:           op1 | op2 | op3 | op4 | op5
+                         materialize at each | (5 barriers)
+
+With every_n_ops(5):     op1 → op2 → op3 → op4 → op5 |
+                         |_____________________________|
+                              Ray optimizes all 5 ops
+```
+
+### Checkpoint Cost Analysis
+
+| Cost Type | Typical Value |
+|-----------|---------------|
+| Checkpoint write | ~2-5 seconds |
+| Cheap op execution | ~1-2 seconds |
+| Expensive op execution | minutes to hours |
+
+**For cheap operations, checkpointing costs MORE than re-running on failure.**
+
+Example pipeline analysis:
+```
+filter(1s) → mapper(2s) → deduplicator(300s) → filter(1s)
+
+Strategy         | Overhead  | Protection Value
+-----------------|-----------|------------------
+every_op         | ~20s      | Save 1-304s on failure
+after dedup only | ~5s       | Save 300s on failure
+disabled         | 0s        | Re-run everything
+```
+
+### Strategy Recommendations
+
+| Job Duration | Recommended Strategy | Rationale |
+|--------------|---------------------|-----------|
+| < 10 min | `disabled` | Re-running is cheap |
+| 10-60 min | `every_n_ops` (n=5) | Balanced protection |
+| > 60 min with expensive ops | `manual` | Checkpoint after expensive ops only |
+| Unstable infrastructure | `every_n_ops` (n=2-3) | Accept overhead for reliability |
+
+### Operation Categories
+
+**Expensive operations (checkpoint after these):**
+- `*_deduplicator` - Global state, expensive computation
+- `*_embedding_*` - Model inference
+- `*_model_*` - Model inference
+- `*_vision_*` - Image/video processing
+- `*_audio_*` - Audio processing
+
+**Cheap operations (skip checkpointing):**
+- `*_filter` - Simple filtering
+- `clean_*` - Text cleaning
+- `remove_*` - Field removal
+
+### Storage Recommendations
+
 - Event logs: fast storage (SSD)
 - Checkpoints: large capacity storage
 - Partitions: local storage
 
-**Partition sizing tradeoffs:**
-- Smaller partitions: better fault tolerance, more overhead
-- Larger partitions: less overhead, coarser recovery
+### Partition Sizing Trade-offs
+
+- Smaller partitions: better fault tolerance, more scheduling overhead
+- Larger partitions: less overhead, coarser recovery granularity
 
 ## Troubleshooting
 

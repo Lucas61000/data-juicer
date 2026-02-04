@@ -431,15 +431,17 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
             parser.add_argument(
                 "--checkpoint.strategy",
                 type=str,
-                default="every_op",
+                default="every_n_ops",
                 choices=["every_op", "every_partition", "every_n_ops", "manual", "disabled"],
-                help="Checkpoint strategy: every_op, every_partition, every_n_ops, manual, disabled",
+                help="Checkpoint strategy: every_n_ops (default, balanced), every_op (max protection), "
+                "manual (after specific ops), disabled (best performance)",
             )
             parser.add_argument(
                 "--checkpoint.n_ops",
                 type=int,
-                default=1,
-                help="Number of operations between checkpoints for every_n_ops strategy",
+                default=5,
+                help="Number of operations between checkpoints for every_n_ops strategy. "
+                "Default 5 balances fault tolerance with Ray optimization.",
             )
             parser.add_argument(
                 "--checkpoint.op_names",
