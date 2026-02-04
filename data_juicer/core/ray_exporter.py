@@ -136,11 +136,7 @@ class RayExporter:
         cols = dataset.columns()
         if cols is None:
             # Empty dataset with unknown schema - create an empty file
-            from loguru import logger
-
             logger.warning(f"Dataset is empty, creating empty export file at {export_path}")
-            import os
-
             os.makedirs(os.path.dirname(export_path) or ".", exist_ok=True)
             with open(export_path, "w"):
                 pass  # Create empty file
@@ -181,6 +177,11 @@ class RayExporter:
             num_shards = min(num_shards, dataset_num_rows)
             rows_per_file = int(dataset_num_rows / num_shards)
             export_kwargs["export_extra_args"]["min_rows_per_file"] = rows_per_file
+
+        # Ensure parent directory exists (Ray's write_json treats export_path as a directory)
+        if not export_path.startswith("s3://"):
+            os.makedirs(os.path.dirname(export_path) or ".", exist_ok=True)
+
         return export_method(dataset, export_path, **export_kwargs)
 
     def export(self, dataset, columns=None):
