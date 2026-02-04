@@ -21,7 +21,7 @@ from data_juicer.core.executor.dag_execution_strategies import (
     is_global_operation,
 )
 from data_juicer.core.executor.event_logging_mixin import EventType
-from data_juicer.core.pipeline_dag import DAGNodeStatus, PipelineDAG
+from data_juicer.core.executor.pipeline_dag import DAGNodeStatus, PipelineDAG
 
 
 class DAGExecutionMixin:

@@ -2,7 +2,9 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
+
+from data_juicer.core.executor.pipeline_dag import DAGNodeStatus
 
 
 class DAGNodeType(Enum):
@@ -16,43 +18,55 @@ class DAGNodeType(Enum):
 class DAGNodeStatusTransition:
     """Validates DAG node status transitions.
 
-    Valid transitions:
-    - pending -> running (node starts execution)
-    - running -> completed (node finishes successfully)
-    - running -> failed (node fails)
-    - failed -> running (node retries)
-    - pending -> completed (skipped - already done in previous run)
+    Uses DAGNodeStatus enum for type safety. Valid transitions:
+    - PENDING -> RUNNING (node starts execution)
+    - PENDING -> COMPLETED (skipped - already done in previous run)
+    - RUNNING -> COMPLETED (node finishes successfully)
+    - RUNNING -> FAILED (node fails)
+    - FAILED -> RUNNING (node retries)
+    - COMPLETED is terminal (no transitions out)
     """
 
     VALID_TRANSITIONS = {
-        "pending": {"running", "completed"},  # completed for skip case
-        "running": {"completed", "failed"},
-        "failed": {"running"},  # retry
-        "completed": set(),  # terminal state
+        DAGNodeStatus.PENDING: {DAGNodeStatus.RUNNING, DAGNodeStatus.COMPLETED},
+        DAGNodeStatus.RUNNING: {DAGNodeStatus.COMPLETED, DAGNodeStatus.FAILED},
+        DAGNodeStatus.FAILED: {DAGNodeStatus.RUNNING},  # retry
+        DAGNodeStatus.COMPLETED: set(),  # terminal state
     }
 
     @classmethod
-    def is_valid(cls, from_status: str, to_status: str) -> bool:
+    def _normalize_status(cls, status: Union[str, DAGNodeStatus]) -> DAGNodeStatus:
+        """Convert string status to DAGNodeStatus enum."""
+        if isinstance(status, DAGNodeStatus):
+            return status
+        return DAGNodeStatus(status)
+
+    @classmethod
+    def is_valid(cls, from_status: Union[str, DAGNodeStatus], to_status: Union[str, DAGNodeStatus]) -> bool:
         """Check if a status transition is valid.
 
         Args:
-            from_status: Current status
-            to_status: Target status
+            from_status: Current status (string or enum)
+            to_status: Target status (string or enum)
 
         Returns:
             True if transition is valid, False otherwise
         """
-        valid_targets = cls.VALID_TRANSITIONS.get(from_status, set())
-        return to_status in valid_targets
+        from_enum = cls._normalize_status(from_status)
+        to_enum = cls._normalize_status(to_status)
+        valid_targets = cls.VALID_TRANSITIONS.get(from_enum, set())
+        return to_enum in valid_targets
 
     @classmethod
-    def validate_and_log(cls, node_id: str, from_status: str, to_status: str) -> bool:
+    def validate_and_log(
+        cls, node_id: str, from_status: Union[str, DAGNodeStatus], to_status: Union[str, DAGNodeStatus]
+    ) -> bool:
         """Validate transition and log warning if invalid.
 
         Args:
             node_id: Node identifier for logging
-            from_status: Current status
-            to_status: Target status
+            from_status: Current status (string or enum)
+            to_status: Target status (string or enum)
 
         Returns:
             True if transition is valid, False otherwise
@@ -60,12 +74,15 @@ class DAGNodeStatusTransition:
         if cls.is_valid(from_status, to_status):
             return True
 
-        # Import logger here to avoid circular imports
         from loguru import logger
 
+        from_enum = cls._normalize_status(from_status)
+        to_enum = cls._normalize_status(to_status)
+        valid_targets = cls.VALID_TRANSITIONS.get(from_enum, set())
+
         logger.warning(
-            f"Invalid DAG node transition for {node_id}: {from_status} -> {to_status}. "
-            f"Valid targets from {from_status}: {cls.VALID_TRANSITIONS.get(from_status, set())}"
+            f"Invalid DAG node transition for {node_id}: {from_enum.value} -> {to_enum.value}. "
+            f"Valid targets: {[s.value for s in valid_targets]}"
         )
         return False
 

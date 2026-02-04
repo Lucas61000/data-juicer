@@ -10,7 +10,7 @@ import os
 import tempfile
 import unittest
 
-from data_juicer.core.pipeline_dag import PipelineDAG, DAGNodeStatus
+from data_juicer.core.executor.pipeline_dag import PipelineDAG, DAGNodeStatus
 from data_juicer.core.executor.dag_execution_strategies import (
     NonPartitionedDAGStrategy, 
     PartitionedDAGStrategy,
@@ -118,13 +118,13 @@ class TestPipelineDAG(unittest.TestCase):
     def test_dag_execution_summary(self):
         """Test DAG execution summary generation."""
         self._build_dag_from_config()
-        
+
         summary = self.dag.get_execution_summary()
-        
+
         self.assertIn("total_nodes", summary)
         self.assertIn("completed_nodes", summary)
         self.assertIn("pending_nodes", summary)
-        self.assertIn("parallel_groups_count", summary)
+        self.assertIn("completion_percentage", summary)
 
 
 class TestDAGExecutionStrategies(unittest.TestCase):
