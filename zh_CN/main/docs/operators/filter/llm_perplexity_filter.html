@@ -637,6 +637,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -749,7 +750,7 @@
 <p>用于保留使用指定 LLM 计算出的困惑度分数在指定范围内的样本的过滤器。</p>
 <p>该算子使用 Hugging Face LLM 为每个样本计算困惑度分数。然后根据困惑度分数是否落在指定的最小和最大分数范围内来过滤样本。困惑度分数计算为 LLM 损失值的指数。该算子使用查询和响应模板来格式化输入 LLM 的文本。如果困惑度分数尚未缓存在样本的统计信息中 'llm_perplexity' 键下，则会进行计算。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, hf</p>
+<p>Tags 标签: gpu, hf</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

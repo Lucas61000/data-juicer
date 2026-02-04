@@ -637,6 +637,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -749,7 +750,7 @@
 <p>用于保留与一组给定验证文本的平均嵌入相似度在特定范围内的文本的过滤器。</p>
 <p>该算子计算文本嵌入与一组验证文本嵌入之间的余弦相似度。如果平均相似度得分在指定范围内，则保留样本。关键指标 'text_embd_similarity' 计算为平均余弦相似度。算子支持基于 API 和基于 Hugging Face 模型的嵌入。如果没有提供有效的数据集，则必须在应用过滤之前手动调用 <code class="docutils literal notranslate"><span class="pre">prepare_valid_feature</span></code> 方法。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, api, text</p>
+<p>Tags 标签: gpu, api, text</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -830,10 +831,6 @@
 </table>
 </div>
 </section>
-<section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="链接到此标题。">#</a></h2>
-<p>not available 暂无</p>
-</section>
 <section id="related-links">
 <h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="链接到此标题。">#</a></h2>
 <ul class="simple">
@@ -892,7 +889,6 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parameter-configuration">🔧 Parameter Configuration 参数配置</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#effect-demonstration">📊 Effect demonstration 效果演示</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#related-links">🔗 related links 相关链接</a></li>
 </ul>
   </nav></div>

@@ -636,6 +636,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -746,7 +747,7 @@
 <p>筛选并保留LLM估计的与验证任务高度相关的样本。</p>
 <p>该算子使用LLM评估每个样本与指定验证任务的相关性。LLM从多个维度对样本进行评分，包括主题相关性、语言风格匹配、任务匹配、知识对齐和潜在实用性。每个维度按1-5的评分，5为最高。关键指标’llm_task_relevance’是这些维度分数的平均值。如果样本的平均分数达到或超过指定的最低阈值，则保留该样本。该算子使用API或Hugging Face模型进行评估。如果没有提供验证数据集或任务描述，则必须在应用过滤前手动调用’prepare_valid_feature’方法。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, vllm, hf, api</p>
+<p>Tags 标签: gpu, vllm, hf, api</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -796,10 +797,6 @@
 </tbody>
 </table>
 </div>
-</section>
-<section id="effect-demonstration">
-<h2>📊 Effect demonstration 效果演示<a class="headerlink" href="#effect-demonstration" title="Link to this heading">#</a></h2>
-<p>not available 暂无</p>
 </section>
 <section id="related-links">
 <h2>🔗 related links 相关链接<a class="headerlink" href="#related-links" title="Link to this heading">#</a></h2>
@@ -859,7 +856,6 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parameter-configuration">🔧 Parameter Configuration 参数配置</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#effect-demonstration">📊 Effect demonstration 效果演示</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#related-links">🔗 related links 相关链接</a></li>
 </ul>
   </nav></div>

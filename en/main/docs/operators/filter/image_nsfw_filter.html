@@ -636,6 +636,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -746,7 +747,7 @@
 <p>用于保留图像的nsfw分数在指定范围内的样本的过滤器。</p>
 <p>该算子使用Hugging Face模型计算样本中每个图像的nsfw分数。它根据指定的<code class="docutils literal notranslate"><span class="pre">min_score</span></code>和<code class="docutils literal notranslate"><span class="pre">max_score</span></code>阈值来保留样本。该算子支持两种策略：’any’（如果任何图像满足条件则保留样本）或’all’（只有当所有图像都满足条件时才保留样本）。nsfw分数被缓存在样本的stats中的’image_nsfw_score’字段。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, hf, image</p>
+<p>Tags 标签: gpu, hf, image</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

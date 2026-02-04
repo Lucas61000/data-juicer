@@ -637,6 +637,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -749,7 +750,7 @@
 <p>用于保留相似度在特定范围内的文本对的过滤器。</p>
 <p>该算子使用Hugging Face CLIP模型计算一对文本之间的相似度。它保留相似度得分在指定最小值和最大值之间的样本。关键指标'text_pair_similarity'计算为文本嵌入之间的余弦相似度。该算子支持两种保留样本的策略：'any'（只要有任何一对满足条件就保留）和'all'（只有当所有对都满足条件时才保留）。如果不提供第二个文本键，该算子将引发错误。相似度分数会被缓存在样本统计信息的'text_pair_similarity'字段中。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, hf, text</p>
+<p>Tags 标签: gpu, hf, text</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

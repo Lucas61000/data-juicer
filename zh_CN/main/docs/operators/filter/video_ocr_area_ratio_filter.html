@@ -637,6 +637,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">video_ocr_area_ratio_filter</a></li>
@@ -749,7 +750,7 @@
 <p>保留视频中指定帧的检测文本区域比率在指定范围内的数据样本。</p>
 <p>该算子根据检测到的文本区域与总帧面积的比例来过滤数据。它使用EasyOCR来检测指定语言中的文本，并计算每个采样帧的面积比例。然后，算子根据<code class="docutils literal notranslate"><span class="pre">any</span></code>或<code class="docutils literal notranslate"><span class="pre">all</span></code>策略决定是否保留样本，该策略检查是否有任何或所有视频满足指定的面积比例范围。关键指标<code class="docutils literal notranslate"><span class="pre">video_ocr_area_ratio</span></code>是通过采样帧中文本面积比例的平均值计算得出的。可以配置采样帧的数量和要采样的特定帧。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, video</p>
+<p>Tags 标签: gpu, video</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

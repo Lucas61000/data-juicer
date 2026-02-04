@@ -637,6 +637,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -749,7 +750,7 @@
 <p>筛选包含指定标签的视频样本。</p>
 <p>该算子根据视频帧中是否存在给定标签来筛选视频样本。它使用 Hugging Face 分词器提取和标记帧。可以配置筛选条件，要求存在任何一个或所有指定的标签。该算子支持两种帧采样方法：&quot;all_keyframes&quot; 和 &quot;uniform&quot;。当使用 &quot;uniform&quot; 时，可以指定要采样的帧数。提取的标签默认存储在 meta 字段中，键为 'video_frame_tags'。是否保留样本的决定基于视频帧是否满足标签条件，由 'any_or_all' 参数指定。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, video</p>
+<p>Tags 标签: gpu, video</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

@@ -637,6 +637,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -749,7 +750,7 @@
 <p>用来保留图像-文本匹配分数在特定范围内的样本的过滤器。</p>
 <p>该算子使用 Hugging Face BLIP 模型计算图像和文本之间的匹配分数。它保留匹配分数落在指定 <code class="docutils literal notranslate"><span class="pre">min_score</span></code> 和 <code class="docutils literal notranslate"><span class="pre">max_score</span></code> 范围内的样本。关键指标 <code class="docutils literal notranslate"><span class="pre">image_text_matching_score</span></code> 为每个图像-文本对计算。如果多个图像与单个文本相关联，可以使用 'avg'、'max' 或 'min' 模式来归约分数。该算子支持图像的水平和垂直翻转。根据 'any' 或 'all' 策略保留样本：'any' 表示只要有任何一个图像满足条件就保留样本，而 'all' 则表示只有当所有图像都满足条件时才保留样本。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, hf, multimodal</p>
+<p>Tags 标签: gpu, hf, multimodal</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

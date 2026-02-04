@@ -1287,9 +1287,17 @@ this deduplicator to the combined dataset, duplicates will be resolved in favor 
 <dt class="sig sig-object py" id="data_juicer.ops.deduplicator.RayBTSMinhashCppDeduplicator">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.deduplicator.</span></span><span class="sig-name descname"><span class="pre">RayBTSMinhashCppDeduplicator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/deduplicator/ray_bts_minhash_cpp_deduplicator.html#RayBTSMinhashCppDeduplicator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.deduplicator.RayBTSMinhashCppDeduplicator" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="data_juicer.ops.base_op.html#data_juicer.ops.base_op.Deduplicator" title="data_juicer.ops.base_op.Deduplicator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Deduplicator</span></code></a></p>
-<p>A basic exact matching deduplicator for RAY.
-Although its functionality is deduplication,
-it is implemented as Filter sub-class.</p>
+<p>A MinHash LSH deduplicator that operates in Ray distributed mode with C++ acceleration.</p>
+<p>Same as ray_bts_minhash_deduplicator but with tokenization and MinHash signature
+computation implemented in C++ for improved performance.</p>
+<p>This operator uses the MinHash LSH technique to identify and remove near-duplicate
+samples from a dataset. It supports various tokenization methods, including space,
+punctuation, character, and sentencepiece. The Jaccard similarity threshold is used to
+determine if two samples are considered duplicates. If the Jaccard similarity of two
+samples is greater than or equal to the specified threshold, one of the samples is
+filtered out. The operator computes the MinHash values for each sample and uses a union-
+find algorithm to group similar samples. The key metric, Jaccard similarity, is computed
+based on the shingling of the text.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="data_juicer.ops.deduplicator.RayBTSMinhashCppDeduplicator.EMPTY_HASH_VALUE">
 <span class="sig-name descname"><span class="pre">EMPTY_HASH_VALUE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EMPTY'</span></span><a class="headerlink" href="#data_juicer.ops.deduplicator.RayBTSMinhashCppDeduplicator.EMPTY_HASH_VALUE" title="Link to this definition">#</a></dt>

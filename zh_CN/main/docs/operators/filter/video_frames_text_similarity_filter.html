@@ -637,6 +637,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -749,7 +750,7 @@
 <p>基于视频帧图像与文本之间的相似度在特定范围内的过滤保留样本。</p>
 <p>该算子使用 Hugging Face CLIP 模型来计算视频帧与关联文本之间的相似度。它保留计算出的相似度得分在指定范围内的样本。该算子支持不同的帧采样方法，包括 'all_keyframes' 和 'uniform'，并且允许对帧进行水平和垂直翻转。相似度得分通过三种模式之一进行归约：'avg'、'max' 或 'min'。该算子还支持两种保留样本的策略：'any'（如果有任何视频满足条件则保留）或 'all'（只有当所有视频都满足条件时才保留）。关键指标存储在 'video_frames_text_similarity' 字段中。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, hf, multimodal</p>
+<p>Tags 标签: gpu, hf, multimodal</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="链接到此标题。">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

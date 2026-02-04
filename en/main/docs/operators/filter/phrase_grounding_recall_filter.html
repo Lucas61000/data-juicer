@@ -636,6 +636,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -746,7 +747,7 @@
 <p>根据从图像中文本提取的短语的定位召回率来过滤样本。</p>
 <p>该算子使用 Hugging Face Owl-ViT 模型来定位从文本中提取的短语在图像中的位置。它保留短语定位召回率在指定范围内的样本。召回率通过比较正确定位的短语数量与总短语数量来计算。该算子可以处理每个文本块中的多张图像，并支持不同的召回值归约策略（例如，平均值、最大值、最小值）。它还允许水平或垂直翻转图像。关键指标 ‘phrase_grounding_recall’ 将被计算并存储在样本的 stats 中。如果没有图像，则召回率设置为空数组。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, hf, multimodal</p>
+<p>Tags 标签: gpu, hf, multimodal</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

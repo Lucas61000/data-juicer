@@ -636,6 +636,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -746,7 +747,7 @@
 <p>根据文本的指令跟随难度 (IFD，<a class="reference external" href="https://arxiv.org/abs/2308.12032">https://arxiv.org/abs/2308.12032</a>) 分数来过滤保留文本。</p>
 <p>该算子为每个样本计算IFD分数，即有无查询时的损失比率。它保留IFD分数在指定范围内的样本。IFD分数是使用Hugging Face的tokenizer和模型计算的。如果IFD分数已经缓存在’ifd_score’字段中，则会重用该分数。该算子根据提供的最小和最大IFD分数阈值来决定保留或过滤样本。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, hf</p>
+<p>Tags 标签: gpu, hf</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

@@ -636,6 +636,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -746,7 +747,7 @@
 <p>用于保留由语言模型估计出高质量分数的样本的过滤器。</p>
 <p>该算子使用语言模型评估每个样本在多个维度上的质量，包括准确性、语法、信息量和连贯性。LLM为每个维度提供一个1-5分的数值评分，其中1分最低，5分最高。总体质量分数用于根据指定的最小和最大分数阈值来决定是否保留或过滤掉样本。评估结果缓存在’llm_quality_score’和’llm_quality_record’字段中。LLM分析的重要标志和标签也可能存储在样本的stats中。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, vllm, hf, api</p>
+<p>Tags 标签: gpu, vllm, hf, api</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">

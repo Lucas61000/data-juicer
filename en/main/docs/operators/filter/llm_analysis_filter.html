@@ -636,6 +636,7 @@
 <li class="toctree-l2"><a class="reference internal" href="video_duration_filter.html">video_duration_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_frames_text_similarity_filter.html">video_frames_text_similarity_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_filter.html">video_motion_score_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="video_motion_score_ptlflow_filter.html">video_motion_score_ptlflow_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_motion_score_raft_filter.html">video_motion_score_raft_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_nsfw_filter.html">video_nsfw_filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="video_ocr_area_ratio_filter.html">video_ocr_area_ratio_filter</a></li>
@@ -746,7 +747,7 @@
 <p>用于利用大语言模型分析和筛选数据样本的基础过滤器类。</p>
 <p>该算子使用大语言模型对每个样本在多个质量维度上进行评分和标记。它支持基于API的模型和Hugging Face模型。大语言模型会对样本的清晰度、相关性、有用性和流利度进行评估，提供1到5分的评分。会分配标签来对样本进行分类，并提出保留、审查或丢弃样本的建议。平均分会根据所需的维度键计算得出。如果样本的平均分落在指定的最小和最大分数阈值之间，则保留该样本。关键指标’llm_analysis_score’会被缓存在样本的统计信息中。</p>
 <p>Type 算子类型: <strong>filter</strong></p>
-<p>Tags 标签: cpu, vllm, hf, api</p>
+<p>Tags 标签: gpu, vllm, hf, api</p>
 <section id="parameter-configuration">
 <h2>🔧 Parameter Configuration 参数配置<a class="headerlink" href="#parameter-configuration" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
