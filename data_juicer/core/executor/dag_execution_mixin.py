@@ -15,6 +15,7 @@ from loguru import logger
 
 from data_juicer.core.executor.dag_execution_strategies import (
     DAGExecutionStrategy,
+    DAGNodeStatusTransition,
     NonPartitionedDAGStrategy,
     PartitionedDAGStrategy,
     is_global_operation,
@@ -129,6 +130,11 @@ class DAGExecutionMixin:
         # Build dependencies using strategy
         self.dag_execution_strategy.build_dependencies(nodes, operations, **strategy_kwargs)
 
+        # Validate DAG has no cycles
+        if not self.dag_execution_strategy.validate_dag(nodes):
+            logger.error("DAG validation failed: cycle detected in dependencies")
+            raise ValueError("Invalid DAG: cycle detected in dependencies")
+
         # Create PipelineDAG instance
         self.pipeline_dag = PipelineDAG(cfg.work_dir)
         self.pipeline_dag.nodes = nodes
@@ -240,6 +246,11 @@ class DAGExecutionMixin:
             return
 
         node = self.pipeline_dag.nodes[node_id]
+
+        # Validate state transition
+        current_status = node.get("status", "pending")
+        DAGNodeStatusTransition.validate_and_log(node_id, current_status, "running")
+
         self.pipeline_dag.mark_node_started(node_id)
         self.current_dag_node = node_id
 
@@ -258,6 +269,11 @@ class DAGExecutionMixin:
             return
 
         node = self.pipeline_dag.nodes[node_id]
+
+        # Validate state transition
+        current_status = node.get("status", "pending")
+        DAGNodeStatusTransition.validate_and_log(node_id, current_status, "completed")
+
         self.pipeline_dag.mark_node_completed(node_id, duration)
 
         # Log DAG node completion
@@ -277,6 +293,11 @@ class DAGExecutionMixin:
             return
 
         node = self.pipeline_dag.nodes[node_id]
+
+        # Validate state transition
+        current_status = node.get("status", "pending")
+        DAGNodeStatusTransition.validate_and_log(node_id, current_status, "failed")
+
         self.pipeline_dag.mark_node_failed(node_id, error_message)
 
         # Log DAG node failure
@@ -823,15 +844,15 @@ class DAGExecutionMixin:
             logger.error("Failed to load DAG execution plan for resumption")
             return False
 
-        # Restore node states
+        # Restore node states (nodes are dicts, not objects)
         for node_id, node_state in dag_state["node_states"].items():
             if node_id in self.pipeline_dag.nodes:
                 node = self.pipeline_dag.nodes[node_id]
-                node.status = DAGNodeStatus(node_state["status"])
-                node.start_time = node_state["start_time"]
-                node.end_time = node_state["end_time"]
-                node.actual_duration = node_state["actual_duration"]
-                node.error_message = node_state["error_message"]
+                node["status"] = node_state["status"]
+                node["start_time"] = node_state["start_time"]
+                node["end_time"] = node_state["end_time"]
+                node["actual_duration"] = node_state["actual_duration"]
+                node["error_message"] = node_state["error_message"]
 
         logger.info(f"Resuming DAG execution from node: {dag_state['resumption']['resume_from_node']}")
         logger.info(f"Statistics: {dag_state['statistics']}")

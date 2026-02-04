@@ -13,6 +13,63 @@ class DAGNodeType(Enum):
     SCATTER_GATHER = "scatter_gather"
 
 
+class DAGNodeStatusTransition:
+    """Validates DAG node status transitions.
+
+    Valid transitions:
+    - pending -> running (node starts execution)
+    - running -> completed (node finishes successfully)
+    - running -> failed (node fails)
+    - failed -> running (node retries)
+    - pending -> completed (skipped - already done in previous run)
+    """
+
+    VALID_TRANSITIONS = {
+        "pending": {"running", "completed"},  # completed for skip case
+        "running": {"completed", "failed"},
+        "failed": {"running"},  # retry
+        "completed": set(),  # terminal state
+    }
+
+    @classmethod
+    def is_valid(cls, from_status: str, to_status: str) -> bool:
+        """Check if a status transition is valid.
+
+        Args:
+            from_status: Current status
+            to_status: Target status
+
+        Returns:
+            True if transition is valid, False otherwise
+        """
+        valid_targets = cls.VALID_TRANSITIONS.get(from_status, set())
+        return to_status in valid_targets
+
+    @classmethod
+    def validate_and_log(cls, node_id: str, from_status: str, to_status: str) -> bool:
+        """Validate transition and log warning if invalid.
+
+        Args:
+            node_id: Node identifier for logging
+            from_status: Current status
+            to_status: Target status
+
+        Returns:
+            True if transition is valid, False otherwise
+        """
+        if cls.is_valid(from_status, to_status):
+            return True
+
+        # Import logger here to avoid circular imports
+        from loguru import logger
+
+        logger.warning(
+            f"Invalid DAG node transition for {node_id}: {from_status} -> {to_status}. "
+            f"Valid targets from {from_status}: {cls.VALID_TRANSITIONS.get(from_status, set())}"
+        )
+        return False
+
+
 @dataclass
 class ScatterGatherNode:
     """Represents a scatter-gather operation in partitioned execution.
@@ -155,6 +212,38 @@ class DAGExecutionStrategy(ABC):
     def can_execute_node(self, node_id: str, nodes: Dict[str, Any], completed_nodes: set) -> bool:
         """Check if a node can be executed based on strategy."""
         pass
+
+    def validate_dag(self, nodes: Dict[str, Any]) -> bool:
+        """Validate DAG has no cycles using DFS.
+
+        Returns:
+            True if DAG is valid (no cycles), False otherwise
+        """
+        # Build adjacency list
+        adj = {node_id: node.get("dependencies", []) for node_id, node in nodes.items()}
+
+        # Track visited nodes
+        WHITE, GRAY, BLACK = 0, 1, 2
+        color = {node_id: WHITE for node_id in nodes}
+
+        def has_cycle(node_id: str) -> bool:
+            """DFS to detect cycle."""
+            color[node_id] = GRAY
+            for dep in adj.get(node_id, []):
+                if dep not in color:
+                    continue  # Skip missing nodes
+                if color[dep] == GRAY:
+                    return True  # Back edge = cycle
+                if color[dep] == WHITE and has_cycle(dep):
+                    return True
+            color[node_id] = BLACK
+            return False
+
+        for node_id in nodes:
+            if color[node_id] == WHITE:
+                if has_cycle(node_id):
+                    return False
+        return True
 
 
 class NonPartitionedDAGStrategy(DAGExecutionStrategy):
@@ -333,13 +422,33 @@ class PartitionedDAGStrategy(DAGExecutionStrategy):
 
 
 def is_global_operation(operation) -> bool:
-    """Check if an operation is a global operation that requires convergence."""
-    # Deduplicators are typically global operations
-    if "deduplicator" in getattr(operation, "_name", ""):
+    """Check if an operation is a global operation that requires convergence.
+
+    Global operations need to see all data at once (e.g., deduplication, global sorting).
+    They cannot be partitioned and require a scatter-gather pattern.
+
+    Detection priority:
+    1. Explicit `is_global_operation` flag on the operation
+    2. Base class inheritance (Deduplicator)
+    3. Operation name pattern (fallback for unknown operations)
+    """
+    # Priority 1: Explicit flag (most reliable)
+    if getattr(operation, "is_global_operation", False):
         return True
 
-    # Check for explicit global operation flag
-    if getattr(operation, "is_global_operation", False):
+    # Priority 2: Check base class (interface-based detection)
+    try:
+        from data_juicer.ops.base_op import Deduplicator
+
+        if isinstance(operation, Deduplicator):
+            return True
+    except ImportError:
+        pass  # Deduplicator class not available
+
+    # Priority 3: Name-based detection (fallback for unknown ops)
+    op_name = getattr(operation, "_name", "")
+    global_op_patterns = ["deduplicator", "global_", "full_dataset_"]
+    if any(pattern in op_name.lower() for pattern in global_op_patterns):
         return True
 
     return False
