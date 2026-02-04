@@ -215,8 +215,8 @@ class ResourceDetector:
         # Ensure we don't exceed available cores
         optimal_workers = min(optimal_workers, available_cores)
 
-        # Minimum of 1 worker, maximum reasonable limit
-        optimal_workers = max(1, min(optimal_workers, 32))  # Cap at 32 workers
+        # Minimum of 1 worker, cap at available cores (no arbitrary limit)
+        optimal_workers = max(1, optimal_workers)
 
         logger.info(f"Worker count calculation:")
         logger.info(f"  Available CPU cores: {available_cores}")
@@ -625,7 +625,7 @@ class PartitionSizeOptimizer:
         """
         Calculate partition size based on data characteristics and available resources.
 
-        Primary goal: Target 64MB per partition for optimal memory usage.
+        Primary goal: Target partition size based on config (default 256MB).
         Secondary goals: Ensure sufficient parallelism and respect resource constraints.
         """
 
@@ -725,10 +725,11 @@ class PartitionSizeOptimizer:
         if mb_per_sample > 0:
             target_samples = int(target_memory_mb / (mb_per_sample * complexity_score))
         else:
-            target_samples = 5000
+            target_samples = self.MODALITY_CONFIGS[ModalityType.TEXT].default_partition_size
 
-        # Apply reasonable bounds
-        target_samples = max(1000, min(target_samples, 20000))
+        # Apply bounds from MODALITY_CONFIGS
+        text_config = self.MODALITY_CONFIGS[ModalityType.TEXT]
+        target_samples = max(100, min(target_samples, text_config.max_partition_size))
 
         logger.info(f"Text partition calculation:")
         logger.info(f"  Target: {target_memory_mb}MB, Avg text: {avg_text_length:.0f} chars")

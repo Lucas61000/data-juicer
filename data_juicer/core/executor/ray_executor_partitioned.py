@@ -314,8 +314,9 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
                 # Calculate number of partitions needed
                 self.num_partitions = max(1, int(total_samples / recommended_size))
 
-                # Ensure we don't create too many partitions (max 32 for efficiency)
-                self.num_partitions = min(self.num_partitions, 32)
+                # Cap partitions at 2x recommended workers (scales with cluster size)
+                max_partitions = max(32, recommended_workers * 2)
+                self.num_partitions = min(self.num_partitions, max_partitions)
 
                 logger.info(f"📊 Dataset analysis complete:")
                 logger.info(f"  Total samples: {total_samples}")
