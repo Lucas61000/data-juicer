@@ -8,12 +8,14 @@ This module implements a streamlined partitioned execution strategy for Ray mode
 5. Supports convergence points for global operations (like deduplicators)
 """
 
+import hashlib
+import json
 import os
 import shutil
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from jsonargparse import Namespace
 from loguru import logger
@@ -62,6 +64,78 @@ class PartitionResult:
     dataset: Optional[Any] = None
     success: bool = False
     error: Optional[str] = None
+
+
+@dataclass
+class PartitionMetadata:
+    """Metadata for a single partition to enable validation on resume.
+
+    Stores information about each partition that can be used to verify
+    that re-partitioning produces the same result on job resumption.
+    """
+
+    partition_id: int
+    row_count: int
+    first_row_hash: str  # Hash of first row for validation
+    last_row_hash: str  # Hash of last row for validation
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "PartitionMetadata":
+        return cls(**data)
+
+
+@dataclass
+class PartitioningInfo:
+    """Complete partitioning information for a job.
+
+    Stored alongside checkpoints to enable validation that re-partitioning
+    on resume produces identical partitions.
+    """
+
+    num_partitions: int
+    total_rows: int
+    partitions: List[PartitionMetadata] = field(default_factory=list)
+    deterministic: bool = True  # Whether deterministic splitting was used
+
+    def to_dict(self) -> Dict:
+        return {
+            "num_partitions": self.num_partitions,
+            "total_rows": self.total_rows,
+            "deterministic": self.deterministic,
+            "partitions": [p.to_dict() for p in self.partitions],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "PartitioningInfo":
+        partitions = [PartitionMetadata.from_dict(p) for p in data.get("partitions", [])]
+        return cls(
+            num_partitions=data["num_partitions"],
+            total_rows=data["total_rows"],
+            deterministic=data.get("deterministic", True),
+            partitions=partitions,
+        )
+
+    def save(self, path: str) -> None:
+        """Save partitioning info to JSON file."""
+        with open(path, "w") as f:
+            json.dump(self.to_dict(), f, indent=2)
+        logger.info(f"Saved partitioning info to {path}")
+
+    @classmethod
+    def load(cls, path: str) -> Optional["PartitioningInfo"]:
+        """Load partitioning info from JSON file."""
+        if not os.path.exists(path):
+            return None
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+            return cls.from_dict(data)
+        except Exception as e:
+            logger.warning(f"Failed to load partitioning info from {path}: {e}")
+            return None
 
 
 class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
@@ -410,13 +484,18 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
     def _process_with_simple_partitioning(self, dataset: RayDataset, ops: List):
         """
         Process dataset with real partitioning using Ray Data's split and union.
+
+        Uses deterministic splitting to ensure reproducible partitions for
+        checkpoint resumption.
         """
         logger.info("Processing with real partitioning using Ray Data's split and union...")
 
-        # Split the dataset into partitions
-        logger.info(f"Splitting dataset into {self.num_partitions} partitions...")
-        partitions = dataset.data.split(self.num_partitions)
-        logger.info(f"Created {len(partitions)} partitions")
+        # Split the dataset deterministically with metadata collection
+        partitions, partitioning_info = self._split_dataset_deterministic(dataset)
+        logger.info(
+            f"Partitioning complete: {partitioning_info.num_partitions} partitions, "
+            f"{partitioning_info.total_rows} total rows"
+        )
 
         # Process each partition separately with checkpointing
         logger.info("Processing partitions with checkpointing support...")
@@ -747,3 +826,178 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
             return None
 
         return self.dag_execution_strategy.get_dag_node_id(op_name, op_idx, partition_id=partition_id, **kwargs)
+
+    # ========== Deterministic Partitioning Methods ==========
+
+    def _enable_deterministic_execution(self) -> None:
+        """Enable deterministic execution order in Ray Data.
+
+        This ensures that split() produces the same partitions on re-runs,
+        which is critical for checkpoint resumption.
+        """
+        try:
+            ctx = ray.data.DataContext.get_current()
+            ctx.execution_options.preserve_order = True
+            logger.info("Enabled deterministic execution (preserve_order=True)")
+        except Exception as e:
+            logger.warning(f"Could not enable deterministic execution: {e}")
+
+    def _compute_row_hash(self, row: Dict) -> str:
+        """Compute a hash of a row for partition validation.
+
+        Uses a stable JSON serialization to ensure consistent hashing.
+        """
+        # Sort keys for deterministic serialization
+        try:
+            row_str = json.dumps(row, sort_keys=True, default=str)
+            return hashlib.md5(row_str.encode()).hexdigest()[:16]
+        except Exception:
+            # Fallback for non-serializable rows
+            return hashlib.md5(str(row).encode()).hexdigest()[:16]
+
+    def _collect_partition_metadata(self, partition, partition_id: int) -> PartitionMetadata:
+        """Collect metadata from a partition for validation on resume.
+
+        Only collects first_row_hash (not last_row_hash) for efficiency.
+        Getting the last row requires take(all_rows) which is expensive.
+        First row hash + row count is sufficient for detecting most mismatches.
+        """
+        row_count = partition.count()
+
+        # Get first row for hashing (cheap operation)
+        first_row_hash = ""
+
+        try:
+            first_rows = partition.take(1)
+            if first_rows:
+                first_row_hash = self._compute_row_hash(first_rows[0])
+        except Exception as e:
+            logger.warning(f"Could not compute row hash for partition {partition_id}: {e}")
+
+        return PartitionMetadata(
+            partition_id=partition_id,
+            row_count=row_count,
+            first_row_hash=first_row_hash,
+            last_row_hash="",  # Skip last_row_hash for efficiency
+        )
+
+    def _get_partitioning_info_path(self) -> str:
+        """Get the path to the partitioning info file."""
+        return os.path.join(self.ckpt_manager.ckpt_dir, "partitioning_info.json")
+
+    def _save_partitioning_info(self, info: PartitioningInfo) -> None:
+        """Save partitioning info alongside checkpoints."""
+        os.makedirs(self.ckpt_manager.ckpt_dir, exist_ok=True)
+        info.save(self._get_partitioning_info_path())
+
+    def _load_partitioning_info(self) -> Optional[PartitioningInfo]:
+        """Load partitioning info from checkpoint directory."""
+        return PartitioningInfo.load(self._get_partitioning_info_path())
+
+    def _validate_partitions(self, partitions: List, saved_info: PartitioningInfo) -> bool:
+        """Validate that current partitions match saved partitioning info.
+
+        Returns True if partitions match (safe to use checkpoints),
+        False if there's a mismatch (must restart from scratch).
+
+        Validation checks:
+        1. Partition count matches
+        2. Row count per partition matches
+        3. First row hash matches (efficient validation)
+        """
+        if len(partitions) != saved_info.num_partitions:
+            logger.error(f"Partition count mismatch: current={len(partitions)}, " f"saved={saved_info.num_partitions}")
+            return False
+
+        for i, partition in enumerate(partitions):
+            current_count = partition.count()
+            saved_meta = saved_info.partitions[i] if i < len(saved_info.partitions) else None
+
+            if saved_meta is None:
+                logger.warning(f"No saved metadata for partition {i}")
+                continue
+
+            if current_count != saved_meta.row_count:
+                logger.error(
+                    f"Partition {i} row count mismatch: current={current_count}, " f"saved={saved_meta.row_count}"
+                )
+                return False
+
+            # Validate first row hash (skip if not available)
+            if saved_meta.first_row_hash:
+                try:
+                    first_rows = partition.take(1)
+                    if first_rows:
+                        current_hash = self._compute_row_hash(first_rows[0])
+                        if current_hash != saved_meta.first_row_hash:
+                            logger.error(
+                                f"Partition {i} first row hash mismatch: "
+                                f"current={current_hash}, saved={saved_meta.first_row_hash}"
+                            )
+                            return False
+                except Exception as e:
+                    logger.warning(f"Could not validate partition {i} hash: {e}")
+
+        logger.info("Partition validation passed - safe to use checkpoints")
+        return True
+
+    def _split_dataset_deterministic(self, dataset: RayDataset) -> tuple:
+        """Split dataset deterministically and collect metadata.
+
+        Returns:
+            tuple: (partitions, partitioning_info)
+        """
+        # Enable deterministic execution
+        self._enable_deterministic_execution()
+
+        # Check for existing partitioning info (resumption case)
+        saved_info = self._load_partitioning_info()
+
+        # Split the dataset
+        logger.info(f"Splitting dataset into {self.num_partitions} partitions (deterministic mode)...")
+        partitions = dataset.data.split(self.num_partitions)
+        logger.info(f"Created {len(partitions)} partitions")
+
+        # If resuming, validate partitions match
+        if saved_info is not None:
+            logger.info("Found existing partitioning info, validating...")
+            if self._validate_partitions(partitions, saved_info):
+                logger.info("Partitions validated successfully - resuming with existing checkpoints")
+                return partitions, saved_info
+            else:
+                logger.warning(
+                    "Partition validation FAILED - partitions don't match saved info. "
+                    "This can happen if the input data changed or Ray's internal state differs. "
+                    "Clearing checkpoints and starting fresh."
+                )
+                self._clear_invalid_checkpoints()
+                saved_info = None
+
+        # Collect metadata for new partitions
+        logger.info("Collecting partition metadata for checkpoint validation...")
+        total_rows = sum(p.count() for p in partitions)
+        partition_metadata = []
+
+        for i, partition in enumerate(partitions):
+            meta = self._collect_partition_metadata(partition, i)
+            partition_metadata.append(meta)
+            logger.debug(f"Partition {i}: {meta.row_count} rows, hash={meta.first_row_hash[:8]}...")
+
+        partitioning_info = PartitioningInfo(
+            num_partitions=self.num_partitions,
+            total_rows=total_rows,
+            partitions=partition_metadata,
+            deterministic=True,
+        )
+
+        # Save partitioning info
+        self._save_partitioning_info(partitioning_info)
+
+        return partitions, partitioning_info
+
+    def _clear_invalid_checkpoints(self) -> None:
+        """Clear checkpoints when partition validation fails."""
+        if os.path.exists(self.ckpt_manager.ckpt_dir):
+            logger.warning(f"Clearing invalid checkpoints in {self.ckpt_manager.ckpt_dir}")
+            shutil.rmtree(self.ckpt_manager.ckpt_dir)
+            os.makedirs(self.ckpt_manager.ckpt_dir, exist_ok=True)
