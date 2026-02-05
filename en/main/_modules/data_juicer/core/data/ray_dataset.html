@@ -651,16 +651,23 @@
 
 <div class="viewcode-block" id="convert_to_absolute_paths">
 <a class="viewcode-back" href="../../../../api/data_juicer.core.data.ray_dataset.html#data_juicer.core.data.ray_dataset.convert_to_absolute_paths">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">convert_to_absolute_paths</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">dataset_dir</span><span class="p">,</span> <span class="n">path_keys</span><span class="p">):</span>
-    <span class="n">samples</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">to_pydict</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">convert_to_absolute_paths</span><span class="p">(</span><span class="n">samples</span><span class="p">:</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">dataset_dir</span><span class="p">,</span> <span class="n">path_keys</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">path_keys</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="n">key</span><span class="p">])):</span>
-            <span class="n">paths</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="n">samples</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_abs_path</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="n">dataset_dir</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="n">samples</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_abs_path</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">dataset_dir</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">Table</span><span class="o">.</span><span class="n">from_pydict</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span></div>
+        <span class="n">col_idx</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">get_field_index</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">col_idx</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_process_paths</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">col</span><span class="o">.</span><span class="n">as_py</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">yield</span> <span class="n">get_abs_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">dataset_dir</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="k">yield</span> <span class="p">[</span><span class="n">get_abs_path</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">dataset_dir</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">path</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">path</span>
+
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">set_column</span><span class="p">(</span><span class="n">col_idx</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">_process_paths</span><span class="p">()))</span>
+    <span class="k">return</span> <span class="n">samples</span></div>
 
 
 
