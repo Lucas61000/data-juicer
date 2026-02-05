@@ -695,6 +695,9 @@
     <span class="c1"># DWPose</span>
     <span class="s2">&quot;dwpose_onnx_det_model&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx&quot;</span><span class="p">,</span>
     <span class="s2">&quot;dwpose_onnx_pose_model&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/yzd-v/DWPose/resolve/main/dw-ll_ucoco_384.onnx&quot;</span><span class="p">,</span>
+    <span class="c1"># HaWoR</span>
+    <span class="s2">&quot;hawor_model_path&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/ThunderVVV/HaWoR/resolve/main/hawor/checkpoints/hawor.ckpt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hawor_config_path&quot;</span><span class="p">:</span> <span class="s2">&quot;https://huggingface.co/ThunderVVV/HaWoR/resolve/main/hawor/model_config.yaml&quot;</span><span class="p">,</span>
 <span class="p">}</span>
 
 
@@ -1289,6 +1292,68 @@
             <span class="n">model</span> <span class="o">=</span> <span class="n">pipe</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">processor</span><span class="p">)</span> <span class="k">if</span> <span class="n">return_model</span> <span class="k">else</span> <span class="n">processor</span></div>
+
+
+
+<div class="viewcode-block" id="prepare_hawor_model">
+<a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.prepare_hawor_model">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_hawor_model</span><span class="p">(</span><span class="n">hawor_model_path</span><span class="p">,</span> <span class="n">hawor_config_path</span><span class="p">,</span> <span class="n">mano_right_path</span><span class="p">,</span> <span class="o">**</span><span class="n">model_params</span><span class="p">):</span>
+
+    <span class="n">device</span> <span class="o">=</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;device&quot;</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+
+    <span class="n">hawor_repo_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATA_JUICER_ASSETS_CACHE</span><span class="p">,</span> <span class="s2">&quot;HaWoR&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">hawor_repo_path</span><span class="p">):</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;clone&quot;</span><span class="p">,</span> <span class="s2">&quot;https://github.com/ThunderVVV/HaWoR.git&quot;</span><span class="p">,</span> <span class="n">hawor_repo_path</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hawor_repo_path</span><span class="p">)</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">hawor.configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_config</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">lib.models.hawor</span><span class="w"> </span><span class="kn">import</span> <span class="n">HAWOR</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">mano_right_path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Users need to download &#39;MANO_RIGHT.pkl&#39; from https://mano.is.tue.mpg.de/ and comply with the MANO license.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">hawor_model_path</span><span class="p">):</span>
+        <span class="n">hawor_model_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DJMC</span><span class="p">,</span> <span class="s2">&quot;HaWor&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">hawor_model_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">hawor_model_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hawor_model_dir</span><span class="p">,</span> <span class="s2">&quot;hawor.ckpt&quot;</span><span class="p">)</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;wget&quot;</span><span class="p">,</span> <span class="n">BACKUP_MODEL_LINKS</span><span class="p">[</span><span class="s2">&quot;hawor_model_path&quot;</span><span class="p">],</span> <span class="n">hawor_model_path</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">hawor_config_path</span><span class="p">):</span>
+        <span class="n">hawor_model_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DJMC</span><span class="p">,</span> <span class="s2">&quot;HaWor&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">hawor_model_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">hawor_config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hawor_model_dir</span><span class="p">,</span> <span class="s2">&quot;model_config.yaml&quot;</span><span class="p">)</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;wget&quot;</span><span class="p">,</span> <span class="n">BACKUP_MODEL_LINKS</span><span class="p">[</span><span class="s2">&quot;hawor_config_path&quot;</span><span class="p">],</span> <span class="n">hawor_config_path</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">model_cfg</span> <span class="o">=</span> <span class="n">get_config</span><span class="p">(</span><span class="n">hawor_config_path</span><span class="p">,</span> <span class="n">update_cachedir</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">BACKBONE</span><span class="o">.</span><span class="n">TYPE</span> <span class="o">==</span> <span class="s2">&quot;vit&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;BBOX_SHAPE&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="p">):</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">defrost</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">IMAGE_SIZE</span> <span class="o">==</span> <span class="mi">256</span>
+        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;MODEL.IMAGE_SIZE (</span><span class="si">{</span><span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">IMAGE_SIZE</span><span class="si">}</span><span class="s2">) should be 256 for ViT backbone&quot;</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MODEL</span><span class="o">.</span><span class="n">BBOX_SHAPE</span> <span class="o">=</span> <span class="p">[</span><span class="mi">192</span><span class="p">,</span> <span class="mi">256</span><span class="p">]</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="s2">&quot;DATA_DIR&quot;</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">MANO</span><span class="p">:</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">defrost</span><span class="p">()</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MANO</span><span class="o">.</span><span class="n">DATA_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hawor_repo_path</span><span class="p">,</span> <span class="s2">&quot;_DATA/data&quot;</span><span class="p">)</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MANO</span><span class="o">.</span><span class="n">MODEL_PATH</span> <span class="o">=</span> <span class="n">mano_right_path</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">MANO</span><span class="o">.</span><span class="n">MEAN_PARAMS</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hawor_repo_path</span><span class="p">,</span> <span class="s2">&quot;_DATA/data/mano_mean_params.npz&quot;</span><span class="p">)</span>
+        <span class="n">model_cfg</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+
+    <span class="n">hawor_model</span> <span class="o">=</span> <span class="n">HAWOR</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">hawor_model_path</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">model_cfg</span><span class="p">,</span> <span class="n">weights_only</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
+        <span class="n">device</span>
+    <span class="p">)</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.ops.common.mano_func</span><span class="w"> </span><span class="kn">import</span> <span class="n">MANO</span>
+
+    <span class="n">mano_model</span> <span class="o">=</span> <span class="n">MANO</span><span class="p">(</span><span class="n">model_path</span><span class="o">=</span><span class="n">mano_right_path</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hawor_model</span><span class="p">,</span> <span class="n">model_cfg</span><span class="p">,</span> <span class="n">mano_model</span></div>
 
 
 
@@ -2326,6 +2391,7 @@
     <span class="s2">&quot;dwpose&quot;</span><span class="p">:</span> <span class="n">prepare_dwpose_model</span><span class="p">,</span>
     <span class="s2">&quot;fasttext&quot;</span><span class="p">:</span> <span class="n">prepare_fasttext_model</span><span class="p">,</span>
     <span class="s2">&quot;fastsam&quot;</span><span class="p">:</span> <span class="n">prepare_fastsam_model</span><span class="p">,</span>
+    <span class="s2">&quot;hawor&quot;</span><span class="p">:</span> <span class="n">prepare_hawor_model</span><span class="p">,</span>
     <span class="s2">&quot;huggingface&quot;</span><span class="p">:</span> <span class="n">prepare_huggingface_model</span><span class="p">,</span>
     <span class="s2">&quot;kenlm&quot;</span><span class="p">:</span> <span class="n">prepare_kenlm_model</span><span class="p">,</span>
     <span class="s2">&quot;moge&quot;</span><span class="p">:</span> <span class="n">prepare_moge_model</span><span class="p">,</span>
