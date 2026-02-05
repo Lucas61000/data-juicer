@@ -19,8 +19,6 @@ Important Notes:
 - For running/incomplete jobs, use event logs and the monitor tool to track progress
 
 Usage:
-    # IMPORTANT: This script must be run from the Data-Juicer root directory
-    cd /path/to/data-juicer
     python demos/partition_and_checkpoint/run_demo.py
 """
 
@@ -227,27 +225,26 @@ def check_job_summary(job_id, work_dir="./outputs/partition-checkpoint-eventlog"
     print("=" * 60)
 
 
-def check_resource_optimization():
+def check_resource_optimization(config_file):
     """Check resource-aware partitioning configuration."""
     print(f"\n⚙️ Resource-Aware Partitioning Check:")
     print("=" * 60)
-    
+
     # Check if resource optimization is enabled in config
-    config_file = "configs/demo/partition-checkpoint-eventlog.yaml"
     if os.path.exists(config_file):
         with open(config_file, 'r') as f:
             config_content = f.read()
-        
+
         if "resource_optimization:" in config_content and "auto_configure: true" in config_content:
             print("✅ Resource optimization is enabled")
             print("   - Automatic partition size optimization")
             print("   - Worker count optimization")
-            print("   - 64MB partition targeting")
+            print("   - 256MB partition targeting")
         else:
             print("ℹ️ Resource optimization not enabled (using manual configuration)")
     else:
         print(f"❌ Config file {config_file} not found")
-    
+
     print("=" * 60)
 
 
@@ -267,29 +264,19 @@ def main():
     """Run the comprehensive demo."""
     print("🚀 DataJuicer Job Management & Monitoring Demo")
     print("=" * 80)
-    
-    # IMPORTANT: This script must be run from the Data-Juicer root directory
-    # Check if we're in the root directory by looking for key files/directories
-    if not os.path.exists("configs") or not os.path.exists("data_juicer"):
-        print("❌ Error: This script must be run from the Data-Juicer root directory!")
-        print("   Current directory:", os.getcwd())
-        print("   Expected to find: configs/ and data_juicer/ directories")
-        print("\n   Please run:")
-        print("   cd /path/to/data-juicer")
-        print("   python demos/partition_and_checkpoint/run_demo.py")
-        return
-    
-    config_file = "configs/demo/partition-checkpoint-eventlog.yaml"
+
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_file = os.path.join(script_dir, "configs", "partition-checkpoint-eventlog.yaml")
     work_dir = "./outputs/partition-checkpoint-eventlog"
     
     # Ensure the config file exists
     if not os.path.exists(config_file):
         print(f"❌ Config file {config_file} not found!")
-        print("Please run this script from the DataJuicer root directory.")
         return
     
     # Check resource optimization configuration
-    check_resource_optimization()
+    check_resource_optimization(config_file)
     
     # Demo 1: First run with new job (auto-generated job_id)
     print("\n🎯 Demo 1: First Run (New Job, Auto-generated job_id)")
