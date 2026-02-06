@@ -18,6 +18,41 @@ from data_juicer.utils.resource_utils import (
 # This leaves some memory for Ray's overhead and other system processes.
 _OPS_MEMORY_LIMIT_FRACTION = 1.0
 
+# Track whether worker threads have been configured
+_WORKER_THREADS_CONFIGURED = False
+
+
+def setup_worker_threads(num_threads=1):
+    """
+    Configure thread limits for worker processes to prevent thread over-subscription.
+
+    When running with multiple worker processes (e.g., num_proc > 1), each worker
+    using multiple threads leads to severe performance degradation due to thread
+    contention. This function limits threads per worker to prevent this issue.
+
+    :param num_threads: Number of threads per worker process (default: 1)
+    """
+    global _WORKER_THREADS_CONFIGURED
+
+    # Only configure once per process
+    if _WORKER_THREADS_CONFIGURED:
+        return
+
+    # Set PyTorch thread limits directly (works even after torch is imported)
+    try:
+        import torch
+
+        torch.set_num_threads(num_threads)
+        torch.set_num_interop_threads(num_threads)
+        logger.debug(f"Set torch threads to {num_threads}")
+    except ImportError:
+        pass
+    except RuntimeError as e:
+        # torch.set_num_interop_threads can only be called once
+        logger.debug(f"Could not set torch interop threads: {e}")
+
+    _WORKER_THREADS_CONFIGURED = True
+
 
 def setup_mp(method=None):
     if mp.current_process().name != "MainProcess":
@@ -58,12 +93,12 @@ def get_min_cuda_memory():
     return min_cuda_memory
 
 
-def calculate_np(name, mem_required, cpu_required, use_cuda=False, gpu_required=0):
+def calculate_np(name, memory, num_cpus, use_cuda=False, num_gpus=0):
     """Calculate the optimum number of processes for the given OP automatically。"""
 
-    if not use_cuda and gpu_required:
+    if not use_cuda and num_gpus:
         raise ValueError(
-            f"Op[{name}] attempted to request GPU resources (gpu_required={gpu_required}), "
+            f"Op[{name}] attempted to request GPU resources (num_gpus={num_gpus}), "
             "but appears to lack GPU support. If you have verified this operator support GPU acceleration, "
             'please explicitly set its property: `_accelerator = "cuda"`.'
         )
@@ -74,24 +109,22 @@ def calculate_np(name, mem_required, cpu_required, use_cuda=False, gpu_required=
     if use_cuda:
         cuda_mems_available = [m / 1024 for m in available_gpu_memories()]  # GB
         gpu_count = cuda_device_count()
-        if not mem_required and not gpu_required:
+        if not memory and not num_gpus:
             auto_num_proc = gpu_count
             logger.warning(
                 f"The required cuda memory and gpu of Op[{name}] "
                 f"has not been specified. "
-                f"Please specify the mem_required field or gpu_required field in the "
-                f"config file. You can reference the config_all.yaml file."
+                f"Please specify the memory field or num_gpus field in the "
+                f"config file. You can reference data_juicer/config/config_all.yaml."
                 f"Set the auto `num_proc` to number of GPUs {auto_num_proc}."
             )
         else:
-            if mem_required:
-                auto_proc_from_mem = sum(
-                    [math.floor(mem_available / mem_required) for mem_available in cuda_mems_available]
-                )
-            if gpu_required:
-                auto_proc_from_gpu = math.floor(gpu_count / gpu_required)
-            if cpu_required:
-                auto_proc_from_cpu = math.floor(cpu_num / cpu_required)
+            if memory:
+                auto_proc_from_mem = sum([math.floor(mem_available / memory) for mem_available in cuda_mems_available])
+            if num_gpus:
+                auto_proc_from_gpu = math.floor(gpu_count / num_gpus)
+            if num_cpus:
+                auto_proc_from_cpu = math.floor(cpu_num / num_cpus)
 
             auto_num_proc = min(auto_proc_from_mem, auto_proc_from_gpu, auto_proc_from_cpu)
             if auto_num_proc < 1:
@@ -99,25 +132,25 @@ def calculate_np(name, mem_required, cpu_required, use_cuda=False, gpu_required=
 
             logger.info(
                 f"Set the auto `num_proc` to {auto_num_proc} of Op[{name}] based on the "
-                f"required cuda memory: {mem_required}GB "
-                f"required gpu: {gpu_required} and required cpu: {cpu_required}."
+                f"required cuda memory: {memory}GB "
+                f"required gpu: {num_gpus} and required cpu: {num_cpus}."
             )
         return auto_num_proc
     else:
         mems_available = [m / 1024 for m in available_memories()]  # GB
 
-        if mem_required:
-            auto_proc_from_mem = sum([math.floor(mem_available / mem_required) for mem_available in mems_available])
-        if cpu_required:
-            auto_proc_from_cpu = math.floor(cpu_num / cpu_required)
+        if memory:
+            auto_proc_from_mem = sum([math.floor(mem_available / memory) for mem_available in mems_available])
+        if num_cpus:
+            auto_proc_from_cpu = math.floor(cpu_num / num_cpus)
 
         auto_num_proc = min(cpu_num, auto_proc_from_mem, auto_proc_from_cpu)
 
         if auto_num_proc < 1.0:
             auto_num_proc = len(available_memories())  # number of processes is equal to the number of nodes
             logger.warning(
-                f"The required CPU number: {cpu_required} "
-                f"and memory: {mem_required}GB might "
+                f"The required CPU number: {num_cpus} "
+                f"and memory: {memory}GB might "
                 f"be more than the available CPU: {cpu_num} "
                 f"and memory: {mems_available}GB."
                 f"This Op [{name}] might "
@@ -127,8 +160,8 @@ def calculate_np(name, mem_required, cpu_required, use_cuda=False, gpu_required=
         else:
             logger.info(
                 f"Set the auto `num_proc` to {auto_num_proc} of Op[{name}] based on the "
-                f"required memory: {mem_required}GB "
-                f"and required cpu: {cpu_required}."
+                f"required memory: {memory}GB "
+                f"and required cpu: {num_cpus}."
             )
         return auto_num_proc
 
@@ -175,7 +208,7 @@ def _find_optimal_concurrency(resource_ratios, total_resource):
 
     for combo in itertools.product(*candidates):
         total_used = sum(c * r for c, r in zip(combo, resource_ratios))
-        if total_used > total_resource:
+        if total_used > total_resource + 1e-10:
             continue
 
         # calculate the standard deviation of processing capacity
@@ -226,7 +259,8 @@ def calculate_ray_np(operators):
             to calculate automatically based on this setting
         b. Auto-calculation returns tuple (min_concurrency, max_concurrency):
             i. Minimum: Ensures baseline resource allocation in remaining resources
-                when all operators are active simultaneously (proportionally)
+                when all operators are active simultaneously in streaming mode (proportionally).
+                If the resources are insufficient, back to the batch mode, only guarantee the actor operators.
             ii. Maximum: Allows full utilization of remaining resources by single
                 operator when others are idle
     """
@@ -243,40 +277,67 @@ def calculate_ray_np(operators):
     total_gpu = ray_gpu_count()
     available_mem = sum(ray_available_memories()) * _OPS_MEMORY_LIMIT_FRACTION / 1024  # Convert MB to GB
     available_gpu_mem = sum(ray_available_gpu_memories()) * _OPS_MEMORY_LIMIT_FRACTION / 1024  # Convert MB to GB
+
+    # Validate cluster resources to prevent divide-by-zero
+    if total_cpu == 0:
+        raise RuntimeError(
+            "Ray cluster has no CPU resources available (ray_cpu_count() returned 0). "
+            "This typically indicates the Ray cluster is not properly initialized. "
+            "Please ensure the Ray cluster has active worker nodes."
+        )
+
+    if available_mem == 0:
+        raise RuntimeError(
+            "Ray cluster has no memory resources available. "
+            "Please verify the Ray cluster status with ray.cluster_resources()."
+        )
+
     resource_configs = {}
 
-    for op in operators:
-        cpu_req = op.cpu_required
-        mem_req = op.mem_required
+    for op_idx, op in enumerate(operators):
+        cpu_req = op.num_cpus
+        mem_req = op.memory
         gpu_req = 0
         gpu_mem_req = 0
 
-        if op.gpu_required:
+        if op.num_gpus:
             if not op.use_cuda():
                 raise ValueError(
-                    f"Op[{op._name}] attempted to request GPU resources (gpu_required={op.gpu_required}), "
+                    f"Op[{op._name}] attempted to request GPU resources (num_gpus={op.num_gpus}), "
                     "but appears to lack GPU support. If you have verified this operator support GPU acceleration, "
                     'please explicitly set its property: `_accelerator = "cuda"`.'
                 )
             if not cuda_available:
                 raise ValueError(
-                    f"Op[{op._name}] attempted to request GPU resources (gpu_required={op.gpu_required}), "
+                    f"Op[{op._name}] attempted to request GPU resources (num_gpus={op.num_gpus}), "
                     "but the gpu is unavailable. Please check whether your environment is installed correctly"
                     " and whether there is a gpu in the resource pool."
                 )
-        # if it is a cuda operator, mem_required will be calculated as gpu memory;
+        # if it is a cuda operator, memory will be calculated as gpu memory;
         # if it is a cpu, it will be calculated as memory.
         cpu_required_frac, gpu_required_frac = 0, 0
         # GPU operator calculations
         if op.use_cuda():
-            gpu_req = op.gpu_required
-            gpu_mem_req = op.mem_required
+            if total_gpu == 0:
+                raise RuntimeError(
+                    f"Op[{op._name}] requires GPU but no GPUs are available in Ray cluster "
+                    "(ray_gpu_count() returned 0). "
+                    "Please ensure GPU nodes are configured in the Ray cluster."
+                )
+            if available_gpu_mem == 0:
+                raise RuntimeError(
+                    f"Op[{op._name}] requires GPU but no GPU memory is available. "
+                    "Please verify GPU nodes are properly configured."
+                )
+
+            gpu_req = op.num_gpus
+            gpu_mem_req = op.memory
             if not gpu_req and not gpu_mem_req:
                 logger.warning(
                     f"Neither the required cuda memory nor gpu of Op[{op._name}] is specified. "
-                    f"We recommend specifying the `mem_required` field or `gpu_required` field in the "
-                    f"config file. You can reference the `config_all.yaml` file."
-                    f"Set the `gpu_required` to 1 now."
+                    f"We recommend specifying the `memory` field or `num_gpus` field in the "
+                    f"config file. You can reference data_juicer/config/config_all.yaml."
+                    f"Set the `num_gpus` to 1 now."
                 )
                 gpu_req = 1
 
@@ -289,6 +350,9 @@ def calculate_ray_np(operators):
 
             if not gpu_req:
                 gpu_req = math.ceil(gpu_required_frac * total_gpu * 100) / 100
+                if gpu_req > 1:
+                    # ray requires integer number when GPU resource quantities >1
+                    gpu_req = math.ceil(gpu_req)
 
         # CPU operator calculations
         else:
@@ -300,22 +364,17 @@ def calculate_ray_np(operators):
                 if op.use_auto_proc():
                     logger.warning(
                         f"Neither the required memory nor cpu of Op[{op._name}] is specified. "
-                        f"We recommend specifying the `cpu_required` field in the "
-                        f"config file. You can reference the `config_all.yaml` file."
+                        f"We recommend specifying the `num_cpus` field in the "
+                        f"config file. You can reference data_juicer/config/config_all.yaml."
                     )
                 # if no cpu is specified, ray will apply for 1 cpu by default
                 cpu_required_frac = 1 / total_cpu
-            if op.num_proc:
-                if not isinstance(op.num_proc, int):
-                    raise ValueError(
-                        f"Op[{op._name}] is running with cpu resource, ``num_proc`` is expected to be set as an integer. "
-                        f"Use ``concurrency=n`` to control maximum number of workers to use,  but got: {op.num_proc}."
-                    )
             # set concurrency to none, using the default autoscaler of ray to ensure performance
             if op.num_proc == -1:
                 op.num_proc = None
 
-        resource_configs[op._name] = {
+        # prevent repeated op
+        resource_configs[op._name + f"_{op_idx}"] = {
             "cpu_required": cpu_req,
             "gpu_required": gpu_req,
             "mem_required": mem_req,
@@ -324,17 +383,15 @@ def calculate_ray_np(operators):
             "gpu_required_frac": gpu_required_frac,
             "num_proc": tuple(op.num_proc) if isinstance(op.num_proc, list) else op.num_proc,
             "auto_proc": op.use_auto_proc(),
-            "is_actor": op.use_cuda(),
+            "is_actor": op.use_ray_actor(),
         }
 
-    fixed_min_cpu = 0
-    fixed_max_cpu = 0
-    fixed_min_gpu = 0
-    fixed_max_gpu = 0
+    fixed_min_cpu = fixed_max_cpu = fixed_min_gpu = fixed_max_gpu = 0
+    fixed_actor_min_cpu = fixed_actor_max_cpu = fixed_actor_min_gpu = fixed_actor_max_gpu = 0
     auto_resource_frac_map = {}
     for op_name, cfg in resource_configs.items():
         if cfg["auto_proc"]:
-            auto_resource_frac_map[op_name] = (cfg["cpu_required_frac"], cfg["gpu_required_frac"])
+            auto_resource_frac_map[op_name] = (cfg["cpu_required_frac"], cfg["gpu_required_frac"], cfg["is_actor"])
         else:
             num_proc = cfg["num_proc"]
             if cfg["is_actor"]:
@@ -342,30 +399,59 @@ def calculate_ray_np(operators):
             else:
                 min_proc = 1  # when ``fn`` is a function, , only the maximum concurrency can be specified
             max_proc = num_proc[1] if isinstance(num_proc, (tuple, list)) else num_proc
-            fixed_min_cpu += cfg["cpu_required_frac"] * min_proc
-            fixed_min_gpu += cfg["gpu_required_frac"] * min_proc
+            _min_cpu = cfg["cpu_required_frac"] * min_proc
+            _min_gpu = cfg["gpu_required_frac"] * min_proc
             if not max_proc:  # when num_proc is none, at least one process will be started
                 max_proc = min_proc  # 1
-            fixed_max_cpu += cfg["cpu_required_frac"] * max_proc
-            fixed_max_gpu += cfg["gpu_required_frac"] * max_proc
+            _max_cpu = cfg["cpu_required_frac"] * max_proc
+            _max_gpu = cfg["gpu_required_frac"] * max_proc
+
+            if cfg["is_actor"]:
+                fixed_actor_min_cpu += _min_cpu
+                fixed_actor_min_gpu += _min_gpu
+                fixed_actor_max_cpu += _max_cpu
+                fixed_actor_max_gpu += _max_gpu
+
+            fixed_min_cpu += _min_cpu
+            fixed_min_gpu += _min_gpu
+            fixed_max_cpu += _max_cpu
+            fixed_max_gpu += _max_gpu
 
     # Validate resource availability
-    total_auto_base_cpu = sum([i[0] for i in list(auto_resource_frac_map.values())])
-    total_auto_base_gpu = sum([i[1] for i in list(auto_resource_frac_map.values())])
+    total_auto_base_cpu = sum([i[0] for i in auto_resource_frac_map.values()])
+    total_auto_base_gpu = sum([i[1] for i in auto_resource_frac_map.values()])
     total_required_min_cpu = fixed_min_cpu + total_auto_base_cpu
-    if total_required_min_cpu > 1:
-        raise ValueError(
-            f"Insufficient cpu resources: "
-            f"At least {total_required_min_cpu * total_cpu} cpus are required,  but only {total_cpu} are available. "
-            f"Please add resources to ray cluster or reduce operator requirements."
-        )
     total_required_min_gpu = fixed_min_gpu + total_auto_base_gpu
-    if total_required_min_gpu > 1:
-        raise ValueError(
-            f"Insufficient gpu resources: "
-            f"At least {total_required_min_gpu * total_gpu} cpus are required,  but only {total_gpu} are available. "
-            f"Please add resources to ray cluster or reduce operator requirements."
+    total_auto_base_cpu_actor = sum([i[0] for i in auto_resource_frac_map.values() if i[2]])
+    total_auto_base_gpu_actor = sum([i[1] for i in auto_resource_frac_map.values() if i[2]])
+
+    # Precheck: if actors resources are insufficient,
+    # the job will hang and keep waiting to add more nodes to the Ray cluster
+    error_str = ""
+    if fixed_actor_min_cpu + total_auto_base_cpu_actor > 1:
+        error_str += (
+            "CPU resource is not enough for the current operators configuration. "
+            f"At least {(fixed_actor_min_cpu + total_auto_base_cpu_actor) * total_cpu:.1f} cpus are required, "
+            f"but only {total_cpu} cpus are available. "
+            "Please consider configuring the 'num_cpus' of operators to a smaller value or increase the number of CPUs."
         )
+    if fixed_actor_min_gpu + total_auto_base_gpu_actor > 1:
+        error_str += (
+            "GPU resource is not enough for the current operators configuration. "
+            f"At least {(fixed_actor_min_gpu + total_auto_base_gpu_actor) * total_gpu:.1f} gpus are required, "
+            f"but only {total_gpu} gpus are available. "
+            "Please consider configuring the 'num_gpus' of cuda operators to a smaller value or increase the number of GPUs."
+        )
+    if error_str:
+        raise ValueError(error_str)
+
+    if total_required_min_cpu > 1 or total_required_min_gpu > 1:
+        # back to batch processing
+        fixed_min_cpu = fixed_actor_min_cpu
+        fixed_max_cpu = fixed_actor_max_cpu
+        fixed_min_gpu = fixed_actor_min_gpu
+        fixed_max_gpu = fixed_actor_max_gpu
+
     if len(auto_resource_frac_map) > 0:
         remaining_min_frac_cpu = 1 - fixed_max_cpu
         remaining_max_frac_cpu = 1 - fixed_min_cpu
@@ -377,7 +463,7 @@ def calculate_ray_np(operators):
         for k, v in auto_resource_frac_map.items():
             if v[1] > 0:  # (cpu, gpu)
                 op_resources_gpu[k] = v[1]
-            elif v[0] > 0:
+            if v[0] > 0:
                 op_resources_cpu[k] = v[0]
 
         best_combination_cpu, best_combination_gpu = {}, {}
@@ -387,6 +473,8 @@ def calculate_ray_np(operators):
                 _gpu_names.append(k)
                 _gpu_resources.append(v)
             _best_combination_gpu, _, _ = _find_optimal_concurrency(_gpu_resources, remaining_min_frac_gpu)
+            if remaining_min_frac_gpu <= 0 or _best_combination_gpu is None:
+                _best_combination_gpu = [1 for _ in range(len(_gpu_names))]
             best_combination_gpu = dict(zip(_gpu_names, _best_combination_gpu))
         if len(op_resources_cpu) > 0:
             _cpu_names, _cpu_resources = [], []
@@ -394,6 +482,8 @@ def calculate_ray_np(operators):
                 _cpu_names.append(k)
                 _cpu_resources.append(v)
             _best_combination_cpu, _, _ = _find_optimal_concurrency(_cpu_resources, remaining_min_frac_cpu)
+            if remaining_min_frac_cpu <= 0 or _best_combination_cpu is None:
+                _best_combination_cpu = [1 for _ in range(len(_cpu_names))]
             best_combination_cpu = dict(zip(_cpu_names, _best_combination_cpu))
 
         best_combination = {}
@@ -422,27 +512,27 @@ def calculate_ray_np(operators):
                 else:
                     max_proc = int(max(1, max_frac_cpu / cfg["cpu_required_frac"]))
 
-                cfg["num_proc"] = min_proc if min_proc == max_proc else (min_proc, max_proc)
+                cfg["num_proc"] = min_proc if min_proc >= max_proc else (min_proc, max_proc)
 
-    for op in operators:
-        cfg = resource_configs[op._name]
+    for op_idx, op in enumerate(operators):
+        cfg = resource_configs[op._name + f"_{op_idx}"]
         auto_proc, num_proc = cfg["auto_proc"], cfg["num_proc"]
         if cfg["is_actor"]:
-            op.cpu_required = cfg["cpu_required"]
-            op.gpu_required = cfg["gpu_required"]
+            op.num_cpus = cfg["cpu_required"]
+            op.num_gpus = cfg["gpu_required"]
             op.num_proc = num_proc
         else:
             # * If ``fn`` is a function and ``concurrency`` is an  int ``n``, Ray Data
             # launches *at most* ``n`` concurrent tasks.
-            op.cpu_required = cfg["cpu_required"]
-            op.gpu_required = None
+            op.num_cpus = cfg["cpu_required"]
+            op.num_gpus = None
             # if concurrency left to None, the automatic concurrency of ray may be slightly higher, which could lead to OOM
             op.num_proc = num_proc[1] if (auto_proc and isinstance(num_proc, (tuple, list))) else num_proc
 
         logger.info(
             f"Op[{op._name}] will be executed with the following resources: "
-            f"num_cpus: {op.cpu_required}, "
-            f"num_gpus: {op.gpu_required}, "
+            f"num_cpus: {op.num_cpus}, "
+            f"num_gpus: {op.num_gpus}, "
             f"concurrency: {op.num_proc}, "
         )
     return operators

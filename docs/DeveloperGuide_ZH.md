@@ -1,23 +1,24 @@
 # 开发者指南
 
-- [1. 快速构建你自己的算子](#1-快速构建你自己的算子)
-- [2. 构建你自己的数据菜谱和配置项](#2-构建你自己的数据菜谱和配置项)
-  - [2.1 丰富的配置源和类型提示](#21-丰富的配置源和类型提示)
-  - [2.2 层次化的配置和帮助](#22-层次化的配置和帮助)
-- [3. 依赖管理](#3-依赖管理)
-  - [3.1 安装 uv](#31-安装-uv)
-  - [3.2 虚拟环境管理](#32-虚拟环境管理)
-  - [3.3 添加新依赖](#33-添加新依赖)
-  - [3.4 开发环境设置](#34-开发环境设置)
-  - [3.5 延迟加载](#35-延迟加载)
-- [4. 为开源社区贡献](#4-为开源社区贡献)
-  - [4.1 编码规范](#41-编码规范)
-  - [4.2 文档规范](#42-文档规范)
-  - [4.3 将你的新算子贡献到开源社区](#43-将你的新算子贡献到开源社区)
-    - [4.3.1 提供算子基本功能（alpha版本）](#431-提供算子基本功能alpha版本)
-    - [4.3.2 使算子更可用（beta版本）](#432-使算子更可用beta版本)
-    - [4.3.3 使算子更快更完备（stable版本）](#433-使算子更快更完备stable版本)
-  - [4.4 贡献您的新配方](#44-贡献您的新配方)
+- [开发者指南](#开发者指南)
+  - [1. 快速构建你自己的算子](#1-快速构建你自己的算子)
+  - [2. 构建你自己的数据菜谱和配置项](#2-构建你自己的数据菜谱和配置项)
+    - [2.1 丰富的配置源和类型提示](#21-丰富的配置源和类型提示)
+    - [2.2 层次化的配置和帮助](#22-层次化的配置和帮助)
+  - [3. 依赖管理](#3-依赖管理)
+    - [3.1 安装 uv](#31-安装-uv)
+    - [3.2 虚拟环境管理](#32-虚拟环境管理)
+    - [3.3 添加新依赖](#33-添加新依赖)
+    - [3.4 开发环境设置](#34-开发环境设置)
+    - [3.5 延迟加载](#35-延迟加载)
+  - [4. 为开源社区贡献](#4-为开源社区贡献)
+    - [4.1 编码规范](#41-编码规范)
+    - [4.2 文档规范](#42-文档规范)
+    - [4.3 将你的新算子贡献到开源社区](#43-将你的新算子贡献到开源社区)
+      - [4.3.1 提供算子基本功能（alpha版本）](#431-提供算子基本功能alpha版本)
+      - [4.3.2 使算子更可用（beta版本）](#432-使算子更可用beta版本)
+      - [4.3.3 使算子更快更完备（stable版本）](#433-使算子更快更完备stable版本)
+    - [4.4 贡献您的新配方](#44-贡献您的新配方)
 
 ## 1. 快速构建你自己的算子
 
@@ -120,13 +121,13 @@ process:
       max_len: 1000
 ```
 
-6. 社区贡献者可在alpha状态后就提相应算子PR。此后该贡献者可以与Data-Juicer团队一起在后续PR中，将其渐进完善到beta和stable版本。更多细节请参考下方第4节。我们非常欢迎共建，并会[高亮致谢](https://github.com/modelscope/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)！
+6. 社区贡献者可在alpha状态后就提相应算子PR。此后该贡献者可以与Data-Juicer团队一起在后续PR中，将其渐进完善到beta和stable版本。更多细节请参考下方第4节。我们非常欢迎共建，并会[高亮致谢](https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)！
 
 ## 2. 构建你自己的数据菜谱和配置项
 
 - 我们提供基于 [jsonargparse](https://github.com/omni-us/jsonargparse/) 的简单配置以降低样板代码的成本。
-- 我们提供大量的示例性菜谱以供参阅复用和扩展，[数据菜谱Gallery](RecipeGallery_ZH.md)。
-- 📣📣📣 社区贡献者可提PR在*数据菜谱Gallery*中添加自定义的数据菜谱，促进传播、复用和相关技术演进。更多细节请参考下方第4节。我们非常欢迎共建，并会[高亮致谢](https://github.com/modelscope/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)！
+- 我们提供大量的示例性菜谱以供参阅复用和扩展，[数据菜谱Gallery](https://datajuicer.github.io/data-juicer-hub/zh_CN/main/docs/RecipeGallery_ZH.html)。
+- 📣📣📣 社区贡献者可提PR在*数据菜谱Gallery*中添加自定义的数据菜谱，促进传播、复用和相关技术演进。更多细节请参考下方第4节。我们非常欢迎共建，并会[高亮致谢](https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)！
 
 ### 2.1 丰富的配置源和类型提示
 
@@ -333,7 +334,7 @@ git commit -m "<your_commit_message>"
   - ![beta](https://img.shields.io/badge/beta-yellow?style=plastic) 版本：在 alpha 版本基础上为算子添加了单元测试，补充基础文档描述
   - ![stable](https://img.shields.io/badge/stable-green?style=plastic) 版本：在 beta 版本基础上进行了各项算子优化（如模型管理、批处理、算子融合等）
 
-- 社区贡献者可以在 alpha 版本提交相应的算子 PR。之后，贡献者可以与 Data-Juicer 团队合作，在后续 PR 中逐步将其改进到 beta 版本和稳定版本。我们欢迎共同创作，并将重点标注[致谢](https://github.com/modelscope/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)！
+- 社区贡献者可以在 alpha 版本提交相应的算子 PR。之后，贡献者可以与 Data-Juicer 团队合作，在后续 PR 中逐步将其改进到 beta 版本和稳定版本。我们欢迎共同创作，并将重点标注[致谢](https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)！
 
 - 欢迎添加新算子的相应参考文献（例如，受现有想法或代码启发的新实现，或现有论文中提出的高级算法）。
 
@@ -368,7 +369,7 @@ if __name__ == '__main__':
 
 - （![beta](https://img.shields.io/badge/beta-yellow?style=plastic) 强烈推荐）为了方便其他用户理解和使用，最好将新增的算子信息更新到相应的文档中，具体包括如下两个基本动作：
    1. 请在算子基类的doc string中补充基础信息，确保其完整可读（包括算子基本功能描述、入参、出参等）。无需用户麻烦地多处撰写，我们的`pre-commit`和sphinx构建脚本会自动抽取doc string形成算子池文档和API文档。
-   2. `configs/config_all.yaml`：该全集配置文件保存了所有算子及参数的一个列表，作为一些自动化特性的信息来源以及用户参考可用算子的一个重要文档之一。因此，在新增算子后，请将其也添加到该文档process列表里（按算子类型分组并按字母序排序）：
+   2. `data_juicer/config/config_all.yaml`：该全集配置文件保存了所有算子及参数的一个列表，作为一些自动化特性的信息来源以及用户参考可用算子的一个重要文档之一。因此，在新增算子后，请将其也添加到该文档process列表里（按算子类型分组并按字母序排序）：
    
    ```yaml
    ...
@@ -591,8 +592,8 @@ class PerplexityFilter(Filter):
 
 
 ### 4.4 贡献您的新配方
-- 社区贡献者可以在[数据配方库](RecipeGallery_ZH.md)中提交 PR，添加自定义数据配方，以促进传播、复用和相关技术演进。
+- 社区贡献者可以在[数据配方库](https://github.com/datajuicer/data-juicer-hub)中提交 PR，添加自定义数据配方，以促进传播、复用和相关技术演进。
 
 - 欢迎添加您新配方的相应参考文献，或提出一些新需求、以及改进现有配方的想法。
 
-- 我们非常欢迎共建，并将重点[注明致谢](https://github.com/modelscope/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)！
+- 我们非常欢迎共建，并将重点[注明致谢](https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)！

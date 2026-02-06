@@ -8,6 +8,7 @@ import zstandard as zstd
 from loguru import logger
 
 RAY_JOB_ENV_VAR = "RAY_JOB"
+SPECIAL_TOKEN_ENV_PREFIX = "_DJ_SPECIAL_TOKEN_"
 DEFAULT_PREFIX = "__dj__"
 
 
@@ -20,6 +21,9 @@ class Fields(object):
     batch_meta = DEFAULT_PREFIX + "batch_meta__"
     context = DEFAULT_PREFIX + "context__"
     suffix = DEFAULT_PREFIX + "suffix__"
+
+    # text_tags
+    text_tags = DEFAULT_PREFIX + "text_tags__"
 
     # the name of the original file from which this sample was derived.
     source_file = DEFAULT_PREFIX + "source_file__"
@@ -60,12 +64,34 @@ class MetaKeys(object):
     video_audio_tags = "video_audio_tags"
     # # video frames
     video_frames = "video_frames"
+    # # object segment info in video
+    video_object_segment_tags = "video_object_segment_tags"
+    # # depth info in video
+    video_depth_tags = "video_depth_tags"
+    # # video optical flow
+    video_optical_flow = "video_optical_flow"
+    # # info extracted by VGGT
+    vggt_tags = "vggt_tags"
     # # image tags
     image_tags = "image_tags"
+    # # hand reconstruction
+    hand_reconstruction_tags = "hand_reconstruction_tags"
+    hand_reconstruction_hawor_tags = "hand_reconstruction_hawor_tags"
     # # bounding box tag
     bbox_tag = DEFAULT_PREFIX + "bbox__"
     # # class label (from detection) tag
     class_label_tag = DEFAULT_PREFIX + "class_label__"
+    # # 2D whole-body pose estimation
+    pose_estimation_tags = "pose_estimation_tags"
+
+    # # pose information
+    pose_info = "pose_info"
+    # # Static Camera Calibration Info (for DeepCalib)
+    static_camera_calibration_deepcalib_tags = "static_camera_calibration_deepcalib_tags"
+    # # Static Camera Calibration Info (for Moge-2)
+    static_camera_calibration_moge_tags = "static_camera_calibration_moge_tags"
+    # # Video Undistortion Info
+    video_undistortion_tags = "video_undistortion_tags"
 
     # === info extraction related tags ===
     # # for event extraction
@@ -252,6 +278,10 @@ class StatsKeysConstant(object):
     image_nsfw_score = "image_nsfw_score"
     image_watermark_prob = "image_watermark_prob"
     image_pair_similarity = "image_pair_similarity"
+    image_subplot_confidence = "image_subplot_confidence"
+    horizontal_peak_count = "horizontal_peak_count"
+    vertical_peak_count = "vertical_peak_count"
+    subplot_detected = "subplot_detected"
 
     #  === audios ===
     audio_duration = "audio_duration"

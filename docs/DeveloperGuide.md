@@ -1,23 +1,24 @@
 # How-to Guide for Developers
 
-- [1. Build Your Own OPs Quickly](#1-build-your-own-ops-quickly)
-- [2. Build Your Own Data Recipes and Configs](#2-build-your-own-data-recipes-and-configs)
-  - [2.1 Fruitful Config Sources \& Type Hints](#21-fruitful-config-sources--type-hints)
-  - [2.2 Hierarchical Configs and Helps](#22-hierarchical-configs-and-helps)
-- [3. Dependency Management](#3-dependency-management)
-  - [3.1 Installing uv](#31-installing-uv)
-  - [3.2 Virtual Environment Management](#32-virtual-environment-management)
-  - [3.3 Adding New Dependencies](#33-adding-new-dependencies)
-  - [3.4 Development Setup](#34-development-setup)
-  - [3.5 Lazy Loading](#35-lazy-loading)
-- [4. Contribution to the Open-source Community](#4-contribution-to-the-open-source-community)
-  - [4.1 Coding Style](#41-coding-style)
-  - [4.2 Documentation Style](#42-documentation-style)
-  - [4.3 Contribute Your New OPs to the Open-Source Community](#43-contribute-your-new-ops-to-the-open-source-community)
-    - [4.3.1 Providing Basic OP Functions (alpha version)](#431-providing-basic-op-functions-alpha-version)
-    - [4.3.2 Making the OP More Usable (beta version)](#432-making-the-op-more-usable-beta-version)
-    - [4.3.2 Making OP Faster \& More complete (stable version)](#432-making-op-faster--more-complete-stable-version)
-  - [4.4 Contribute Your New Recipes](#44-contribute-your-new-recipes)
+- [How-to Guide for Developers](#how-to-guide-for-developers)
+  - [1. Build Your Own OPs Quickly](#1-build-your-own-ops-quickly)
+  - [2. Build Your Own Data Recipes and Configs](#2-build-your-own-data-recipes-and-configs)
+    - [2.1 Fruitful Config Sources \& Type Hints](#21-fruitful-config-sources--type-hints)
+    - [2.2 Hierarchical Configs and Helps](#22-hierarchical-configs-and-helps)
+  - [3. Dependency Management](#3-dependency-management)
+    - [3.1 Installing uv](#31-installing-uv)
+    - [3.2 Virtual Environment Management](#32-virtual-environment-management)
+    - [3.3 Adding New Dependencies](#33-adding-new-dependencies)
+    - [3.4 Development Setup](#34-development-setup)
+    - [3.5 Lazy Loading](#35-lazy-loading)
+  - [4. Contribution to the Open-source Community](#4-contribution-to-the-open-source-community)
+    - [4.1 Coding Style](#41-coding-style)
+    - [4.2 Documentation Style](#42-documentation-style)
+    - [4.3 Contribute Your New OPs to the Open-Source Community](#43-contribute-your-new-ops-to-the-open-source-community)
+      - [4.3.1 Providing Basic OP Functions (alpha version)](#431-providing-basic-op-functions-alpha-version)
+      - [4.3.2 Making the OP More Usable (beta version)](#432-making-the-op-more-usable-beta-version)
+      - [4.3.3 Making OP Faster \& More complete (stable version)](#433-making-op-faster--more-complete-stable-version)
+    - [4.4 Contribute Your New Recipes](#44-contribute-your-new-recipes)
 
 ## 1. Build Your Own OPs Quickly
 
@@ -119,13 +120,13 @@ process:
       max_len: 1000
 ```
 
-6. Community contributors can submit corresponding operator PRs and work with the Data-Juicer team to gradually improve it in subsequent PRs. Please see more details [below](#4-contribution-to-the-open-source-community). We greatly welcome co-construction and will [highlight acknowledgements](https://github.com/modelscope/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)!
+6. Community contributors can submit corresponding operator PRs and work with the Data-Juicer team to gradually improve it in subsequent PRs. Please see more details [below](#4-contribution-to-the-open-source-community). We greatly welcome co-construction and will [highlight acknowledgements](https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)!
 
 
 ## 2. Build Your Own Data Recipes and Configs
 - We provide easy configuration based on [jsonargparse](https://github.com/omni-us/jsonargparse/) to reduce cost for boilerplate codes.
-- We provide fruitful examples in [Data Recipe Gallery](RecipeGallery.md) for reference reuse and extension.
-- 📣📣📣 Community contributors can submit PRs in the *Data Recipe Gallery* to add customized data recipes to promote dissemination, reuse and related technical evolution. We greatly welcome co-construction and will highlight [acknowledgements](https://github.com/modelscope/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)!
+- We provide fruitful examples in [Data Recipe Gallery](https://datajuicer.github.io/data-juicer-hub/en/main/docs/RecipeGallery.html) for reference reuse and extension.
+- 📣📣📣 Community contributors can submit PRs in the *Data Recipe Gallery* to add customized data recipes to promote dissemination, reuse and related technical evolution. We greatly welcome co-construction and will highlight [acknowledgements](https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)!
 
 ### 2.1 Fruitful Config Sources & Type Hints
 - A global config object can be initialized via
@@ -344,7 +345,7 @@ We use Sphinx for document management. To ensure the smooth integration of devel
   - ![beta](https://img.shields.io/badge/beta-yellow?style=plastic) version: Based on the alpha version, unittests for this OP and basic docstring are added as well.
   - ![stable](https://img.shields.io/badge/stable-green?style=plastic) version: Based on the beta version, OP optimizations (e.g. model management, batched processing, OP fusion, ...)
 
-- Community contributors can submit corresponding operator PRs in the alpha state. After that, the contributor can work with the Data-Juicer team to gradually improve it to beta and stable versions in subsequent PRs. We welcome co-construction and will highlight [acknowledgements](https://github.com/modelscope/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)!
+- Community contributors can submit corresponding operator PRs in the alpha state. After that, the contributor can work with the Data-Juicer team to gradually improve it to beta and stable versions in subsequent PRs. We welcome co-construction and will highlight [acknowledgements](https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)!
 
 - Welcome to add the corresponding references of your new recipe (e.g., a new implementation inspired by some existing ideas or codes, or an advanced algorithm proposed in an existing paper).
 
@@ -379,7 +380,7 @@ if __name__ == '__main__':
 
 - (![beta](https://img.shields.io/badge/beta-yellow?style=plastic) strongly recommend) In order to facilitate other users to understand and use, it is best to update the newly added operator information to the corresponding documents, including the following two basic actions:
    1. Please add basic information to the doc string of the operator class to ensure that it is complete and readable (including basic function description of the operator, input parameters, output parameters, etc.). There is no need for users to write in multiple places. Our `pre-commit` and sphinx build scripts will automatically extract doc strings to form operator pool documents and API documents.
-   2. `configs/config_all.yaml`: This complete configuration file saves a list of all operators and parameters, as a source of information for some automated features and one of the important documents for users to refer to available operators. Therefore, after adding a new operator, please also add it to the document process list (grouped by operator type and sorted alphabetically):
+   2. `data_juicer/config/config_all.yaml`: This complete configuration file saves a list of all operators and parameters, as a source of information for some automated features and one of the important documents for users to refer to available operators. Therefore, after adding a new operator, please also add it to the document process list (grouped by operator type and sorted alphabetically):
    
    ```yaml
    ...
@@ -402,7 +403,7 @@ if __name__ == '__main__':
    ```
 
 
-#### 4.3.2 Making OP Faster & More complete (stable version)
+#### 4.3.3 Making OP Faster & More complete (stable version)
 
 
 - (![stable](https://img.shields.io/badge/stable-green?style=plastic)) If Hugging Face models are used within an operator, you might want to leverage GPU acceleration. To achieve this, declare `_accelerator = 'cuda'` in the OP's constructor, and ensure that `compute_stats_single/batched` and `process_single/batched` methods accept an additional positional argument `rank`.
@@ -612,8 +613,8 @@ class PerplexityFilter(Filter):
 
 
 ### 4.4 Contribute Your New Recipes 
-- Community contributors can submit PRs in the [Data Recipe Gallery](RecipeGallery.md) to add customized data recipes to promote dissemination, reuse and related technical evolution. 
+- Community contributors can submit PRs in the [Data Recipe Gallery](https://github.com/datajuicer/data-juicer-hub) to add customized data recipes to promote dissemination, reuse and related technical evolution. 
 
 - Feel free to add the corresponding references of your new recipe, or just propose some requirements/ideas to improve the existing recipes.
 
-- We greatly welcome co-construction and will highlight [acknowledgements](https://github.com/modelscope/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)!
+- We greatly welcome co-construction and will highlight [acknowledgements](https://github.com/datajuicer/data-juicer?tab=readme-ov-file#contribution-and-acknowledgements)!

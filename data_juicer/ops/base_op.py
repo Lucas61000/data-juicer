@@ -1,11 +1,12 @@
 import copy
+from abc import ABCMeta
 from functools import wraps
 
 import numpy as np
 import pyarrow as pa
 
 from data_juicer.utils.constant import Fields
-from data_juicer.utils.mm_utils import SpecialTokens, size_to_bytes
+from data_juicer.utils.mm_utils import size_to_bytes
 from data_juicer.utils.model_utils import free_models
 from data_juicer.utils.process_utils import calculate_np
 from data_juicer.utils.ray_utils import is_ray_mode
@@ -69,17 +70,159 @@ def catch_map_batches_exception(method, skip_op_error=False, op_name=None):
 
             from loguru import logger
 
-            logger.error(
-                f"An error occurred in {op_name} when processing "
-                f'samples "{samples}" -- {type(e)}: {e} -- '
-                f"{traceback.format_exc()}"
-            )
+            logger.error(f"An error occurred in {op_name}: {e} -- {traceback.format_exc()}")
             ret = {key: [] for key in samples.keys()}
             ret[Fields.stats] = []
             ret[Fields.source_file] = []
             return ret
 
     return wrapper
+
+
+def sample_to_dict(sample):
+    """
+    Convert sample to dict.
+    """
+    from datasets.formatting.formatting import LazyDict
+
+    if isinstance(sample, dict) or isinstance(sample, LazyDict):
+        return sample
+    elif isinstance(sample, pa.Table):
+        return sample.to_pydict()
+    else:
+        raise ValueError(f"Unknown sample type: {type(sample)}")
+
+
+def wrap_mapper_with_tracer(process_method, op_name, text_key, tracer, is_batched_op):
+    """
+    Wrap a mapper's process method to collect sample-level changes.
+
+    :param process_method: the original process method (single or batched)
+    :param op_name: the operator name
+    :param text_key: the text key to compare
+    :param tracer: the tracer instance
+    :param is_batched_op: whether this is a batched operator
+    :return: wrapped process method
+    """
+    from data_juicer.core.tracer import should_trace_op
+
+    if tracer is None or not should_trace_op(tracer, op_name):
+        return process_method
+
+    @wraps(process_method)
+    def wrapped_process(sample, *args, **kwargs):
+        from data_juicer.core.tracer import (
+            check_tracer_collect_complete,
+            collect_for_mapper,
+        )
+
+        # Check if collection is already complete (early exit for performance)
+        if check_tracer_collect_complete(tracer, op_name):
+            return process_method(sample, *args, **kwargs)
+
+        sample_dict = sample_to_dict(sample)
+
+        if is_batched_op:
+            # Batched processing: sample is dict of lists
+            import copy
+
+            keys = list(sample_dict.keys())
+            num_samples = len(sample_dict[keys[0]])
+
+            # Make a deep copy of original samples for comparison
+            original_samples = []
+            for i in range(num_samples):
+                orig_sample = {key: sample_dict[key][i] for key in keys}
+                original_samples.append(copy.deepcopy(orig_sample))
+
+            # Process the batch
+            processed_batch = process_method(sample, *args, **kwargs)
+
+            processed_batch_dict = sample_to_dict(processed_batch)
+
+            # Collect changes for each sample
+            for i in range(num_samples):
+                if check_tracer_collect_complete(tracer, op_name):
+                    break
+
+                orig_sample = original_samples[i]
+                proc_sample = {key: processed_batch_dict[key][i] for key in processed_batch_dict.keys()}
+                collect_for_mapper(tracer, op_name, orig_sample, proc_sample, text_key)
+
+            return processed_batch
+        else:
+            # Single sample processing
+            import copy
+
+            original_sample_dict = copy.deepcopy(sample_dict)
+            processed_sample = process_method(sample, *args, **kwargs)
+            processed_sample_dict = sample_to_dict(processed_sample)
+
+            # Collect sample-level change
+            if not check_tracer_collect_complete(tracer, op_name):
+                collect_for_mapper(tracer, op_name, original_sample_dict, processed_sample_dict, text_key)
+
+            return processed_sample
+
+    return wrapped_process
+
+
+def wrap_filter_with_tracer(process_method, op_name, tracer, is_batched_op):
+    """
+    Wrap a filter's process method to collect sample-level changes.
+
+    :param process_method: the original process method (single or batched)
+    :param op_name: the operator name
+    :param tracer: the tracer instance
+    :param is_batched_op: whether this is a batched operator
+    :return: wrapped process method
+    """
+    from data_juicer.core.tracer import should_trace_op
+
+    if tracer is None or not should_trace_op(tracer, op_name):
+        return process_method
+
+    @wraps(process_method)
+    def wrapped_process(sample, *args, **kwargs):
+        from data_juicer.core.tracer import (
+            check_tracer_collect_complete,
+            collect_for_filter,
+        )
+
+        # Check if collection is already complete (early exit for performance)
+        if check_tracer_collect_complete(tracer, op_name):
+            return process_method(sample, *args, **kwargs)
+
+        if is_batched_op:
+            # Batched processing: process returns iterable of booleans
+            results = process_method(sample, *args, **kwargs)
+            results_list = list(results) if not isinstance(results, (list, tuple)) else results
+
+            # Collect filtered samples
+            keys = list(sample.keys())
+            num_samples = len(sample[keys[0]])
+            for i in range(num_samples):
+                if check_tracer_collect_complete(tracer, op_name):
+                    break
+
+                should_keep = results_list[i] if i < len(results_list) else True
+                if not should_keep:
+                    sample_dict = {key: sample[key][i] for key in keys}
+                    collect_for_filter(tracer, op_name, sample_dict, should_keep)
+
+            # return the results_list because the map object results
+            # has been calculated and empty when getting results_list
+            return results_list
+        else:
+            # Single sample processing
+            should_keep = process_method(sample, *args, **kwargs)
+
+            # Collect filtered sample
+            if not check_tracer_collect_complete(tracer, op_name) and not should_keep:
+                collect_for_filter(tracer, op_name, sample, should_keep)
+            return should_keep
+
+    return wrapped_process
 
 
 def catch_map_single_exception(method, return_sample=True, skip_op_error=False, op_name=None):
@@ -117,11 +260,7 @@ def catch_map_single_exception(method, return_sample=True, skip_op_error=False, 
 
                 from loguru import logger
 
-                logger.error(
-                    f"An error occurred in {op_name} when processing "
-                    f'sample "{sample}" -- {type(e)}: {e} -- '
-                    f"{traceback.format_exc()}"
-                )
+                logger.error(f"An error occurred in {op_name}: {e} -- {traceback.format_exc()}")
                 ret = {key: [] for key in sample.keys()}
                 ret[Fields.stats] = []
                 ret[Fields.source_file] = []
@@ -133,7 +272,15 @@ def catch_map_single_exception(method, return_sample=True, skip_op_error=False, 
     return wrapper
 
 
-class OP:
+class OPMetaClass(ABCMeta):
+    def __call__(cls, *args, **kwargs):
+        instance = super().__call__(*args, **kwargs)
+        instance._init_args = args
+        instance._init_kwargs = kwargs
+        return instance
+
+
+class OP(metaclass=OPMetaClass):
     _accelerator = "cpu"
     _batched_op = False
 
@@ -156,8 +303,26 @@ class OP:
         :param history_key: the key name of field that stores history of
             queries and responses
         :param index_key: index the samples before process if not None
+        :param system_key: the key name of field that stores system prompts
+        :param instruction_key: the key name of field that stores instruction
+        :param index_key: the key name of field that stores index
         :param batch_size: the batch size for processing
         :param work_dir: the working directory for this operator
+        :param skip_op_error: whether to skip the error when processing samples
+
+        # Ray related parameters
+        :param num_cpus: number of CPUs required for this operator, only used when
+            running in Ray mode
+        :param num_gpus: number of GPUs required for this operator, only used when
+            running in Ray mode
+        :param memory: memory size required for this operator, only used when
+            running in Ray mode
+        :param runtime_env: runtime environment for this operator, only used when
+            running in Ray mode. More details can be found in Ray documentation.
+        :param ray_execution_mode: execution mode in Ray, can be "actor" or "task" or None,
+            if None, the "actor" mode is used when the operator is a CUDA operator,
+            and the "task" mode is used if the operator is a CPU operator.
+
         """
         # init data keys
         self.text_key = kwargs.get("text_key", "text")
@@ -176,13 +341,15 @@ class OP:
         self.history_key = kwargs.get("history_key", "history")
 
         self.index_key = kwargs.get("index_key", None)
-
-        self.batch_size = kwargs.get("batch_size", DEFAULT_BATCH_SIZE)
         self.work_dir = kwargs.get("work_dir", None)
 
         # for unittest, do not skip the error.
         # It would be set to be True in config init.
         self.skip_op_error = kwargs.get("skip_op_error", False)
+        self.auto_op_parallelism = kwargs.get("auto_op_parallelism", True)
+
+        # whether to enable batch processing
+        self.batch_mode = kwargs.get("batch_mode", None)
 
         # whether the model can be accelerated using cuda
         _accelerator = kwargs.get("accelerator", None)
@@ -191,20 +358,56 @@ class OP:
         else:
             self.accelerator = self._accelerator
 
+        if self.accelerator == "cuda":
+            self.batch_size = kwargs.get("batch_size", 10)
+        else:
+            self.batch_size = kwargs.get("batch_size", DEFAULT_BATCH_SIZE)
+
         # parameters to determine the number of procs for this op
-        self.num_proc = kwargs.get("num_proc", -1)  # -1 means automatic calculation of concurrency
+        if not self.auto_op_parallelism:
+            self.num_proc = kwargs.get("num_proc", None)
+        else:
+            self.num_proc = kwargs.get("num_proc", -1)  # -1 means automatic calculation of concurrency
+
         self.cpu_required = kwargs.get("cpu_required", None)
         self.gpu_required = kwargs.get("gpu_required", None)
         self.mem_required = kwargs.get("mem_required", None)
         if isinstance(self.mem_required, str):
             self.mem_required = size_to_bytes(self.mem_required) / 1024**3
 
+        self.num_cpus = kwargs.get("num_cpus", None)
+        self.num_gpus = kwargs.get("num_gpus", None)
+        self.memory = kwargs.get("memory", None)
+        if self.memory and isinstance(self.memory, str):
+            self.memory = size_to_bytes(self.memory) / 1024**3
+        # Optional[Union[Dict[str, Any], "RuntimeEnv"]]
+        self.runtime_env = kwargs.get("runtime_env", None)
+        self.ray_execution_mode = kwargs.get("ray_execution_mode", None)
+        assert self.ray_execution_mode in [None, "actor", "task"]
+
+        # Local import to avoid logger being serialized in multiprocessing
+        from loguru import logger
+
+        if self.cpu_required:
+            logger.warning(
+                "The argument ``cpu_required`` will be deprecated. Please specify argument ``num_cpus`` instead."
+            )
+            if self.num_cpus is None:
+                self.num_cpus = self.cpu_required
+        if self.gpu_required:
+            logger.warning(
+                "The argument ``gpu_required`` will be deprecated. Please specify argument ``num_gpus`` instead."
+            )
+            if self.num_gpus is None:
+                self.num_gpus = self.gpu_required
+        if self.mem_required:
+            logger.warning(
+                "The argument ``mem_required`` will be deprecated. Please specify argument ``memory`` instead."
+            )
+            if self.memory is None:
+                self.memory = self.mem_required
+
         self.turbo = kwargs.get("turbo", False)
-        # update special tokens
-        SpecialTokens.image = kwargs.get("image_special_token", SpecialTokens.image)
-        SpecialTokens.audio = kwargs.get("audio_special_token", SpecialTokens.audio)
-        SpecialTokens.video = kwargs.get("video_special_token", SpecialTokens.video)
-        SpecialTokens.eoc = kwargs.get("eoc_special_token", SpecialTokens.eoc)
 
         # nested wrappers
         from data_juicer.core.data import wrap_func_with_nested_access
@@ -217,13 +420,25 @@ class OP:
                 setattr(self, name, method)
 
     def use_auto_proc(self):
-        if is_ray_mode() and not self.use_cuda():  # ray task
+        if is_ray_mode() and not self.use_ray_actor():  # ray task
             return self.num_proc == -1
         else:
             return not self.num_proc or self.num_proc == -1
 
     def is_batched_op(self):
+        if self.batch_mode is not None:
+            if not self.batch_mode and self._batched_op:
+                raise ValueError(
+                    f"Op [{self._name}] is implemented as a batched op, " f"but batch_mode is set to False."
+                )
+            return self._batched_op or self.batch_mode
         return self._batched_op
+
+    def use_ray_actor(self):
+        if self.ray_execution_mode:
+            return self.ray_execution_mode == "actor"
+
+        return self.use_cuda()
 
     def process(self, *args, **kwargs):
         raise NotImplementedError
@@ -235,11 +450,13 @@ class OP:
         # Local import to avoid logger being serialized in multiprocessing
         from loguru import logger
 
-        op_proc = calculate_np(
-            self._name, self.mem_required, self.cpu_required or 1, self.use_cuda(), self.gpu_required
-        )
-        if not self.use_auto_proc():
-            op_proc = min(op_proc, self.num_proc)
+        if self.auto_op_parallelism:
+            op_proc = calculate_np(self._name, self.memory, self.num_cpus or 1, self.use_cuda(), self.num_gpus)
+            if not self.use_auto_proc():
+                op_proc = min(op_proc, self.num_proc)
+        else:
+            op_proc = self.num_proc
+
         logger.debug(f"Op [{self._name}] running with number of procs:{op_proc}")
         return op_proc
 
@@ -306,6 +523,9 @@ class OP:
         return dataset
 
     def empty_history(self):
+        if is_ray_mode():
+            return []
+
         return np.empty((0, 0), dtype=str)
 
 
@@ -390,15 +610,32 @@ class Mapper(OP):
 
     def run(self, dataset, *, exporter=None, tracer=None):
         dataset = super(Mapper, self).run(dataset)
-        new_dataset = dataset.map(
-            self.process,
-            num_proc=self.runtime_np(),
-            with_rank=self.use_cuda(),
-            batch_size=self.batch_size,
-            desc=self._name + "_process",
-        )
-        if tracer:
-            tracer.trace_mapper(self._name, dataset, new_dataset, self.text_key)
+
+        # Wrap process method with tracer for sample-level collection
+        from data_juicer.core.tracer import should_trace_op
+
+        original_process = None
+        if tracer and should_trace_op(tracer, self._name):
+            # Store original process method
+            original_process = self.process
+            # Wrap with tracer
+            self.process = wrap_mapper_with_tracer(
+                original_process, self._name, self.text_key, tracer, self.is_batched_op()
+            )
+
+        try:
+            new_dataset = dataset.map(
+                self.process,
+                num_proc=self.runtime_np(),
+                with_rank=self.use_cuda(),
+                batch_size=self.batch_size,
+                desc=self._name + "_process",
+            )
+        finally:
+            # Restore original process method
+            if tracer and should_trace_op(tracer, self._name) and original_process:
+                self.process = original_process
+
         free_models()
         return new_dataset
 
@@ -530,11 +767,25 @@ class Filter(OP):
         if exporter and self.stats_export_path is not None:
             exporter.export_compute_stats(new_dataset, self.stats_export_path)
         if reduce:
-            new_dataset = new_dataset.filter(
-                self.process, num_proc=self.runtime_np(), batch_size=self.batch_size, desc=self._name + "_process"
-            )
-            if tracer:
-                tracer.trace_filter(self._name, dataset, new_dataset)
+            # Wrap process method with tracer for sample-level collection
+            from data_juicer.core.tracer import should_trace_op
+
+            original_process = None
+            if tracer and should_trace_op(tracer, self._name):
+                # Store original process method
+                original_process = self.process
+                # Wrap with tracer
+                self.process = wrap_filter_with_tracer(original_process, self._name, tracer, self.is_batched_op())
+
+            try:
+                new_dataset = new_dataset.filter(
+                    self.process, num_proc=self.runtime_np(), batch_size=self.batch_size, desc=self._name + "_process"
+                )
+            finally:
+                # Restore original process method
+                if tracer and should_trace_op(tracer, self._name) and original_process:
+                    self.process = original_process
+
         free_models()
         return new_dataset
 
@@ -640,7 +891,9 @@ class Selector(OP):
         dataset = super(Selector, self).run(dataset)
         new_dataset = self.process(dataset)
         if tracer:
-            tracer.trace_filter(self._name, dataset, new_dataset)
+            from loguru import logger
+
+            logger.warning("Selector OPs are not supported for tracing for now.")
         free_models()
         return new_dataset
 
@@ -683,7 +936,9 @@ class Grouper(OP):
 
         new_dataset = NestedDataset.from_list(batched_samples)
         if tracer:
-            tracer.trace_filter(self._name, dataset, new_dataset)
+            from loguru import logger
+
+            logger.warning("Grouper OPs are not supported for tracing for now.")
         free_models()
         return new_dataset
 
@@ -744,6 +999,38 @@ class Aggregator(OP):
             desc=self._name + "_process",
         )
         if tracer:
-            tracer.trace_mapper(self._name, dataset, new_dataset, self.text_key)
+            from loguru import logger
+
+            logger.warning("Aggregator OPs are not supported for tracing for now.")
         free_models()
         return new_dataset
+
+
+class Pipeline(OP):
+    """Base class for Operators that represent a data processing pipeline."""
+
+    def __init__(self, *args, **kwargs):
+        """
+        Base class of operators.
+
+        :param text_key: the key name of field that stores sample texts
+            to be processed.
+        :param image_key: the key name of field that stores sample image list
+            to be processed
+        :param audio_key: the key name of field that stores sample audio list
+            to be processed
+        :param video_key: the key name of field that stores sample video list
+            to be processed
+        :param image_bytes_key: the key name of field that stores sample image bytes list
+            to be processed
+        :param query_key: the key name of field that stores sample queries
+        :param response_key: the key name of field that stores responses
+        :param history_key: the key name of field that stores history of
+            queries and responses
+        :param index_key: index the samples before process if not None
+        :param batch_size: the batch size for processing
+        """
+        super(Pipeline, self).__init__(*args, **kwargs)
+
+    def run(self, dataset):
+        raise NotImplementedError

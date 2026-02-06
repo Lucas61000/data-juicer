@@ -10,7 +10,7 @@ This operator uses a Hugging Face diffusion model to generate image pairs based 
 
 Type 算子类型: **mapper**
 
-Tags 标签: cpu, text
+Tags 标签: gpu, text
 
 ## 🔧 Parameter Configuration 参数配置
 | name 参数名 | type 类型 | default 默认值 | desc 说明 |
@@ -22,12 +22,10 @@ Tags 标签: cpu, text
 | `guidance_scale` | <class 'float'> | `7.5` | A higher guidance scale value encourages the model to generate images closely linked to the text prompt at the expense of lower image quality. Guidance scale is enabled when |
 | `text_key` |  | `None` | the key name used to store the first caption in the caption pair. |
 | `text_key_second` |  | `None` | the key name used to store the second caption in the caption pair. |
-| `output_dir` |  | `'/home/cmgzn/.cache/data_juicer/assets'` | the storage location of the generated images. |
+| `output_dir` |  | `DATA_JUICER_ASSETS_CACHE` | the storage location of the generated images. |
 | `args` |  | `''` |  |
 | `kwargs` |  | `''` |  |
 
-## 📊 Effect demonstration 效果演示
-not available 暂无
 
 ## 🔗 related links 相关链接
 - [source code 源代码](../../../data_juicer/ops/mapper/sdxl_prompt2prompt_mapper.py)

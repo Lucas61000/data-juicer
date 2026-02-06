@@ -1,11 +1,14 @@
 import fnmatch
+import importlib
 import inspect
 import io
 import os
+import subprocess
+import sys
 from contextlib import redirect_stderr
 from functools import partial
 from pickle import UnpicklingError
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import httpx
 import multiprocess as mp
@@ -18,8 +21,10 @@ from data_juicer.utils.nltk_utils import (
     ensure_nltk_resource,
     patch_nltk_pickle_security,
 )
+from data_juicer.utils.ray_utils import is_ray_mode
 from data_juicer.utils.resource_utils import cuda_device_count
 
+from .cache_utils import DATA_JUICER_ASSETS_CACHE
 from .cache_utils import DATA_JUICER_EXTERNAL_MODELS_HOME as DJEMH
 from .cache_utils import DATA_JUICER_MODELS_CACHE as DJMC
 
@@ -33,12 +38,16 @@ nltk = LazyLoader("nltk")
 aes_pred = LazyLoader("aesthetics_predictor", "simple-aesthetics-predictor")
 vllm = LazyLoader("vllm")
 diffusers = LazyLoader("diffusers")
-ram = LazyLoader("ram", "git+https://github.com/xinyu1205/recognize-anything.git")
+ram = LazyLoader("ram", "git+https://github.com/datajuicer/recognize-anything.git")
 cv2 = LazyLoader("cv2", "opencv-python")
 openai = LazyLoader("openai")
 ultralytics = LazyLoader("ultralytics")
 tiktoken = LazyLoader("tiktoken")
 dashscope = LazyLoader("dashscope")
+qwen_vl_utils = LazyLoader("qwen_vl_utils", "qwen-vl-utils")
+transformers_stream_generator = LazyLoader(
+    "transformers_stream_generator", "git+https://github.com/datajuicer/transformers-stream-generator.git"
+)
 
 MODEL_ZOO = {}
 
@@ -64,6 +73,16 @@ BACKUP_MODEL_LINKS = {
     "*_core_web_md-3.*.0": "https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/" "data_juicer/models/",
     # YOLO
     "yolo11n.pt": "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt",
+    # WiLoR
+    "wilor_model_path": "https://huggingface.co/spaces/rolpotamias/WiLoR/resolve/main/pretrained_models/wilor_final.ckpt",
+    "wilor_model_config": "https://raw.githubusercontent.com/rolpotamias/WiLoR/refs/heads/main/pretrained_models/model_config.yaml",
+    "wilor_detector_model_path": "https://huggingface.co/spaces/rolpotamias/WiLoR/resolve/main/pretrained_models/detector.pt",
+    # DWPose
+    "dwpose_onnx_det_model": "https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx",
+    "dwpose_onnx_pose_model": "https://huggingface.co/yzd-v/DWPose/resolve/main/dw-ll_ucoco_384.onnx",
+    # HaWoR
+    "hawor_model_path": "https://huggingface.co/ThunderVVV/HaWoR/resolve/main/hawor/checkpoints/hawor.ckpt",
+    "hawor_config_path": "https://huggingface.co/ThunderVVV/HaWoR/resolve/main/hawor/model_config.yaml",
 }
 
 
@@ -223,7 +242,7 @@ class ChatAPIModel:
                 self.endpoint, body=body, cast_to=httpx.Response, stream=stream, stream_cls=stream_cls
             )
             result = response.json()
-            return nested_access(result, self.response_path)
+            return nested_access(result, self.response_path) or ""
         except Exception as e:
             logger.exception(e)
             return ""
@@ -276,6 +295,55 @@ class EmbeddingAPIModel:
             return []
 
 
+class ResponsesAPIModel:
+    def __init__(self, model=None, endpoint=None, response_path=None, **kwargs):
+        """
+        Initializes an instance specialized for OpenAI Responses API.
+
+        :param model: The model identifier for Responses API calls.
+            If it's None, use the first available model from the server.
+        :param endpoint: API endpoint URL. Defaults to '/responses'.
+        :param response_path: Path to extract content from response.
+            Defaults to 'output.0.content.0.text'.
+        :param kwargs: Configuration for the OpenAI client.
+        """
+        self.model = model
+        self.endpoint = endpoint or "/responses"
+        self.response_path = response_path or "output.0.content.0.text"
+
+        client_args = filter_arguments(openai.OpenAI, kwargs)
+        self._client = openai.OpenAI(**client_args)
+        if self.model is None:
+            logger.warning("No model specified. Using the first available model from the server.")
+            models_list = self._client.models.list().data
+            if len(models_list) == 0:
+                raise ValueError("No models available on the server.")
+            self.model = models_list[0].id
+
+    def __call__(self, input, **kwargs):
+        """
+        Sends input to the Responses API and returns the parsed response content.
+
+        :param input: The input text or content to send to the API.
+        :param kwargs: Additional parameters for the API call.
+        :return: The parsed response content from the API call, or an empty
+            string if an error occurs.
+        """
+        body = {
+            "model": self.model,
+            "input": input,
+        }
+        body.update(kwargs)
+
+        try:
+            response = self._client.post(self.endpoint, body=body, cast_to=httpx.Response)
+            result = response.json()
+            return nested_access(result, self.response_path) or ""
+        except Exception as e:
+            logger.exception(f"Responses API error: {e}")
+            return ""
+
+
 def prepare_api_model(
     model, *, endpoint=None, response_path=None, return_processor=False, processor_config=None, **model_params
 ):
@@ -290,10 +358,12 @@ def prepare_api_model(
         `base_url` parameter). Supported endpoints include:
         - '/chat/completions' for chat models
         - '/embeddings' for embedding models
+        - '/responses' for OpenAI Responses API
         Defaults to `/chat/completions` for OpenAI compatibility.
     :param response_path: The dot-separated  path to extract desired content
         from the API response. Defaults to 'choices.0.message.content'
-        for chat models and 'data.0.embedding' for embedding models.
+        for chat models, 'data.0.embedding' for embedding models, and
+        'output.0.content.0.text' for responses models.
     :param return_processor: A boolean flag indicating whether to return a
         processor along with the model. The processor can be used for tasks
         like tokenization or encoding. Defaults to False.
@@ -309,6 +379,7 @@ def prepare_api_model(
     ENDPOINT_CLASS_MAP = {
         "chat": ChatAPIModel,
         "embeddings": EmbeddingAPIModel,
+        "responses": ResponsesAPIModel,
     }
 
     API_Class = next((cls for keyword, cls in ENDPOINT_CLASS_MAP.items() if keyword in endpoint.lower()), None)
@@ -352,6 +423,60 @@ def prepare_api_model(
     else:
         processor = get_processor()
     return (client, processor)
+
+
+def prepare_deepcalib_model(model_path, **model_params):
+
+    device = model_params.pop("device", None)
+    if device is None:
+        raise ValueError("video_camera_calibration_static_deepcalib_mapper currently supports GPU usage only.")
+    device = device.replace("cuda", "/gpu")
+
+    if not os.path.exists(model_path):
+        LazyLoader.check_packages(["gdown"])
+        deepcalib_folder = os.path.join(DJMC, "deepcalib")
+        deepcalib_model_path = os.path.join(deepcalib_folder, "Regression", "Single_net", "weights_10_0.02.h5")
+        os.makedirs(deepcalib_folder, exist_ok=True)
+
+        if not os.path.exists(deepcalib_model_path):
+
+            deepcalib_zip_path = os.path.join(DJMC, "deepcalib_weights.zip")
+            subprocess.run(["gdown", "1TYZn-f2z7O0hp_IZnNfZ06ExgU9ii70T", "-O", deepcalib_zip_path], check=True)
+
+            import zipfile
+
+            zip_file = zipfile.ZipFile(deepcalib_zip_path)
+            for names in zip_file.namelist():
+                zip_file.extract(names, deepcalib_folder)
+            zip_file.close()
+
+        model_path = deepcalib_model_path
+
+    LazyLoader.check_packages(["tensorflow"])
+    import tensorflow as tf
+    from keras.applications.inception_v3 import InceptionV3
+    from keras.layers import Dense, Flatten, Input
+    from keras.models import Model
+
+    gpus = tf.config.list_physical_devices("GPU")
+    tf.config.set_visible_devices(gpus[int(device.split(":")[-1])], "GPU")
+    tf.config.experimental.set_memory_growth(gpus[int(device.split(":")[-1])], True)
+    with tf.device(device):
+        input_shape = (299, 299, 3)
+        main_input = Input(shape=input_shape, dtype="float32", name="main_input")
+        phi_model = InceptionV3(weights="imagenet", include_top=False, input_tensor=main_input, input_shape=input_shape)
+        phi_features = phi_model.output
+        phi_flattened = Flatten(name="phi-flattened")(phi_features)
+        final_output_focal = Dense(1, activation="sigmoid", name="output_focal")(phi_flattened)
+        final_output_distortion = Dense(1, activation="sigmoid", name="output_distortion")(phi_flattened)
+
+        for layer in phi_model.layers:
+            layer.name = layer.name + "_phi"
+
+        model = Model(inputs=main_input, outputs=[final_output_focal, final_output_distortion])
+        model.load_weights(model_path)
+
+    return model
 
 
 def prepare_diffusion_model(pretrained_model_name_or_path, diffusion_type, **model_params):
@@ -398,6 +523,27 @@ def prepare_diffusion_model(pretrained_model_name_or_path, diffusion_type, **mod
         model = model.to(device)
 
     return model
+
+
+def prepare_dwpose_model(onnx_det_model, onnx_pose_model, **model_params):
+    from data_juicer.ops.common.dwpose_func import DWposeDetector
+
+    device = model_params.pop("device", "cpu")
+
+    def _get_model_path(model_path, default_filename, download_key):
+        if not os.path.exists(model_path):
+            if not os.path.exists(DJMC):
+                os.makedirs(DJMC)
+            model_path = os.path.join(DJMC, default_filename)
+            if not os.path.exists(model_path):
+                wget.download(BACKUP_MODEL_LINKS[download_key], DJMC)
+        return model_path
+
+    onnx_det_model = _get_model_path(onnx_det_model, "yolox_l.onnx", "dwpose_onnx_det_model")
+    onnx_pose_model = _get_model_path(onnx_pose_model, "dw-ll_ucoco_384.onnx", "dwpose_onnx_pose_model")
+
+    dwpose_model = DWposeDetector(onnx_det_model, onnx_pose_model, device)
+    return dwpose_model
 
 
 def prepare_fastsam_model(model_path, **model_params):
@@ -473,6 +619,7 @@ def prepare_huggingface_model(
         model = model_class.from_pretrained(pretrained_model_name_or_path, **model_params)
 
         if return_pipe:
+            pipe_params = {}
             if isinstance(processor, transformers.PreTrainedTokenizerBase):
                 pipe_params = {"tokenizer": processor}
             elif isinstance(processor, transformers.SequenceFeatureExtractor):
@@ -483,6 +630,65 @@ def prepare_huggingface_model(
             model = pipe
 
     return (model, processor) if return_model else processor
+
+
+def prepare_hawor_model(hawor_model_path, hawor_config_path, mano_right_path, **model_params):
+
+    device = model_params.pop("device", "cpu")
+
+    hawor_repo_path = os.path.join(DATA_JUICER_ASSETS_CACHE, "HaWoR")
+    if not os.path.exists(hawor_repo_path):
+        subprocess.run(["git", "clone", "https://github.com/ThunderVVV/HaWoR.git", hawor_repo_path], check=True)
+    import sys
+
+    sys.path.append(hawor_repo_path)
+
+    from hawor.configs import get_config
+    from lib.models.hawor import HAWOR
+
+    if not os.path.exists(mano_right_path):
+        raise ValueError(
+            "Users need to download 'MANO_RIGHT.pkl' from https://mano.is.tue.mpg.de/ and comply with the MANO license."
+        )
+
+    if not os.path.exists(hawor_model_path):
+        hawor_model_dir = os.path.join(DJMC, "HaWor")
+        os.makedirs(hawor_model_dir, exist_ok=True)
+        hawor_model_path = os.path.join(hawor_model_dir, "hawor.ckpt")
+        subprocess.run(["wget", BACKUP_MODEL_LINKS["hawor_model_path"], hawor_model_path], check=True)
+
+    if not os.path.exists(hawor_config_path):
+        hawor_model_dir = os.path.join(DJMC, "HaWor")
+        os.makedirs(hawor_model_dir, exist_ok=True)
+        hawor_config_path = os.path.join(hawor_model_dir, "model_config.yaml")
+        subprocess.run(["wget", BACKUP_MODEL_LINKS["hawor_config_path"], hawor_config_path], check=True)
+
+    model_cfg = get_config(hawor_config_path, update_cachedir=True)
+
+    if (model_cfg.MODEL.BACKBONE.TYPE == "vit") and ("BBOX_SHAPE" not in model_cfg.MODEL):
+        model_cfg.defrost()
+        assert (
+            model_cfg.MODEL.IMAGE_SIZE == 256
+        ), f"MODEL.IMAGE_SIZE ({model_cfg.MODEL.IMAGE_SIZE}) should be 256 for ViT backbone"
+        model_cfg.MODEL.BBOX_SHAPE = [192, 256]
+        model_cfg.freeze()
+
+    if "DATA_DIR" in model_cfg.MANO:
+        model_cfg.defrost()
+        model_cfg.MANO.DATA_DIR = os.path.join(hawor_repo_path, "_DATA/data")
+        model_cfg.MANO.MODEL_PATH = mano_right_path
+        model_cfg.MANO.MEAN_PARAMS = os.path.join(hawor_repo_path, "_DATA/data/mano_mean_params.npz")
+        model_cfg.freeze()
+
+    hawor_model = HAWOR.load_from_checkpoint(hawor_model_path, strict=False, cfg=model_cfg, weights_only=False).to(
+        device
+    )
+
+    from data_juicer.ops.common.mano_func import MANO
+
+    mano_model = MANO(model_path=mano_right_path).to(device)
+
+    return hawor_model, model_cfg, mano_model
 
 
 def prepare_kenlm_model(lang, name_pattern="{}.arpa.bin", **model_params):
@@ -509,6 +715,18 @@ def prepare_kenlm_model(lang, name_pattern="{}.arpa.bin", **model_params):
     except:  # noqa: E722
         kenlm_model = kenlm.Model(check_model(model_name, force=True), **model_params)
     return kenlm_model
+
+
+def prepare_moge_model(model_path, **model_params):
+
+    device = model_params.pop("device", "cpu")
+
+    LazyLoader.check_packages(["moge@ git+https://github.com/microsoft/MoGe.git"])
+    from moge.model.v2 import MoGeModel
+
+    model = MoGeModel.from_pretrained(model_path).to(device)
+
+    return model
 
 
 def prepare_nltk_model(lang, name_pattern="punkt.{}.pickle", **model_params):
@@ -884,11 +1102,87 @@ def prepare_video_blip_model(pretrained_model_name_or_path, *, return_model=True
             self.post_init()
 
     pretrained_model_name_or_path = check_model_home(pretrained_model_name_or_path)
-    processor = transformers.AutoProcessor.from_pretrained(pretrained_model_name_or_path, **model_params)
+    processor = transformers.AutoProcessor.from_pretrained(
+        pretrained_model_name_or_path, num_query_tokens=32, **model_params
+    )
     if return_model:
         model_class = VideoBlipForConditionalGeneration
         model = model_class.from_pretrained(pretrained_model_name_or_path, **model_params)
+        model.config.image_token_index = 50265
     return (model, processor) if return_model else processor
+
+
+def prepare_video_depth_anything(model_path, **model_params):
+    video_depth_anything_repo_path = os.path.join(DATA_JUICER_ASSETS_CACHE, "Video-Depth-Anything")
+    if not os.path.exists(video_depth_anything_repo_path):
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "https://github.com/DepthAnything/Video-Depth-Anything.git",
+                video_depth_anything_repo_path,
+            ],
+            check=True,
+        )
+
+    sys.path.append(video_depth_anything_repo_path)
+
+    from video_depth_anything.video_depth import VideoDepthAnything
+
+    device = model_params.pop("device", "cpu")
+
+    model_configs = {
+        "vits": {"encoder": "vits", "features": 64, "out_channels": [48, 96, 192, 384]},
+        "vitb": {"encoder": "vitb", "features": 128, "out_channels": [96, 192, 384, 768]},
+        "vitl": {"encoder": "vitl", "features": 256, "out_channels": [256, 512, 1024, 1024]},
+    }
+
+    model_links = {
+        "video_depth_anything_vits": "https://huggingface.co/depth-anything/Video-Depth-Anything-Small/resolve/main/video_depth_anything_vits.pth",
+        "video_depth_anything_vitb": "https://huggingface.co/depth-anything/Video-Depth-Anything-Base/resolve/main/video_depth_anything_vitb.pth",
+        "video_depth_anything_vitl": "https://huggingface.co/depth-anything/Video-Depth-Anything-Large/resolve/main/video_depth_anything_vitl.pth",
+        "metric_video_depth_anything_vits": "https://huggingface.co/depth-anything/Metric-Video-Depth-Anything-Small/resolve/main/metric_video_depth_anything_vits.pth",
+        "metric_video_depth_anything_vitb": "https://huggingface.co/depth-anything/Metric-Video-Depth-Anything-Base/resolve/main/metric_video_depth_anything_vitb.pth",
+        "metric_video_depth_anything_vitl": "https://huggingface.co/depth-anything/Metric-Video-Depth-Anything-Large/resolve/main/metric_video_depth_anything_vitl.pth",
+    }
+
+    if "vits" in model_path:
+        encoder_type = "vits"
+    elif "vitb" in model_path:
+        encoder_type = "vitb"
+    else:
+        encoder_type = "vitl"
+
+    if "metric" in model_path:
+        metric = True
+    else:
+        metric = False
+
+    if "metric_video_depth_anything_vitl" in model_path:
+        model_type = "metric_video_depth_anything_vitl"
+    elif "metric_video_depth_anything_vitb" in model_path:
+        model_type = "metric_video_depth_anything_vitb"
+    elif "metric_video_depth_anything_vits" in model_path:
+        model_type = "metric_video_depth_anything_vits"
+    elif "video_depth_anything_vitb" in model_path:
+        model_type = "video_depth_anything_vitb"
+    elif "video_depth_anything_vitl" in model_path:
+        model_type = "video_depth_anything_vitl"
+    else:
+        model_type = "video_depth_anything_vits"
+
+    if not os.path.exists(model_path):
+        if not os.path.exists(DJMC):
+            os.makedirs(DJMC)
+
+        model_path = os.path.join(DJMC, model_type + ".pth")
+        wget.download(model_links[model_type], model_path)
+
+    model = VideoDepthAnything(**model_configs[encoder_type], metric=metric)
+    model.load_state_dict(torch.load(model_path, map_location="cpu"), strict=True)
+    model = model.to(device).eval()
+
+    return model
 
 
 def prepare_yolo_model(model_path, **model_params):
@@ -897,23 +1191,115 @@ def prepare_yolo_model(model_path, **model_params):
     return model
 
 
-def prepare_vllm_model(pretrained_model_name_or_path, **model_params):
+def prepare_vggt_model(model_path, **model_params):
+    device = model_params.pop("device", "cpu")
+    vggt_repo_path = os.path.join(DATA_JUICER_ASSETS_CACHE, "vggt")
+    if not os.path.exists(vggt_repo_path):
+        subprocess.run(["git", "clone", "https://github.com/facebookresearch/vggt.git", vggt_repo_path], check=True)
+
+    sys.path.append(vggt_repo_path)
+
+    from vggt.models.vggt import VGGT
+
+    model = VGGT.from_pretrained(check_model_home(model_path)).to(device)
+
+    return model
+
+
+def prepare_vllm_model(pretrained_model_name_or_path, return_processor=False, **model_params):
     """
     Prepare and load a HuggingFace model with the corresponding processor.
 
     :param pretrained_model_name_or_path: model name or path
+    :param return_processor: whether to return the processor instead of the tokenizer
     :param model_params: LLM initialization parameters.
     :return: a tuple of (model, tokenizer)
     """
     os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 
-    if model_params.get("device", "").startswith("cuda:"):
-        model_params["device"] = "cuda"
+    if "device" in model_params:
+        model_params.pop("device")
+
+    if is_ray_mode():
+        tensor_parallel_size = model_params.get("tensor_parallel_size", 1)
+    else:
+        tensor_parallel_size = model_params.get("tensor_parallel_size", torch.cuda.device_count())
+    logger.info(f"Set tensor_parallel_size to {tensor_parallel_size} for vllm.")
 
     model = vllm.LLM(model=check_model_home(pretrained_model_name_or_path), generation_config="auto", **model_params)
     tokenizer = model.get_tokenizer()
 
-    return (model, tokenizer)
+    if return_processor:
+        processor = transformers.AutoProcessor.from_pretrained(pretrained_model_name_or_path)
+        return model, processor
+    else:
+        return model, tokenizer
+
+
+def prepare_wilor_model(wilor_model_path, wilor_model_config, detector_model_path, mano_right_path, **model_params):
+    device = model_params.pop("device", "cpu")
+    wilor_DJMC_model_path = os.path.join(DJMC, "WiLoR")
+
+    if not os.path.exists(mano_right_path):
+        raise ValueError(
+            "Users need to download 'MANO_RIGHT.pkl' from https://mano.is.tue.mpg.de/ and comply with the MANO license."
+        )
+    wilor_repo_path = os.path.join(DATA_JUICER_ASSETS_CACHE, "WiLoR")
+    if not os.path.exists(wilor_repo_path):
+        subprocess.run(["git", "clone", "https://github.com/rolpotamias/WiLoR.git", wilor_repo_path], check=True)
+
+    sys.path.append(wilor_repo_path)
+    from wilor.configs import get_config
+    from wilor.models.wilor import WiLoR
+    from wilor.utils.renderer import Renderer
+
+    def _get_model_path(model_path, default_filename, download_key):
+        if not os.path.exists(model_path):
+            if not os.path.exists(DJMC):
+                os.makedirs(DJMC)
+            if not os.path.exists(wilor_DJMC_model_path):
+                os.makedirs(wilor_DJMC_model_path)
+            model_path = os.path.join(wilor_DJMC_model_path, default_filename)
+            if not os.path.exists(model_path):
+                wget.download(BACKUP_MODEL_LINKS[download_key], wilor_DJMC_model_path)
+        return model_path
+
+    wilor_model_path = _get_model_path(wilor_model_path, "wilor_final.ckpt", "wilor_model_path")
+    wilor_model_config = _get_model_path(wilor_model_config, "model_config.yaml", "wilor_model_config")
+    detector_model_path = _get_model_path(detector_model_path, "detector.pt", "wilor_detector_model_path")
+
+    model_cfg = get_config(wilor_model_config, update_cachedir=True)
+    # Override some config values, to crop bbox correctly
+    if ("vit" in model_cfg.MODEL.BACKBONE.TYPE) and ("BBOX_SHAPE" not in model_cfg.MODEL):
+
+        model_cfg.defrost()
+        assert (
+            model_cfg.MODEL.IMAGE_SIZE == 256
+        ), f"MODEL.IMAGE_SIZE ({model_cfg.MODEL.IMAGE_SIZE}) should be 256 for ViT backbone"
+        model_cfg.MODEL.BBOX_SHAPE = [192, 256]
+        model_cfg.freeze()
+
+    # Update config to be compatible with demo
+    if "PRETRAINED_WEIGHTS" in model_cfg.MODEL.BACKBONE:
+        model_cfg.defrost()
+        model_cfg.MODEL.BACKBONE.pop("PRETRAINED_WEIGHTS")
+        model_cfg.freeze()
+
+        # Update config to be compatible with demo
+    if "DATA_DIR" in model_cfg.MANO:
+        model_cfg.defrost()
+        model_cfg.MANO.DATA_DIR = os.path.join(wilor_repo_path, "mano_data/")
+        model_cfg.MANO.MODEL_PATH = mano_right_path
+        model_cfg.MANO.MEAN_PARAMS = os.path.join(wilor_repo_path, "mano_data/mano_mean_params.npz")
+        model_cfg.freeze()
+
+    model = WiLoR.load_from_checkpoint(wilor_model_path, strict=False, cfg=model_cfg)
+    detector = ultralytics.YOLO(detector_model_path)
+    renderer = Renderer(model_cfg, faces=model.mano.faces)
+    model = model.to(device)
+    detector = detector.to(device)
+
+    return model, detector, model_cfg, renderer
 
 
 def prepare_embedding_model(model_path, **model_params):
@@ -1032,13 +1418,257 @@ def update_sampling_params(sampling_params, pretrained_model_name_or_path, enabl
     return sampling_params
 
 
+class MMLabModel(object):
+    """
+    A wrapper for mmdeploy model.
+    It is used to load a mmdeploy model and run inference on given images.
+    """
+
+    def __init__(self, model_cfg_path, deploy_cfg_path, model_files, device):
+        """Initialize the MMLabModel.
+        :param model_cfg: Path to the model config.
+        :param deploy_cfg: Path to the deployment config.
+        :param model_files: Path to the model files.
+        :param device: Device to use.
+        """
+        self._install_required_packages()
+
+        self.model_cfg_path = model_cfg_path
+        self.deploy_cfg_path = deploy_cfg_path
+        self.model_files = model_files
+        self.device = device
+
+        from mmdeploy.apis.utils import build_task_processor
+        from mmdeploy.utils import get_input_shape, load_config
+
+        deploy_cfg, model_cfg = load_config(self.deploy_cfg_path, self.model_cfg_path)
+        self.task_processor = build_task_processor(model_cfg, deploy_cfg, self.device)
+
+        self.model = self.task_processor.build_backend_model(
+            self.model_files, data_preprocessor_updater=self.task_processor.update_data_preprocessor
+        )
+
+        self.input_shape = get_input_shape(deploy_cfg)
+
+    def _install_required_packages(self):
+        import importlib
+
+        try:
+            importlib.import_module("mim")
+        except ImportError:
+            logger.info("Installing openmim...")
+            try:
+                subprocess.run([sys.executable, "-m", "pip", "install", "openmim"], check=True)
+            except Exception:
+                raise ValueError(
+                    "Failed to install openmim, please refer to the documentation at "
+                    "https://github.com/open-mmlab/mim/blob/main/docs/en/installation.md for installation instructions."
+                )
+
+        # install mmcv using mim
+        try:
+            importlib.import_module("mmcv")
+        except ImportError:
+            logger.info("Installing mmcv using mim...")
+            try:
+                subprocess.run([sys.executable, "-m", "mim", "install", "mmcv==2.1.0"], check=True)
+            except Exception:
+                raise ValueError(
+                    "Failed to install mmcv, please refer to the documentation at "
+                    "https://mmcv.readthedocs.io/en/latest/get_started/installation.html# for installation instructions."
+                )
+
+        # install mmdeploy using mim
+        try:
+            importlib.import_module("mmdeploy")
+        except ImportError:
+            logger.info("Installing mmdeploy using mim...")
+            try:
+                subprocess.run([sys.executable, "-m", "mim", "install", "mmdeploy"], check=True)
+            except Exception:
+                raise ValueError(
+                    "Failed to install mmdeploy, please refer to the documentation at "
+                    "https://mmdeploy.readthedocs.io/en/latest/get_started.html#installation for installation instructions."
+                )
+
+    def __call__(self, images):
+        model_inputs, _ = self.task_processor.create_input(images, self.input_shape)
+
+        with torch.no_grad():
+            result = self.model.test_step(model_inputs)
+
+        return result
+
+
+def prepare_mmlab_model(model_cfg: str, deploy_cfg: str, model_files: List[str], device: str = "cpu"):
+    """Prepare and load a model using mmdeploy.
+
+    :param model_cfg: Path to the model config.
+    :param deploy_cfg: Path to the deployment config.
+    :param model_files: Path to the model files.
+    :param device: Device to use.
+    """
+    model = MMLabModel(
+        model_cfg,
+        deploy_cfg,
+        model_files,
+        device,
+    )
+
+    return model
+
+
+def prepare_qwen_vl_inputs_for_vllm(messages, processor):
+    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    # qwen_vl_utils 0.0.14+ required
+    image_inputs, video_inputs, video_kwargs = qwen_vl_utils.process_vision_info(
+        messages,
+        image_patch_size=processor.image_processor.patch_size,
+        return_video_kwargs=True,
+        return_video_metadata=True,
+    )
+
+    mm_data = {}
+    if image_inputs is not None:
+        mm_data["image"] = image_inputs
+    if video_inputs is not None:
+        mm_data["video"] = video_inputs
+
+    return {"prompt": text, "multi_modal_data": mm_data, "mm_processor_kwargs": video_kwargs}
+
+
+def prepare_sam_3d_body_model(
+    checkpoint_path: str = "",
+    detector_name: str = "vitdet",
+    segmentor_name: str = "sam2",
+    fov_name: str = "moge2",
+    mhr_path: str = "",
+    detector_path: str = "",
+    segmentor_path: str = "",
+    fov_path: str = "",
+    **model_params,
+):
+    """
+    Prepare the SAM-3D-Body model.
+    :param checkpoint_path: Path to SAM 3D Body model checkpoint.
+    :param mhr_path: Path to MoHR/assets folder (or set SAM3D_mhr_path).
+    :param detector_path: Path to human detection model folder (or set SAM3D_DETECTOR_PATH).
+    :param segmentor_path: Path to human segmentation model folder (or set SAM3D_SEGMENTOR_PATH).
+    :param fov_path: Path to fov estimation model folder (or set SAM3D_FOV_PATH).
+    :param detector_name: Human detection model for demo (Default `vitdet`, add your favorite detector if needed).
+    :param segmentor_name: Human segmentation model for demo (Default `sam2`, add your favorite segmentor if needed).
+    :param fov_name: FOV estimation model for demo (Default `moge2`, add your favorite fov estimator if needed).
+    :param model_params: Additional parameters for the model.
+    """
+    sam_3d_body_repo_path = os.path.join(DATA_JUICER_ASSETS_CACHE, "sam-3d-body")
+    if not os.path.exists(sam_3d_body_repo_path):
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "https://github.com/facebookresearch/sam-3d-body.git",
+                sam_3d_body_repo_path,
+            ],
+            check=True,
+        )
+
+    def _download_model(local_dir):
+        import importlib
+
+        os.makedirs(local_dir, exist_ok=True)
+        try:
+            importlib.import_module("modelscope")
+        except ImportError:
+            logger.info("Installing modelscope...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "modelscope"], check=True)
+        logger.info("Downloading model 'facebook/sam-3d-body-dinov3'...")
+        subprocess.run(
+            [
+                "modelscope",
+                "download",
+                "--model",
+                "facebook/sam-3d-body-dinov3",
+                "--local_dir",
+                local_dir,
+            ],
+            check=True,
+        )
+
+    if not checkpoint_path or not mhr_path:
+        local_dir = os.path.join(DJMC, "sam-3d-body-dinov3")
+
+        if not os.path.exists(local_dir):
+            _download_model(local_dir)
+
+        if not checkpoint_path:
+            checkpoint_path = os.path.join(local_dir, "model.ckpt")
+        if not mhr_path:
+            mhr_path = os.path.join(local_dir, "assets/mhr_model.pt")
+
+    try:
+        sys.path.insert(0, sam_3d_body_repo_path)
+        from sam_3d_body import SAM3DBodyEstimator, load_sam_3d_body
+
+        device = model_params.pop("device", "cpu")
+
+        try:
+            # Initialize sam-3d-body model and other optional modules
+            model, model_cfg = load_sam_3d_body(checkpoint_path, device=device, mhr_path=mhr_path)
+        except Exception:  # double check, local_dir exists but files broken or missing
+            _download_model(local_dir)
+            model, model_cfg = load_sam_3d_body(checkpoint_path, device=device, mhr_path=mhr_path)
+
+        human_detector, human_segmentor, fov_estimator = None, None, None
+        if detector_name:
+            module_path = f"{sam_3d_body_repo_path}/tools/build_detector.py"
+            spec = importlib.util.spec_from_file_location("build_detector", module_path)
+            if spec is None:
+                raise ImportError(f"Could not load spec from {module_path}")
+            build_detector = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(build_detector)
+            human_detector = build_detector.HumanDetector(name=detector_name, device=device, path=detector_path)
+        if segmentor_path:
+            module_path = f"{sam_3d_body_repo_path}/tools/build_sam.py"
+            spec = importlib.util.spec_from_file_location("build_sam", module_path)
+            if spec is None:
+                raise ImportError(f"Could not load spec from {module_path}")
+            build_sam = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(build_sam)
+            human_segmentor = build_sam.HumanSegmentor(name=segmentor_name, device=device, path=segmentor_path)
+        if fov_name:
+            module_path = f"{sam_3d_body_repo_path}/tools/build_fov_estimator.py"
+            spec = importlib.util.spec_from_file_location("build_fov_estimator", module_path)
+            if spec is None:
+                raise ImportError(f"Could not load spec from {module_path}")
+            build_fov_estimator = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(build_fov_estimator)
+            fov_estimator = build_fov_estimator.FOVEstimator(name=fov_name, device=device, path=fov_path)
+
+        estimator = SAM3DBodyEstimator(
+            sam_3d_body_model=model,
+            model_cfg=model_cfg,
+            human_detector=human_detector,
+            human_segmentor=human_segmentor,
+            fov_estimator=fov_estimator,
+        )
+    finally:
+        if sam_3d_body_repo_path in sys.path:
+            sys.path.remove(sam_3d_body_repo_path)
+
+    return estimator
+
+
 MODEL_FUNCTION_MAPPING = {
     "api": prepare_api_model,
+    "deepcalib": prepare_deepcalib_model,
     "diffusion": prepare_diffusion_model,
+    "dwpose": prepare_dwpose_model,
     "fasttext": prepare_fasttext_model,
     "fastsam": prepare_fastsam_model,
+    "hawor": prepare_hawor_model,
     "huggingface": prepare_huggingface_model,
     "kenlm": prepare_kenlm_model,
+    "moge": prepare_moge_model,
     "nltk": prepare_nltk_model,
     "nltk_pos_tagger": prepare_nltk_pos_tagger,
     "opencv_classifier": prepare_opencv_classifier,
@@ -1047,10 +1677,15 @@ MODEL_FUNCTION_MAPPING = {
     "sentencepiece": prepare_sentencepiece_for_lang,
     "simple_aesthetics": prepare_simple_aesthetics_model,
     "spacy": prepare_spacy_model,
+    "vggt": prepare_vggt_model,
     "video_blip": prepare_video_blip_model,
+    "video_depth_anything": prepare_video_depth_anything,
     "vllm": prepare_vllm_model,
+    "wilor": prepare_wilor_model,
     "yolo": prepare_yolo_model,
     "embedding": prepare_embedding_model,
+    "sam_3d_body": prepare_sam_3d_body_model,
+    "mmlab": prepare_mmlab_model,
 }
 
 _MODELS_WITHOUT_FILE_LOCK = {"fasttext", "fastsam", "kenlm", "nltk", "recognizeAnything", "sentencepiece", "spacy"}
@@ -1075,6 +1710,14 @@ def get_model(model_key=None, rank=None, use_cuda=False):
     global MODEL_ZOO
     if model_key not in MODEL_ZOO:
         logger.debug(f"{model_key} not found in MODEL_ZOO ({mp.current_process().name})")
+
+        # Configure thread limits in worker processes to prevent thread over-subscription
+        # when running with multiple processes (num_proc > 1)
+        if mp.current_process().name != "MainProcess":
+            from data_juicer.utils.process_utils import setup_worker_threads
+
+            setup_worker_threads(num_threads=1)
+
         if use_cuda and cuda_device_count() > 0:
             rank = rank if rank is not None else 0
             rank = rank % cuda_device_count()

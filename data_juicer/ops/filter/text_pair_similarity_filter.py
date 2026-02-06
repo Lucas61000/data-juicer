@@ -62,7 +62,7 @@ class TextPairSimilarityFilter(Filter):
         """
         torch.set_num_threads(1)
 
-        kwargs["mem_required"] = "1500MB" if kwargs.get("mem_required", 0) == 0 else kwargs["mem_required"]
+        kwargs["memory"] = "1500MB" if kwargs.get("memory", 0) == 0 else kwargs["memory"]
         super().__init__(*args, **kwargs)
         self.min_score = min_score
         self.max_score = max_score
@@ -102,7 +102,7 @@ class TextPairSimilarityFilter(Filter):
         text1 = sample[self.text_key]
         text2 = sample[self.text_key_second]
 
-        text_tensors = processor([text1, text2], padding=True, return_tensors="pt").to(model.device)
+        text_tensors = processor(text=[text1, text2], padding=True, return_tensors="pt").to(model.device)
         text_features = model.get_text_features(**text_tensors)
 
         similarity = torch.cosine_similarity(text_features[0], text_features[1], dim=0)

@@ -5,20 +5,20 @@ from functools import partial
 from typing import Any, Dict, List, Literal, Optional, Union
 
 import pyarrow
+import ray
 from jsonargparse import Namespace
 from loguru import logger
+from ray.data._internal.util import get_compute_strategy
 
 from data_juicer.core.data import DJDataset
 from data_juicer.core.data.schema import Schema
-from data_juicer.ops import Deduplicator, Filter, Mapper
+from data_juicer.core.tracer import should_trace_op
+from data_juicer.ops import Deduplicator, Filter, Mapper, Pipeline
 from data_juicer.ops.base_op import DEFAULT_BATCH_SIZE, TAGGING_OPS
 from data_juicer.utils.constant import Fields
 from data_juicer.utils.file_utils import is_remote_path
-from data_juicer.utils.lazy_loader import LazyLoader
 from data_juicer.utils.resource_utils import cuda_device_count
 from data_juicer.utils.webdataset_utils import _custom_default_decoder
-
-ray = LazyLoader("ray")
 
 
 def get_abs_path(path, dataset_dir):
@@ -31,16 +31,23 @@ def get_abs_path(path, dataset_dir):
         return path
 
 
-def convert_to_absolute_paths(samples, dataset_dir, path_keys):
-    samples = samples.to_pydict()
+def convert_to_absolute_paths(samples: pyarrow.Table, dataset_dir, path_keys):
     for key in path_keys:
-        for idx in range(len(samples[key])):
-            paths = samples[key][idx]
-            if isinstance(paths, str):
-                samples[key][idx] = get_abs_path(paths, dataset_dir)
-            elif isinstance(paths, list):
-                samples[key][idx] = [get_abs_path(item, dataset_dir) for item in paths]
-    return pyarrow.Table.from_pydict(samples)
+        col_idx = samples.schema.get_field_index(key)
+        cols = samples.column(col_idx)
+
+        def _process_paths():
+            for col in cols:
+                path = col.as_py()
+                if isinstance(path, str):
+                    yield get_abs_path(path, dataset_dir)
+                elif isinstance(path, list):
+                    yield [get_abs_path(p, dataset_dir) for p in path]
+                else:
+                    yield path
+
+        samples = samples.set_column(col_idx, key, pyarrow.array(_process_paths()))
+    return samples
 
 
 # TODO: check path for nestdataset
@@ -89,8 +96,20 @@ def filter_batch(batch, filter_func):
 
 
 class RayDataset(DJDataset):
-    def __init__(self, dataset: ray.data.Dataset, dataset_path: str = None, cfg: Optional[Namespace] = None) -> None:
+    def __init__(
+        self,
+        dataset: ray.data.Dataset,
+        dataset_path: str = None,
+        cfg: Optional[Namespace] = None,
+        auto_op_parallelism=True,
+    ) -> None:
         self.data = preprocess_dataset(dataset, dataset_path, cfg)
+
+        # if auto_op_parallelism is set in both args and cfg, cfg takes precedence
+        if cfg and cfg.get("auto_op_parallelism") is not None:
+            self._auto_proc = cfg.get("auto_op_parallelism")
+        else:
+            self._auto_proc = auto_op_parallelism
 
     def schema(self) -> Schema:
         """Get dataset schema.
@@ -149,14 +168,43 @@ class RayDataset(DJDataset):
 
         from data_juicer.utils.process_utils import calculate_ray_np
 
-        calculate_ray_np(operators)
+        if self._auto_proc:
+            calculate_ray_np(operators)
+
+        # Check if dataset is empty - Ray returns None for columns() on empty datasets
+        # with unknown schema. If empty, skip processing as there's nothing to process.
+        try:
+            row_count = self.data.count()
+        except Exception:
+            row_count = 0
+
+        if row_count == 0:
+            from loguru import logger
+
+            logger.warning("Dataset is empty (0 rows), skipping operator processing")
+            return self
+
+        # Cache columns once at start to avoid breaking pipeline with repeated columns() calls
+        # Ray's columns() internally does limit(1) which forces execution and breaks streaming
+        columns_result = self.data.columns()
+        # Handle empty dataset case where columns() returns None
+        if columns_result is None:
+            from loguru import logger
+
+            logger.warning("Dataset has unknown schema (likely empty), skipping operator processing")
+            return self
+        cached_columns = set(columns_result)
 
         for op in operators:
-            self._run_single_op(op)
+            cached_columns = self._run_single_op(op, cached_columns, tracer=tracer)
         return self
 
-    def _run_single_op(self, op):
-        if op._name in TAGGING_OPS.modules and Fields.meta not in self.data.columns():
+    def _run_single_op(self, op, cached_columns=None, tracer=None):
+        # Use cached columns to avoid calling self.data.columns() which breaks pipeline
+        if cached_columns is None:
+            cached_columns = set(self.data.columns())
+
+        if op._name in TAGGING_OPS.modules and Fields.meta not in cached_columns:
 
             def process_batch_arrow(table: pyarrow.Table):
                 new_column_data = [{} for _ in range(len(table))]
@@ -166,35 +214,53 @@ class RayDataset(DJDataset):
             self.data = self.data.map_batches(
                 process_batch_arrow, batch_format="pyarrow", batch_size=DEFAULT_BATCH_SIZE
             )
+            cached_columns.add(Fields.meta)
 
         try:
             batch_size = getattr(op, "batch_size", 1) if op.is_batched_op() else 1
             if isinstance(op, Mapper):
-                if op.use_cuda():
-                    op_kwargs = op._op_cfg[op._name]
-                    self.data = self.data.map_batches(
-                        op.__class__,
-                        fn_args=None,
-                        fn_kwargs=None,
-                        fn_constructor_args=None,
-                        fn_constructor_kwargs=op_kwargs,
-                        batch_size=batch_size,
-                        num_cpus=op.cpu_required,
-                        num_gpus=op.gpu_required,
-                        concurrency=op.num_proc,
-                        batch_format="pyarrow",
-                    )
-                else:
-                    self.data = self.data.map_batches(
-                        op.process,
-                        batch_size=batch_size,
-                        batch_format="pyarrow",
-                        num_cpus=op.cpu_required,
-                        concurrency=op.num_proc,
-                    )
+                # Wrap process method with tracer for sample-level collection
+                original_process = None
+                if tracer and should_trace_op(tracer, op._name):
+                    from data_juicer.ops.base_op import wrap_mapper_with_tracer
+
+                    original_process = op.process
+                    op.process = wrap_mapper_with_tracer(original_process, op._name, op.text_key, tracer, True)
+
+                try:
+                    if op.use_ray_actor():
+                        compute = get_compute_strategy(op.__class__, concurrency=op.num_proc)
+                        self.data = self.data.map_batches(
+                            op.__class__,
+                            fn_args=None,
+                            fn_kwargs=None,
+                            fn_constructor_args=op._init_args,
+                            fn_constructor_kwargs=op._init_kwargs,
+                            batch_size=batch_size,
+                            num_cpus=op.num_cpus,
+                            num_gpus=op.num_gpus,
+                            compute=compute,
+                            batch_format="pyarrow",
+                            runtime_env=op.runtime_env,
+                        )
+                    else:
+                        compute = get_compute_strategy(op.process, concurrency=op.num_proc)
+                        self.data = self.data.map_batches(
+                            op.process,
+                            batch_size=batch_size,
+                            batch_format="pyarrow",
+                            num_cpus=op.num_cpus,
+                            num_gpus=op.num_gpus,
+                            compute=compute,
+                            runtime_env=op.runtime_env,
+                        )
+                finally:
+                    # Restore original process method
+                    if tracer and should_trace_op(tracer, op._name) and original_process:
+                        op.process = original_process
             elif isinstance(op, Filter):
-                columns = self.data.columns()
-                if Fields.stats not in columns:
+                # Use cached_columns instead of self.data.columns() to avoid breaking pipeline
+                if Fields.stats not in cached_columns:
 
                     def process_batch_arrow(table: pyarrow.Table):
                         new_column_data = [{} for _ in range(len(table))]
@@ -204,46 +270,68 @@ class RayDataset(DJDataset):
                     self.data = self.data.map_batches(
                         process_batch_arrow, batch_format="pyarrow", batch_size=DEFAULT_BATCH_SIZE
                     )
-                if op.use_cuda():
-                    op_kwargs = op._op_cfg[op._name]
+                    cached_columns.add(Fields.stats)
+                if op.use_ray_actor():
+                    compute = get_compute_strategy(op.__class__, concurrency=op.num_proc)
                     self.data = self.data.map_batches(
                         op.__class__,
                         fn_args=None,
                         fn_kwargs=None,
-                        fn_constructor_args=None,
-                        fn_constructor_kwargs=op_kwargs,
+                        fn_constructor_args=op._init_args,
+                        fn_constructor_kwargs=op._init_kwargs,
                         batch_size=batch_size,
-                        num_cpus=op.cpu_required,
-                        num_gpus=op.gpu_required,
-                        concurrency=op.num_proc,
+                        num_cpus=op.num_cpus,
+                        num_gpus=op.num_gpus,
+                        compute=compute,
                         batch_format="pyarrow",
+                        runtime_env=op.runtime_env,
                     )
                 else:
+                    compute = get_compute_strategy(op.compute_stats, concurrency=op.num_proc)
                     self.data = self.data.map_batches(
                         op.compute_stats,
                         batch_size=batch_size,
                         batch_format="pyarrow",
-                        num_cpus=op.cpu_required,
-                        concurrency=op.num_proc,
+                        num_cpus=op.num_cpus,
+                        num_gpus=op.num_gpus,
+                        compute=compute,
+                        runtime_env=op.runtime_env,
                     )
                 if op.stats_export_path is not None:
                     self.data.write_json(op.stats_export_path, force_ascii=False)
-                if op.is_batched_op():
-                    # The core computation have been done in compute_stats,
-                    # and the filter process only performs simple filtering.
-                    # cpu and parallelism are not set here
-                    self.data = self.data.map_batches(
-                        partial(filter_batch, filter_func=op.process),
-                        batch_format="pyarrow",
-                        zero_copy_batch=True,
-                        batch_size=DEFAULT_BATCH_SIZE,
-                    )
-                else:
-                    self.data = self.data.filter(op.process)
-            elif isinstance(op, Deduplicator):
+                # Wrap process method with tracer for sample-level collection
+                original_process = None
+                if tracer and should_trace_op(tracer, op._name):
+                    from data_juicer.ops.base_op import wrap_filter_with_tracer
+
+                    original_process = op.process
+                    op.process = wrap_filter_with_tracer(original_process, op._name, tracer, op.is_batched_op())
+
+                try:
+                    if op.is_batched_op():
+                        # The core computation have been done in compute_stats,
+                        # and the filter process only performs simple filtering.
+                        # cpu and parallelism are not set here
+                        self.data = self.data.map_batches(
+                            partial(filter_batch, filter_func=op.process),
+                            batch_format="pyarrow",
+                            zero_copy_batch=True,
+                            batch_size=DEFAULT_BATCH_SIZE,
+                            runtime_env=op.runtime_env,
+                        )
+                    else:
+                        self.data = self.data.filter(
+                            op.process,
+                            runtime_env=op.runtime_env,
+                        )
+                finally:
+                    # Restore original process method
+                    if tracer and should_trace_op(tracer, op._name) and original_process:
+                        op.process = original_process
+            elif isinstance(op, (Deduplicator, Pipeline)):
                 self.data = op.run(self.data)
             else:
-                logger.error("Ray executor only support Filter, Mapper and Deduplicator OPs for now")
+                logger.error("Ray executor only support Filter, Mapper, Deduplicator and Pipeline OPs for now")
                 raise NotImplementedError
         except:  # noqa: E722
             logger.error(f"An error occurred during Op [{op._name}].")
@@ -251,6 +339,11 @@ class RayDataset(DJDataset):
 
             traceback.print_exc()
             exit(1)
+
+        return cached_columns
+
+    def count(self) -> int:
+        return self.data.count()
 
     @classmethod
     def read(cls, data_format: str, paths: Union[str, List[str]]) -> RayDataset:
@@ -292,7 +385,7 @@ class RayDataset(DJDataset):
         return self.data.to_pandas().to_dict(orient="records")
 
 
-class JSONStreamDatasource(ray.data.read_api.JSONDatasource):
+class JSONStreamDatasource(ray.data.read_api.ArrowJSONDatasource):
     """
     A temp Datasource for reading json stream.
 
@@ -302,7 +395,22 @@ class JSONStreamDatasource(ray.data.read_api.JSONDatasource):
     """
 
     def _read_stream(self, f: "pyarrow.NativeFile", path: str):
-        from pyarrow.json import open_json
+        # Check if open_json is available (PyArrow 20.0.0+)
+        try:
+            from pyarrow.json import open_json
+        except ImportError:
+            # Fall back to read_json for older PyArrow versions
+            # This will read the entire file into memory, but works with older PyArrow
+            import pyarrow.json as js
+
+            try:
+                # Read the entire file as a table
+                table = js.read_json(f, **self.arrow_json_args)
+                if table.num_rows > 0:
+                    yield table
+            except Exception as e:
+                raise ValueError(f"Failed to read JSON file: {path}. Error: {e}") from e
+            return
 
         try:
             reader = open_json(
@@ -342,6 +450,17 @@ def read_json_stream(
     override_num_blocks: Optional[int] = None,
     **arrow_json_args,
 ) -> ray.data.Dataset:
+    # Check if open_json is available (PyArrow 20.0.0+)
+    # If not, fall back to ray.data.read_json which works with older PyArrow
+    try:
+        import pyarrow.json as js
+
+        js.open_json  # Check if attribute exists
+    except (ImportError, AttributeError):
+        # Fall back to standard ray.data.read_json for older PyArrow versions
+        # This works with filesystem parameter for S3
+        return ray.data.read_json(paths, filesystem=filesystem)
+
     if meta_provider is None:
         meta_provider = ray.data.read_api.DefaultFileMetadataProvider()
 

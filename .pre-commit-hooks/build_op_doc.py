@@ -26,7 +26,7 @@ sources and file formats, and allow for flexible extension to custom datasets.
 
 This page offers a basic description of the operators (OPs) in Data-Juicer.
 Users can consult the
-[API documentation](https://modelscope.github.io/data-juicer/en/main/api.html)
+[API documentation](https://datajuicer.github.io/data-juicer/en/main/api.html)
 for the operator API reference. To learn more about each operator, click its
 adjacent 'info' link to access the operator's details page, which includes its
 detailed parameters, effect demonstrations, and links to relevant unit tests
@@ -43,7 +43,7 @@ operator when applied to built-in test data samples. Besides, you can try to
 use agent to automatically route suitable OPs and call them. E.g., refer to
 [Agentic Filters of DJ](../demos/api_service/react_data_filter_process.ipynb), [Agentic Mappers of DJ](../demos/api_service/react_data_mapper_process.ipynb)
 
-这个页面提供了Data-Juicer中算子的基本描述。算子的API参考，用户可以直接查阅[API文档](https://modelscope.github.io/data-juicer/en/main/api.html)。
+这个页面提供了Data-Juicer中算子的基本描述。算子的API参考，用户可以直接查阅[API文档](https://datajuicer.github.io/data-juicer/en/main/api.html)。
 要详细了解每个算子，请点击其旁的info链接进入算子详情页，其中包含了算子参数、效果演示，以及相关单元测试和源码的链接。
 
 此外，表格中的『参考』（Reference）列则用于注明算子设计或实现所依据的研究、库或资料链接，欢迎您提供已知或相关的参考来源，共同完善此部分内容。
@@ -69,6 +69,7 @@ OP_TYPE_DESC = {
     "grouper": "Group samples to batched samples. 将样本分组，每一组组成一个批量样本。",
     "aggregator": "Aggregate for batched samples, such as summary or conclusion. "
     "对批量样本进行汇总，如得出总结或结论。",
+    "pipeline": "Applies dataset-level processing; both input and output are datasets. 执行数据集级别的操作，输入和输出均为完整数据集。",
 }
 # <<<
 
@@ -291,7 +292,7 @@ def get_op_list_from_code_for_formatter():
         if formatter == "formatter.py":
             # add record for local/remote_formatter
             code_path = os.path.join(FORMATTER_CODE_PREFIX, formatter)
-            test_path = os.path.join(FORMATTER_TEST_PREFIX, "test_unify_format.py")
+            test_path = os.path.join(FORMATTER_TEST_PREFIX, "test_formatter.py")
             docstrings = get_class_and_docstring(code_path)
             for cls, doc in docstrings:
                 if cls == "LocalFormatter":
@@ -315,6 +316,8 @@ def get_op_list_from_code_for_formatter():
             test_path = os.path.join(FORMATTER_TEST_PREFIX, f"test_{formatter}")
             if os.path.isdir(code_path):
                 continue
+            if "_cpp" in code_path:
+                continue
             docstrings = get_class_and_docstring(code_path)
             _, doc = docstrings[0]
             op_record_list.append(
@@ -337,18 +340,22 @@ def get_op_list_from_code():
     # get docs for formatters first
     op_record_list = get_op_list_from_code_for_formatter()
     # get docs for other ops
+    op_num_dict = {}
     for type in os.listdir(OP_CODE_PREFIX):
         if type in OP_EXCLUDE:
             continue
         type_dir = os.path.join(OP_CODE_PREFIX, type)
         if os.path.isfile(type_dir):
             continue
+        op_num_dict[type] = 0
         for op in os.listdir(type_dir):
             if op in OP_EXCLUDE:
                 continue
             code_path = os.path.join(type_dir, op)
             test_path = os.path.join(OP_TEST_PREFIX, type, f"test_{op}")
             if os.path.isdir(code_path):
+                continue
+            if not code_path.endswith(".py") or "_cpp" in code_path:
                 continue
             docstrings = get_class_and_docstring(code_path)
             _, doc = docstrings[0]
@@ -364,8 +371,9 @@ def get_op_list_from_code():
                     ref=ref_link(op.replace(".py", "")),
                 )
             )
+            op_num_dict[type] += 1
     op_record_list.sort(key=lambda record: (record.type, record.name))
-    return op_record_list
+    return op_record_list, op_num_dict
 
 
 def generate_new_doc(op_record_list, old_op_record_list):
@@ -511,6 +519,22 @@ def get_op_desc_in_en_zh_batched(descs):
     return zhs
 
 
+def parse_op_num_from_doc(doc_content):
+    pattern = r"\| +(.*?) +\| +(.*?) +\| +(.*?) +\|"
+    link_pattern = r"\[(.*?)\]\(.*\)"
+    overview_section = doc_content.split("## Overview  概览")[1].split("##")[0]
+    res = re.findall(pattern, overview_section)
+    num_dict = {}
+    for type, num, desc in res:
+        if type == "Type 类型":
+            continue
+        type = re.findall(link_pattern, type)[0]
+        if type == "formatter":
+            continue
+        num_dict[type] = int(num)
+    return num_dict
+
+
 def parse_op_record_from_current_doc():
     """
     Parse the old-version OP records from the existing OP doc.
@@ -522,6 +546,7 @@ def parse_op_record_from_current_doc():
         op_record_list = []
         with open(DOC_PATH, "r", encoding="utf-8") as fin:
             content = fin.read()
+            op_num_dict = parse_op_num_from_doc(content)
             res = re.findall(tab_pattern, content)
             for name, tags, desc, info, ref in res:
                 # skip table header
@@ -548,9 +573,9 @@ def parse_op_record_from_current_doc():
                     )
                 )
         op_record_list.sort(key=lambda record: (record.type, record.name))
-        return op_record_list
+        return op_record_list, op_num_dict
     else:
-        return []
+        return [], {}
 
 
 def check_and_update_op_record(old_op_record_list, new_op_record_list):
@@ -615,11 +640,11 @@ def check_and_update_op_record(old_op_record_list, new_op_record_list):
 
 
 def main():
-    old_op_record_list = parse_op_record_from_current_doc()
-    new_op_record_list = get_op_list_from_code()
+    old_op_record_list, old_op_num_dict = parse_op_record_from_current_doc()
+    new_op_record_list, new_op_num_dict = get_op_list_from_code()
     updated_op_record_list = check_and_update_op_record(old_op_record_list, new_op_record_list)
     # if the doc is changed, exit with non-zero value
-    if old_op_record_list == updated_op_record_list:
+    if new_op_num_dict == old_op_num_dict and old_op_record_list == updated_op_record_list:
         exit(0)
     else:
         generate_new_doc(updated_op_record_list, old_op_record_list)

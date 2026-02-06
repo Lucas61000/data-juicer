@@ -11,9 +11,12 @@ from data_juicer.core.adapter import Adapter
 from data_juicer.core.data import NestedDataset
 from data_juicer.core.data.dataset_builder import DatasetBuilder
 from data_juicer.core.executor import ExecutorBase
+from data_juicer.core.executor.dag_execution_mixin import DAGExecutionMixin
+from data_juicer.core.executor.event_logging_mixin import EventLoggingMixin
 from data_juicer.core.exporter import Exporter
 from data_juicer.core.tracer import Tracer
 from data_juicer.ops import load_ops
+from data_juicer.ops.op_fusion import fuse_operators
 from data_juicer.ops.selector import (
     FrequencySpecifiedFieldSelector,
     TopkSpecifiedFieldSelector,
@@ -23,7 +26,7 @@ from data_juicer.utils.ckpt_utils import CheckpointManager
 from data_juicer.utils.sample import random_sample
 
 
-class DefaultExecutor(ExecutorBase):
+class DefaultExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
     """
     This Executor class is used to process a specific dataset.
 
@@ -38,10 +41,17 @@ class DefaultExecutor(ExecutorBase):
         :param cfg: optional jsonargparse Namespace.
         """
         super().__init__(cfg)
-        self.executor_type = "default"
+        # If work_dir contains job_id, all outputs go under it
         self.work_dir = self.cfg.work_dir
 
-        self.tracer = None
+        # Initialize EventLoggingMixin for job management and event logging
+        EventLoggingMixin.__init__(self, cfg)
+
+        # Initialize DAGExecutionMixin for AST/DAG functionality
+        DAGExecutionMixin.__init__(self)
+        # Set executor type for strategy selection
+        self.executor_type = "default"
+
         self.ckpt_manager = None
 
         self.adapter = Adapter(self.cfg)
@@ -71,6 +81,30 @@ class DefaultExecutor(ExecutorBase):
 
         # prepare exporter and check export path suffix
         logger.info("Preparing exporter...")
+        # Prepare export extra args, including S3 credentials if export_path is S3
+        export_extra_args = dict(self.cfg.export_extra_args) if hasattr(self.cfg, "export_extra_args") else {}
+
+        # If export_path is S3, extract AWS credentials with priority:
+        # 1. export_aws_credentials (export-specific)
+        # 2. dataset config (for backward compatibility)
+        # 3. environment variables (handled by exporter)
+        if self.cfg.export_path.startswith("s3://"):
+            # Priority 1: Check for export-specific credentials
+            if hasattr(self.cfg, "export_aws_credentials"):
+                export_aws_creds = self.cfg.export_aws_credentials
+                if hasattr(export_aws_creds, "aws_access_key_id"):
+                    export_extra_args["aws_access_key_id"] = export_aws_creds.aws_access_key_id
+                if hasattr(export_aws_creds, "aws_secret_access_key"):
+                    export_extra_args["aws_secret_access_key"] = export_aws_creds.aws_secret_access_key
+                if hasattr(export_aws_creds, "aws_session_token"):
+                    export_extra_args["aws_session_token"] = export_aws_creds.aws_session_token
+                if hasattr(export_aws_creds, "aws_region"):
+                    export_extra_args["aws_region"] = export_aws_creds.aws_region
+                if hasattr(export_aws_creds, "endpoint_url"):
+                    export_extra_args["endpoint_url"] = export_aws_creds.endpoint_url
+            else:
+                raise ValueError("No AWS credentials provided for S3 export")
+
         self.exporter = Exporter(
             self.cfg.export_path,
             self.cfg.export_type,
@@ -79,14 +113,22 @@ class DefaultExecutor(ExecutorBase):
             self.np,
             keep_stats_in_res_ds=self.cfg.keep_stats_in_res_ds,
             keep_hashes_in_res_ds=self.cfg.keep_hashes_in_res_ds,
-            **self.cfg.export_extra_args,
+            **export_extra_args,
         )
 
         # setup tracer
         self.open_tracer = self.cfg.open_tracer
         if self.open_tracer:
             logger.info("Preparing tracer...")
-            self.tracer = Tracer(self.work_dir, self.cfg.op_list_to_trace, show_num=self.cfg.trace_num)
+            from multiprocessing import Manager
+
+            self.tracer = Tracer(
+                self.work_dir,
+                self.cfg.op_list_to_trace,
+                show_num=self.cfg.trace_num,
+                trace_keys=self.cfg.trace_keys,
+                lock=Manager().Lock(),
+            )
 
     def run(
         self,
@@ -120,10 +162,36 @@ class DefaultExecutor(ExecutorBase):
         logger.info("Preparing process operators...")
         ops = load_ops(self.cfg.process)
 
-        # Apply core optimizer if enabled
-        from data_juicer.core.optimization_manager import apply_optimizations
+        # Initialize DAG execution planning (pass ops to avoid redundant loading)
+        self._initialize_dag_execution(self.cfg, ops=ops)
 
-        ops = apply_optimizations(ops, self.cfg)
+        # Log job start with DAG context
+        # Handle both dataset_path (string) and dataset (dict) configurations
+        dataset_info = {}
+        if hasattr(self.cfg, "dataset_path") and self.cfg.dataset_path:
+            dataset_info["dataset_path"] = self.cfg.dataset_path
+        if hasattr(self.cfg, "dataset") and self.cfg.dataset:
+            dataset_info["dataset"] = self.cfg.dataset
+
+        job_config = {
+            **dataset_info,
+            "work_dir": self.work_dir,
+            "executor_type": self.executor_type,
+            "dag_node_count": len(self.pipeline_dag.nodes) if self.pipeline_dag else 0,
+            "dag_edge_count": len(self.pipeline_dag.edges) if self.pipeline_dag else 0,
+            "parallel_groups_count": len(self.pipeline_dag.parallel_groups) if self.pipeline_dag else 0,
+        }
+        self.log_job_start(job_config, len(ops))
+
+        # OP fusion
+        if self.cfg.op_fusion:
+            probe_res = None
+            if self.cfg.fusion_strategy == "probe":
+                logger.info("Probe the OP speed for OP reordering...")
+                probe_res, _ = self.adapter.probe_small_batch(dataset, ops)
+
+            logger.info(f"Start OP fusion and reordering with strategy " f"[{self.cfg.fusion_strategy}]...")
+            ops = fuse_operators(ops, probe_res)
 
         # adaptive batch size
         if self.cfg.adaptive_batch_size:
@@ -136,20 +204,31 @@ class DefaultExecutor(ExecutorBase):
                 if op.is_batched_op():
                     op.batch_size = bs_per_op[i]
 
-        # 3. data process
+        # 3. data process with DAG monitoring
         # - If tracer is open, trace each op after it's processed
         # - If checkpoint is open, clean the cache files after each process
-        logger.info("Processing data...")
+        logger.info("Processing data with DAG monitoring...")
         tstart = time()
+
+        # Pre-execute DAG monitoring (log operation start events)
+        if self.pipeline_dag:
+            self._pre_execute_operations_with_dag_monitoring(ops)
+
+        # Execute operations with executor-specific parameters
         dataset = dataset.process(
             ops,
             work_dir=self.work_dir,
             exporter=self.exporter,
             checkpointer=self.ckpt_manager,
-            tracer=self.tracer,
+            tracer=self.tracer if self.cfg.open_tracer else None,
             adapter=self.adapter,
             open_monitor=self.cfg.open_monitor,
         )
+
+        # Post-execute DAG monitoring (log operation completion events)
+        if self.pipeline_dag:
+            self._post_execute_operations_with_dag_monitoring(ops)
+
         tend = time()
         logger.info(f"All OPs are done in {tend - tstart:.3f}s.")
 
@@ -162,6 +241,10 @@ class DefaultExecutor(ExecutorBase):
             from data_juicer.utils.compress import compress
 
             compress(dataset)
+
+        # Log job completion with DAG context
+        job_duration = time() - tstart
+        self.log_job_complete(job_duration, self.cfg.export_path)
 
         if not skip_return:
             return dataset

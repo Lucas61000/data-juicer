@@ -95,7 +95,7 @@ class BTSUnionFind:
         for value in self.hash_table.values():
             if len(value) > 1:
                 self.union_list(value)
-        del self.hash_table
+        self.hash_table = {}
 
     def balanced_union_find(self):
         for x, y in self.edge_buffer:
@@ -224,15 +224,22 @@ class BTSUnionFind:
         return [idx for uid, idx in queries if uid in self.parent]
 
 
-def get_remote_classes():
-    """Get remote versions of classes with Ray decorators applied at runtime."""
+def get_remote_classes(actor_memory: Optional[int] = None):
+    """Get remote versions of classes with Ray decorators applied at runtime.
+
+    :param actor_memory: Memory reservation for EdgeBuffer and BTSUnionFind actors in bytes.
+    """
     # Apply ray.method decorator to get_next_id at runtime
     IdGenerator.get_next_id = ray.method(num_returns=2)(IdGenerator.get_next_id)
 
+    remote_args = {"scheduling_strategy": "SPREAD"}
+    if actor_memory is not None:
+        remote_args["memory"] = actor_memory
+
     return {
         "IdGenerator": ray.remote(IdGenerator),
-        "EdgeBuffer": ray.remote(scheduling_strategy="SPREAD")(EdgeBuffer),
-        "BTSUnionFind": ray.remote(scheduling_strategy="SPREAD")(BTSUnionFind),
+        "EdgeBuffer": ray.remote(**remote_args)(EdgeBuffer),
+        "BTSUnionFind": ray.remote(**remote_args)(BTSUnionFind),
     }
 
 
@@ -322,6 +329,8 @@ class RayBTSMinhashDeduplicator(Deduplicator):
         merge_batch_size: Optional[int] = 1000,
         minhash_batch_size: Optional[Union[int, str]] = "auto",
         memory_per_sample: Optional[float] = 0.1,  # MB per sample
+        actor_memory: Optional[int] = None,  # Memory per actor (bytes)
+        task_memory: Optional[int] = None,  # Memory per map_batches task (bytes)
         *args,
         **kwargs,
     ):
@@ -376,6 +385,12 @@ class RayBTSMinhashDeduplicator(Deduplicator):
         :param memory_per_sample: estimated memory needed per sample in MB.
             Used to calculate batch size based on available GPU memory.
             Default is 0.1 MB per sample.
+        :param actor_memory: Memory reservation per BTSUnionFind/EdgeBuffer
+            actor in bytes. For billion-row scale, use 20_000_000_000 (20GB).
+            Default is None (no reservation).
+        :param task_memory: Memory reservation per map_batches task in bytes.
+            For billion-row scale, use 2_000_000_000 (2GB).
+            Default is None (no reservation).
         """
 
         super().__init__(*args, **kwargs)
@@ -481,23 +496,46 @@ class RayBTSMinhashDeduplicator(Deduplicator):
             dtype=np.uint64,
         ).T
 
-        if union_find_parallel_num == "auto":
-            union_find_parallel_num = int(ray.cluster_resources().get("CPU") / 2)
-        else:
-            union_find_parallel_num = int(union_find_parallel_num)
+        # Store config for lazy initialization - don't create actors yet
+        self._union_find_parallel_num_config = union_find_parallel_num
+        self._merge_batch_size_config = merge_batch_size
 
         self.max_pending_edge_buffer_task = max_pending_edge_buffer_task
         self.num_edge_buffer_task_returns = num_edge_buffer_task_returns
         self.max_pending_filter_tasks = max_pending_filter_tasks
         self.num_filter_task_returns = num_filter_task_returns
-        self.merge_batch_size = min(merge_batch_size, union_find_parallel_num)
-
-        logger.info(f"union_find_parallel_num = {union_find_parallel_num}")
-        self.union_find_parallel_num = union_find_parallel_num
         self.union_threshold = union_threshold
+        self.actor_memory = actor_memory
+        self.task_memory = task_memory
 
-        # Get remote classes only when needed
-        remote_classes = get_remote_classes()
+        # Lazy initialization - actors created in _ensure_actors()
+        self._actors_initialized = False
+        self.union_find_parallel_num = None
+        self.merge_batch_size = None
+        self.remote_edge_buffers = None
+        self.union_find_list = None
+        self.empty_hash_value = None
+        self.empty_hash_table_id = None
+
+    def _ensure_actors(self):
+        """Create actors lazily on first use, when cluster has autoscaled."""
+        if self._actors_initialized:
+            return
+
+        # Calculate union_find_parallel_num NOW when cluster has scaled
+        if self._union_find_parallel_num_config == "auto":
+            self.union_find_parallel_num = max(1, int(ray.cluster_resources().get("CPU", 1) / 2))
+        else:
+            self.union_find_parallel_num = int(self._union_find_parallel_num_config)
+
+        self.merge_batch_size = min(self._merge_batch_size_config, self.union_find_parallel_num)
+
+        logger.info(f"union_find_parallel_num = {self.union_find_parallel_num}")
+        if self.actor_memory is not None:
+            logger.info(f"actor_memory = {self.actor_memory}")
+
+        # Create actors NOW when cluster has resources
+        remote_classes = get_remote_classes(actor_memory=self.actor_memory)
         self.remote_edge_buffers = [remote_classes["EdgeBuffer"].remote() for _ in range(self.union_find_parallel_num)]
         self.union_find_list = [
             remote_classes["BTSUnionFind"].remote(
@@ -511,9 +549,23 @@ class RayBTSMinhashDeduplicator(Deduplicator):
             for i in range(self.union_find_parallel_num)
         ]
 
+        # Wait for all actors to be ready before proceeding
+        ray.get(
+            [uf.__ray_ready__.remote() for uf in self.union_find_list]
+            + [eb.__ray_ready__.remote() for eb in self.remote_edge_buffers]
+        )
+
         empty_hash_value = np.full((self.num_rows_per_band,), MAX_HASH, dtype=np.uint32)
         self.empty_hash_value = b"\x00\x00\x00\x00" + empty_hash_value.tobytes()
         self.empty_hash_table_id = int(MAX_HASH % self.union_find_parallel_num)
+
+        self._actors_initialized = True
+
+    def _get_map_batches_kwargs(self):
+        kwargs = {"batch_format": "pyarrow", "zero_copy_batch": True}
+        if self.task_memory is not None:
+            kwargs["memory"] = self.task_memory
+        return kwargs
 
     def band_minhash(self, minhash_list, uid_list):
         """
@@ -613,6 +665,9 @@ class RayBTSMinhashDeduplicator(Deduplicator):
 
     def run(self, dataset, **kwargs):
         # Ignore additional parameters like exporter, tracer, etc.
+        # Initialize actors lazily - now cluster has had time to autoscale
+        self._ensure_actors()
+
         start_time = time.time()
         # Get remote IdGenerator only when needed
         remote_classes = get_remote_classes()
@@ -674,22 +729,14 @@ class RayBTSMinhashDeduplicator(Deduplicator):
                 batch_format="pyarrow",
                 zero_copy_batch=True,
                 num_gpus=1,
-                concurrency=concurrency,
+                compute=ray.data.ActorPoolStrategy(size=concurrency),
                 batch_size=batch_size,
             )
-            dataset.map_batches(
-                band_with_uid,
-                batch_format="pyarrow",
-                zero_copy_batch=True,
-            ).write_parquet(tmp_dir)
+            dataset.map_batches(band_with_uid, **self._get_map_batches_kwargs()).write_parquet(tmp_dir)
             del dataset
         else:
             logger.info("Using CPU for MinHash computation")
-            dataset.map_batches(
-                minhash_with_uid,
-                batch_format="pyarrow",
-                zero_copy_batch=True,
-            ).write_parquet(tmp_dir)
+            dataset.map_batches(minhash_with_uid, **self._get_map_batches_kwargs()).write_parquet(tmp_dir)
         end_time = time.time()
         logger.info(f"MinHash time = {end_time - start_time}")
         new_dataset = ray.data.read_parquet(tmp_dir)
@@ -698,11 +745,53 @@ class RayBTSMinhashDeduplicator(Deduplicator):
         end_time = time.time()
         logger.info(f"merge time = {end_time - start_time}")
         start_time = time.time()
-        result = new_dataset.map_batches(
-            self.filter_with_union_find,
-            batch_format="pyarrow",
-            zero_copy_batch=True,
-        )
+        result = new_dataset.map_batches(self.filter_with_union_find, **self._get_map_batches_kwargs())
         end_time = time.time()
         logger.info(f"filter time = {end_time - start_time}")
+        return result
+
+
+@OPERATORS.register_module(f"{OP_NAME}_with_uid")
+class RayBTSMinhashDeduplicatorWithUid(RayBTSMinhashDeduplicator):
+    """
+    A MinhashLSH deduplicator based on RAY.
+
+    Unlike `RayBTSMinhashDeduplicator`, this class requires the input dataset to contain an additional column
+    named '__dj__uid' of type int, where each value is unique across samples. This column serves two main purposes:
+
+    1. **Reduced I/O Overhead**: Compared to RayBTSMinhashDeduplicator, this class does not persist intermediate
+    results, thereby reducing disk read and write operations.
+
+    2. **Support for Incremental Deduplication**: The '__dj__uid' column enables the deduplicator to perform
+    incremental deduplication. This is particularly useful in scenarios where you already have a deduplicated dataset
+    (e.g., dataset A) and want to add a new dataset (e.g., dataset B) while ensuring that duplicates are resolved
+    in favor of the original data.
+
+        For example, consider a scenario where you have an already deduplicated dataset A and a new dataset B that
+        you wish to add. If you want to perform joint deduplication on both A and B while prioritizing the retention
+        of data from A, you can ensure that all '__dj__uid' values in B are greater than those in A. Then, by applying
+        this deduplicator to the combined dataset, duplicates will be resolved in favor of the entries from A.
+    """
+
+    def run(self, dataset, **kwargs):
+        # Ignore additional parameters like exporter, tracer, etc.
+        # Initialize actors lazily - now cluster has had time to autoscale
+        self._ensure_actors()
+
+        start_time = time.time()
+
+        def minhash_with_uid(table: pa.Table) -> pa.Table:
+            uid_list = table[HashKeys.uid].to_pylist()
+            self.calc_minhash(table[self.text_key], uid_list)
+            return table
+
+        dataset.map_batches(minhash_with_uid, **self._get_map_batches_kwargs()).materialize()
+        end_time = time.time()
+        logger.info(f"MinHash time = {end_time - start_time}")
+
+        start_time = time.time()
+        self.merge()
+        end_time = time.time()
+        logger.info(f"merge time = {end_time - start_time}")
+        result = dataset.map_batches(self.filter_with_union_find, **self._get_map_batches_kwargs())
         return result
