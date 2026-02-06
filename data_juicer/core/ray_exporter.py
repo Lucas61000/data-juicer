@@ -1,12 +1,33 @@
 import os
 from functools import partial
 
+import pyarrow.fs as pafs
 from loguru import logger
 
 from data_juicer.utils.constant import Fields, HashKeys
 from data_juicer.utils.file_utils import Sizes, byte_size_to_size_str
 from data_juicer.utils.model_utils import filter_arguments
 from data_juicer.utils.webdataset_utils import reconstruct_custom_webdataset_format
+
+
+class AutoMkdirLocalFileSystem(pafs.LocalFileSystem):
+    """
+    A PyArrow LocalFileSystem wrapper that auto-creates parent directories.
+
+    In distributed Ray clusters, each worker has its own local filesystem.
+    When Ray distributes write tasks across workers, the export directory
+    created on the driver node doesn't exist on worker nodes.
+
+    This filesystem wrapper ensures parent directories are created on each
+    worker before writing, solving the distributed filesystem issue.
+    """
+
+    def open_output_stream(self, path, **kwargs):
+        """Open an output stream, creating parent directories if needed."""
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        return super().open_output_stream(path, **kwargs)
 
 
 class RayExporter:
@@ -178,7 +199,9 @@ class RayExporter:
             rows_per_file = int(dataset_num_rows / num_shards)
             export_kwargs["export_extra_args"]["min_rows_per_file"] = rows_per_file
 
-        # Ensure export directory exists (Ray's write_json treats export_path as a directory)
+        # Ensure export directory exists on driver node.
+        # For distributed mode, AutoMkdirLocalFileSystem handles directory
+        # creation on each worker node (see write_json method).
         if not export_path.startswith("s3://"):
             os.makedirs(export_path, exist_ok=True)
 
@@ -209,6 +232,10 @@ class RayExporter:
         # Add S3 filesystem if available
         if "filesystem" in export_extra_args:
             filtered_kwargs["filesystem"] = export_extra_args["filesystem"]
+        elif not export_path.startswith("s3://"):
+            # For local paths, use AutoMkdirLocalFileSystem to ensure directories
+            # are created on each worker in distributed Ray clusters
+            filtered_kwargs["filesystem"] = AutoMkdirLocalFileSystem()
         return dataset.write_json(export_path, force_ascii=False, **filtered_kwargs)
 
     @staticmethod
