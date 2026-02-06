@@ -613,27 +613,33 @@
                 <article class="bd-article">
                   
   <h1>Source code for data_juicer.core.executor.factory</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExecutorBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.default_executor</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultExecutor</span>
+
+
 <div class="viewcode-block" id="ExecutorFactory">
 <a class="viewcode-back" href="../../../../api/data_juicer.core.executor.factory.html#data_juicer.core.ExecutorFactory">[docs]</a>
-<span></span><span class="k">class</span><span class="w"> </span><span class="nc">ExecutorFactory</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExecutorFactory</span><span class="p">:</span>
 <div class="viewcode-block" id="ExecutorFactory.create_executor">
 <a class="viewcode-back" href="../../../../api/data_juicer.core.executor.factory.html#data_juicer.core.ExecutorFactory.create_executor">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">create_executor</span><span class="p">(</span><span class="n">executor_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_executor</span><span class="p">(</span><span class="n">executor_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutorBase</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">executor_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">):</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">.default_executor</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultExecutor</span>
-
             <span class="k">return</span> <span class="n">DefaultExecutor</span>
         <span class="k">elif</span> <span class="n">executor_type</span> <span class="o">==</span> <span class="s2">&quot;ray&quot;</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">.ray_executor</span><span class="w"> </span><span class="kn">import</span> <span class="n">RayExecutor</span>
 
             <span class="k">return</span> <span class="n">RayExecutor</span>
+        <span class="k">elif</span> <span class="n">executor_type</span> <span class="o">==</span> <span class="s2">&quot;ray_partitioned&quot;</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">.ray_executor_partitioned</span><span class="w"> </span><span class="kn">import</span> <span class="n">PartitionedRayExecutor</span>
+
+            <span class="k">return</span> <span class="n">PartitionedRayExecutor</span>
         <span class="c1"># TODO: add nemo support</span>
         <span class="c1">#  elif executor_type == &quot;nemo&quot;:</span>
-        <span class="c1">#    return NemoExecutor()</span>
+        <span class="c1">#    return NemoExecutor</span>
         <span class="c1"># TODO: add dask support</span>
         <span class="c1">#  elif executor_type == &quot;dask&quot;:</span>
-        <span class="c1">#    return DaskExecutor()</span>
+        <span class="c1">#    return DaskExecutor</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unsupported executor type&quot;</span><span class="p">)</span></div>
 </div>

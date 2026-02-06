@@ -582,6 +582,8 @@
 <li class="toctree-l1"><a class="reference internal" href="DJ_service.html">DJ_service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="DeveloperGuide.html">How-to Guide for Developers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Distributed.html">Distributed Data Processing in Data-Juicer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="JobManagement.html">Job Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PartitionAndCheckpoint.html">Partitioned Processing with Checkpointing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="awesome_llm_data.html">Awesome Data-Model Co-Development of MLLMs </a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">operators</span></p>
@@ -725,7 +727,7 @@ Data-Juicer 中的算子分为以下 8 种类型。</p>
 <td class="text-center"><p>10</p></td>
 <td><p>Detects and removes duplicate samples. 识别、删除重复样本。</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../api/data_juicer.core.html#data_juicer.core.NestedDataset.filter" title="data_juicer.core.NestedDataset.filter"><span class="xref myst py py-meth">filter</span></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/data_juicer.ops.filter.html#module-data_juicer.ops.filter" title="data_juicer.ops.filter"><span class="xref myst py py-mod">filter</span></a></p></td>
 <td class="text-center"><p>56</p></td>
 <td><p>Filters out low-quality samples. 过滤低质量样本。</p></td>
 </tr>
@@ -1779,13 +1781,13 @@ Data-Juicer 中的算子分为以下 8 种类型。</p>
 <td><p>-</p></td>
 </tr>
 <tr class="row-odd"><td><p>s3_download_file_mapper</p></td>
-<td><p>💻CPU 🔴Alpha</p></td>
+<td><p>💻CPU 🟡Beta</p></td>
 <td><p>Mapper to download files from S3 to local files or load them into memory. Mapper将文件从S3下载到本地文件或将其加载到内存中。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/s3_download_file_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
 <tr class="row-even"><td><p>s3_upload_file_mapper</p></td>
-<td><p>💻CPU 🔴Alpha</p></td>
+<td><p>💻CPU 🟡Beta</p></td>
 <td><p>Mapper to upload local files to S3 and update paths to S3 URLs. Mapper将本地文件上传到S3并更新S3 url的路径。</p></td>
 <td><p><a class="reference internal" href="operators/mapper/s3_upload_file_mapper.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>

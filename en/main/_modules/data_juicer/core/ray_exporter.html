@@ -625,7 +625,7 @@
 
 
 <div class="viewcode-block" id="RayExporter">
-<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.RayExporter">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.ray_exporter.RayExporter">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RayExporter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The Exporter class is used to export a ray dataset to files of specific</span>
 <span class="sd">    format.&quot;&quot;&quot;</span>
@@ -644,7 +644,7 @@
     <span class="p">}</span>
 
 <div class="viewcode-block" id="RayExporter.__init__">
-<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.RayExporter.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.ray_exporter.RayExporter.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">export_path</span><span class="p">,</span>
@@ -751,7 +751,19 @@
 <span class="sd">        :param columns: the columns to export.</span>
 <span class="sd">        :return:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">feature_fields</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">columns</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">columns</span> <span class="k">else</span> <span class="n">columns</span>
+        <span class="c1"># Handle empty dataset case - Ray returns None for columns() on empty datasets</span>
+        <span class="c1"># Check if dataset is empty by calling columns() regardless of columns parameter</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">columns</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cols</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Empty dataset with unknown schema - create an empty file</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset is empty, creating empty export file at </span><span class="si">{</span><span class="n">export_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">export_path</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">export_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">):</span>
+                <span class="k">pass</span>  <span class="c1"># Create empty file</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Use provided columns or infer from dataset</span>
+        <span class="n">feature_fields</span> <span class="o">=</span> <span class="n">columns</span> <span class="k">if</span> <span class="n">columns</span> <span class="k">else</span> <span class="n">cols</span>
         <span class="n">removed_fields</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_stats_in_res_ds</span><span class="p">:</span>
             <span class="n">extra_fields</span> <span class="o">=</span> <span class="p">{</span><span class="n">Fields</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span> <span class="n">Fields</span><span class="o">.</span><span class="n">meta</span><span class="p">}</span>
@@ -785,10 +797,15 @@
             <span class="n">num_shards</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">num_shards</span><span class="p">,</span> <span class="n">dataset_num_rows</span><span class="p">)</span>
             <span class="n">rows_per_file</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dataset_num_rows</span> <span class="o">/</span> <span class="n">num_shards</span><span class="p">)</span>
             <span class="n">export_kwargs</span><span class="p">[</span><span class="s2">&quot;export_extra_args&quot;</span><span class="p">][</span><span class="s2">&quot;min_rows_per_file&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows_per_file</span>
+
+        <span class="c1"># Ensure export directory exists (Ray&#39;s write_json treats export_path as a directory)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">export_path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;s3://&quot;</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">export_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">export_method</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="o">**</span><span class="n">export_kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="RayExporter.export">
-<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.RayExporter.export">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.ray_exporter.RayExporter.export">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Export method for a dataset.</span>
@@ -801,7 +818,7 @@
 
 
 <div class="viewcode-block" id="RayExporter.write_json">
-<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.RayExporter.write_json">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.ray_exporter.RayExporter.write_json">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">write_json</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -821,7 +838,7 @@
 
 
 <div class="viewcode-block" id="RayExporter.write_webdataset">
-<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.RayExporter.write_webdataset">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.ray_exporter.RayExporter.write_webdataset">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">write_webdataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -849,7 +866,7 @@
 
 
 <div class="viewcode-block" id="RayExporter.write_others">
-<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.RayExporter.write_others">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.core.ray_exporter.html#data_juicer.core.ray_exporter.RayExporter.write_others">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">write_others</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">export_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>

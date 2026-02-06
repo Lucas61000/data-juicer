@@ -617,9 +617,74 @@
   <section id="module-data_juicer.utils.ckpt_utils">
 <span id="data-juicer-utils-ckpt-utils-module"></span><h1>data_juicer.utils.ckpt_utils module<a class="headerlink" href="#module-data_juicer.utils.ckpt_utils" title="Link to this heading">#</a></h1>
 <dl class="py class">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManagerBase">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.utils.ckpt_utils.</span></span><span class="sig-name descname"><span class="pre">CheckpointManagerBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManagerBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Base class for checkpoint managers.</p>
+<p>Provides common functionality for managing checkpoint directories and
+defines the interface that checkpoint managers should implement.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManagerBase.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManagerBase.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize base checkpoint manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ckpt_dir</strong> – Directory to save and load checkpoints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManagerBase.save_checkpoint">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManagerBase.save_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase.save_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Save a dataset checkpoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> – Dataset to save</p></li>
+<li><p><strong>kwargs</strong> – Additional arguments specific to the implementation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to saved checkpoint</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManagerBase.load_checkpoint">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManagerBase.load_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase.load_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Load a dataset checkpoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – Arguments specific to the implementation (e.g., op_idx, partition_id)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loaded dataset or None if checkpoint doesn’t exist</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManagerBase.checkpoint_exists">
+<span class="sig-name descname"><span class="pre">checkpoint_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManagerBase.checkpoint_exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase.checkpoint_exists" title="Link to this definition">#</a></dt>
+<dd><p>Check if a checkpoint file/directory exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>checkpoint_path</strong> – Path to checkpoint</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if checkpoint exists, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.utils.ckpt_utils.</span></span><span class="sig-name descname"><span class="pre">CheckpointManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_process_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase" title="data_juicer.utils.ckpt_utils.CheckpointManagerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">CheckpointManagerBase</span></code></a></p>
 <p>This class is used to save the latest version of dataset to checkpoint
 directory or load it from checkpoint directory, a bit like cache management
 Rerun the same config will reload the checkpoint and skip ops before it.</p>
@@ -689,7 +754,8 @@ from scratch.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.save_ckpt">
 <span class="sig-name descname"><span class="pre">save_ckpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.save_ckpt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.save_ckpt" title="Link to this definition">#</a></dt>
-<dd><p>Save dataset to checkpoint directory and dump processed ops list.</p>
+<dd><p>Save dataset to checkpoint directory and dump processed ops list.
+Alias for save_checkpoint for backward compatibility.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>ds</strong> – input dataset to save</p>
@@ -698,12 +764,177 @@ from scratch.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.save_checkpoint">
+<span class="sig-name descname"><span class="pre">save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.save_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.save_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Save dataset to checkpoint directory and dump processed ops list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> – input dataset to save</p></li>
+<li><p><strong>kwargs</strong> – Additional arguments (not used, kept for interface compatibility)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to checkpoint directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.load_ckpt">
 <span class="sig-name descname"><span class="pre">load_ckpt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.load_ckpt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.load_ckpt" title="Link to this definition">#</a></dt>
-<dd><p>Load dataset from a checkpoint file.</p>
+<dd><p>Load dataset from a checkpoint file.
+Alias for load_checkpoint for backward compatibility.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>a dataset stored in checkpoint file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointManager.load_checkpoint">
+<span class="sig-name descname"><span class="pre">load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointManager.load_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointManager.load_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Load dataset from a checkpoint file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – Additional arguments (not used, kept for interface compatibility)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a dataset stored in checkpoint file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointStrategy">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.utils.ckpt_utils.</span></span><span class="sig-name descname"><span class="pre">CheckpointStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#CheckpointStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Checkpoint strategies for controlling when to create checkpoints.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointStrategy.EVERY_OP">
+<span class="sig-name descname"><span class="pre">EVERY_OP</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'every_op'</span></span><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy.EVERY_OP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointStrategy.EVERY_N_OPS">
+<span class="sig-name descname"><span class="pre">EVERY_N_OPS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'every_n_ops'</span></span><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy.EVERY_N_OPS" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointStrategy.MANUAL">
+<span class="sig-name descname"><span class="pre">MANUAL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'manual'</span></span><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy.MANUAL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.CheckpointStrategy.DISABLED">
+<span class="sig-name descname"><span class="pre">DISABLED</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'disabled'</span></span><a class="headerlink" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy.DISABLED" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.RayCheckpointManager">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.utils.ckpt_utils.</span></span><span class="sig-name descname"><span class="pre">RayCheckpointManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_enabled</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy" title="data_juicer.utils.ckpt_utils.CheckpointStrategy"><span class="pre">CheckpointStrategy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">CheckpointStrategy.EVERY_OP</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_n_ops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_op_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#RayCheckpointManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase" title="data_juicer.utils.ckpt_utils.CheckpointManagerBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">CheckpointManagerBase</span></code></a></p>
+<p>Checkpoint manager for Ray Data with per-partition checkpointing support.</p>
+<p>This class manages checkpoints for Ray Data datasets using Parquet format,
+supporting per-partition checkpointing and various checkpoint strategies.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.RayCheckpointManager.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ckpt_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_enabled</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy" title="data_juicer.utils.ckpt_utils.CheckpointStrategy"><span class="pre">CheckpointStrategy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">CheckpointStrategy.EVERY_OP</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_n_ops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_op_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#RayCheckpointManager.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize Ray checkpoint manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ckpt_dir</strong> – Directory to save and load checkpoints</p></li>
+<li><p><strong>checkpoint_enabled</strong> – Whether checkpointing is enabled</p></li>
+<li><p><strong>checkpoint_strategy</strong> – Strategy for when to create checkpoints</p></li>
+<li><p><strong>checkpoint_n_ops</strong> – Number of operations between checkpoints (for EVERY_N_OPS strategy)</p></li>
+<li><p><strong>checkpoint_op_names</strong> – List of operation names to checkpoint (for MANUAL strategy)</p></li>
+<li><p><strong>event_logger</strong> – Optional event logger for checkpoint events</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.RayCheckpointManager.resolve_checkpoint_filename">
+<span class="sig-name descname"><span class="pre">resolve_checkpoint_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#RayCheckpointManager.resolve_checkpoint_filename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.resolve_checkpoint_filename" title="Link to this definition">#</a></dt>
+<dd><p>Resolve checkpoint filename using consistent format.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.RayCheckpointManager.should_checkpoint">
+<span class="sig-name descname"><span class="pre">should_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#RayCheckpointManager.should_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.should_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Determine if checkpoint should be created based on configuration strategy.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.RayCheckpointManager.save_checkpoint">
+<span class="sig-name descname"><span class="pre">save_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#RayCheckpointManager.save_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.save_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Save dataset checkpoint to parquet format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> – RayDataset or ray.data.Dataset to save</p></li>
+<li><p><strong>op_idx</strong> – Operation index</p></li>
+<li><p><strong>op_name</strong> – Operation name (optional)</p></li>
+<li><p><strong>partition_id</strong> – Partition ID</p></li>
+<li><p><strong>cfg</strong> – Optional config for RayDataset wrapper</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to saved checkpoint</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.RayCheckpointManager.load_checkpoint">
+<span class="sig-name descname"><span class="pre">load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#RayCheckpointManager.load_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.load_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Load dataset checkpoint from parquet format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>op_idx</strong> – Operation index</p></li>
+<li><p><strong>op_name</strong> – Operation name (optional)</p></li>
+<li><p><strong>partition_id</strong> – Partition ID</p></li>
+<li><p><strong>cfg</strong> – Optional config for RayDataset wrapper</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>RayDataset or None if checkpoint doesn’t exist</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.RayCheckpointManager.find_latest_checkpoint">
+<span class="sig-name descname"><span class="pre">find_latest_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#RayCheckpointManager.find_latest_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.find_latest_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Find the latest checkpoint for a partition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>partition_id</strong> – Partition ID</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of (op_idx, op_name, checkpoint_path) or None if no checkpoint found</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.utils.ckpt_utils.RayCheckpointManager.group_operations_for_checkpointing">
+<span class="sig-name descname"><span class="pre">group_operations_for_checkpointing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/data_juicer/utils/ckpt_utils.html#RayCheckpointManager.group_operations_for_checkpointing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.group_operations_for_checkpointing" title="Link to this definition">#</a></dt>
+<dd><p>Group operations based on checkpoint strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ops</strong> – List of operations</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of (start_idx, end_idx, group_ops) tuples</p>
 </dd>
 </dl>
 </dd></dl>
@@ -741,6 +972,13 @@ from scratch.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase"><code class="docutils literal notranslate"><span class="pre">CheckpointManagerBase</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase.__init__"><code class="docutils literal notranslate"><span class="pre">CheckpointManagerBase.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase.save_checkpoint"><code class="docutils literal notranslate"><span class="pre">CheckpointManagerBase.save_checkpoint()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase.load_checkpoint"><code class="docutils literal notranslate"><span class="pre">CheckpointManagerBase.load_checkpoint()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManagerBase.checkpoint_exists"><code class="docutils literal notranslate"><span class="pre">CheckpointManagerBase.checkpoint_exists()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager"><code class="docutils literal notranslate"><span class="pre">CheckpointManager</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager.__init__"><code class="docutils literal notranslate"><span class="pre">CheckpointManager.__init__()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager.get_left_process_list"><code class="docutils literal notranslate"><span class="pre">CheckpointManager.get_left_process_list()</span></code></a></li>
@@ -748,7 +986,26 @@ from scratch.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager.record"><code class="docutils literal notranslate"><span class="pre">CheckpointManager.record()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager.check_ops_to_skip"><code class="docutils literal notranslate"><span class="pre">CheckpointManager.check_ops_to_skip()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager.save_ckpt"><code class="docutils literal notranslate"><span class="pre">CheckpointManager.save_ckpt()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager.save_checkpoint"><code class="docutils literal notranslate"><span class="pre">CheckpointManager.save_checkpoint()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager.load_ckpt"><code class="docutils literal notranslate"><span class="pre">CheckpointManager.load_ckpt()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointManager.load_checkpoint"><code class="docutils literal notranslate"><span class="pre">CheckpointManager.load_checkpoint()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy"><code class="docutils literal notranslate"><span class="pre">CheckpointStrategy</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy.EVERY_OP"><code class="docutils literal notranslate"><span class="pre">CheckpointStrategy.EVERY_OP</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy.EVERY_N_OPS"><code class="docutils literal notranslate"><span class="pre">CheckpointStrategy.EVERY_N_OPS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy.MANUAL"><code class="docutils literal notranslate"><span class="pre">CheckpointStrategy.MANUAL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.CheckpointStrategy.DISABLED"><code class="docutils literal notranslate"><span class="pre">CheckpointStrategy.DISABLED</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager"><code class="docutils literal notranslate"><span class="pre">RayCheckpointManager</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.__init__"><code class="docutils literal notranslate"><span class="pre">RayCheckpointManager.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.resolve_checkpoint_filename"><code class="docutils literal notranslate"><span class="pre">RayCheckpointManager.resolve_checkpoint_filename()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.should_checkpoint"><code class="docutils literal notranslate"><span class="pre">RayCheckpointManager.should_checkpoint()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.save_checkpoint"><code class="docutils literal notranslate"><span class="pre">RayCheckpointManager.save_checkpoint()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.load_checkpoint"><code class="docutils literal notranslate"><span class="pre">RayCheckpointManager.load_checkpoint()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.find_latest_checkpoint"><code class="docutils literal notranslate"><span class="pre">RayCheckpointManager.find_latest_checkpoint()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.utils.ckpt_utils.RayCheckpointManager.group_operations_for_checkpointing"><code class="docutils literal notranslate"><span class="pre">RayCheckpointManager.group_operations_for_checkpointing()</span></code></a></li>
 </ul>
 </li>
 </ul>

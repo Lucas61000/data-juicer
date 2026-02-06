@@ -664,7 +664,7 @@ setting up logger.</p></li>
 <span class="sig-prename descclassname"><span class="pre">data_juicer.config.config.</span></span><span class="sig-name descname"><span class="pre">init_setup_from_cfg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_configs_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/config/config.html#init_setup_from_cfg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.config.config.init_setup_from_cfg" title="Link to this definition">#</a></dt>
 <dd><p>Do some extra setup tasks after parsing config file or command line.</p>
 <ol class="arabic simple">
-<li><p>create working directory and a log directory</p></li>
+<li><p>create working directory and logs directory</p></li>
 <li><p>update cache directory</p></li>
 <li><p>update checkpoint and <cite>temp_dir</cite> of tempfile</p></li>
 </ol>
@@ -723,6 +723,22 @@ op_class</p>
 <dt class="sig sig-object py" id="data_juicer.config.config.namespace_to_arg_list">
 <span class="sig-prename descclassname"><span class="pre">data_juicer.config.config.</span></span><span class="sig-name descname"><span class="pre">namespace_to_arg_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">namespace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">includes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">excludes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/config/config.html#namespace_to_arg_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.config.config.namespace_to_arg_list" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.config.config.save_cli_arguments">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.config.config.</span></span><span class="sig-name descname"><span class="pre">save_cli_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/config/config.html#save_cli_arguments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.config.config.save_cli_arguments" title="Link to this definition">#</a></dt>
+<dd><p>Save CLI arguments to cli.yaml in the work directory.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.config.config.validate_config_for_resumption">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.config.config.</span></span><span class="sig-name descname"><span class="pre">validate_config_for_resumption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">work_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/data_juicer/config/config.html#validate_config_for_resumption"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.config.config.validate_config_for_resumption" title="Link to this definition">#</a></dt>
+<dd><p>Validate that the current config matches the job’s saved config for safe resumption.</p>
+<p>Does verbatim comparison between:
+1. Original config.yaml + cli.yaml (saved during job creation)
+2. Current config (from current command)</p>
+<p>Sets cfg._same_yaml_config = True/False for the executor to use.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.config.config.config_backup">
@@ -811,6 +827,47 @@ yaml, yml or json format</p>
 <span class="sig-prename descclassname"><span class="pre">data_juicer.config.config.</span></span><span class="sig-name descname"><span class="pre">prepare_cfgs_for_export</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/config/config.html#prepare_cfgs_for_export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.config.config.prepare_cfgs_for_export" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.config.config.resolve_job_id">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.config.config.</span></span><span class="sig-name descname"><span class="pre">resolve_job_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/config/config.html#resolve_job_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.config.config.resolve_job_id" title="Link to this definition">#</a></dt>
+<dd><p>Resolve or auto-generate job_id and set it on cfg.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.config.config.validate_work_dir_config">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.config.config.</span></span><span class="sig-name descname"><span class="pre">validate_work_dir_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">work_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/data_juicer/config/config.html#validate_work_dir_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.config.config.validate_work_dir_config" title="Link to this definition">#</a></dt>
+<dd><p>Validate work_dir configuration to ensure {job_id} placement rules are followed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>work_dir</strong> – The work_dir string to validate</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If {job_id} is not at the end of the path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_juicer.config.config.resolve_job_directories">
+<span class="sig-prename descclassname"><span class="pre">data_juicer.config.config.</span></span><span class="sig-name descname"><span class="pre">resolve_job_directories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/config/config.html#resolve_job_directories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.config.config.resolve_job_directories" title="Link to this definition">#</a></dt>
+<dd><p>Centralize directory resolution and placeholder substitution. Assumes job_id is already set.</p>
+<p>Job Directory Rules:
+- If work_dir contains ‘{job_id}’ placeholder, it MUST be the last part of the path
+- Examples:</p>
+<blockquote>
+<div><p>✅ work_dir: “./outputs/my_project/{job_id}”     # Valid
+✅ work_dir: “/data/experiments/{job_id}”        # Valid
+❌ work_dir: “./outputs/{job_id}/results”        # Invalid - {job_id} not at end
+❌ work_dir: “./{job_id}/outputs/data”           # Invalid - {job_id} not at end</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>If work_dir does NOT contain ‘{job_id}’, job_id will be appended automatically</p></li>
+<li><p>Examples:
+work_dir: “./outputs/my_project” → work_dir: “./outputs/my_project/20250804_143022_abc123”</p></li>
+</ul>
+<p>After resolution, work_dir will always include job_id at the end.</p>
+</dd></dl>
+
 </section>
 
 
@@ -852,6 +909,8 @@ yaml, yml or json format</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.sort_op_by_types_and_names"><code class="docutils literal notranslate"><span class="pre">sort_op_by_types_and_names()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.update_op_process"><code class="docutils literal notranslate"><span class="pre">update_op_process()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.namespace_to_arg_list"><code class="docutils literal notranslate"><span class="pre">namespace_to_arg_list()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.save_cli_arguments"><code class="docutils literal notranslate"><span class="pre">save_cli_arguments()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.validate_config_for_resumption"><code class="docutils literal notranslate"><span class="pre">validate_config_for_resumption()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.config_backup"><code class="docutils literal notranslate"><span class="pre">config_backup()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.display_config"><code class="docutils literal notranslate"><span class="pre">display_config()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.export_config"><code class="docutils literal notranslate"><span class="pre">export_config()</span></code></a></li>
@@ -860,6 +919,9 @@ yaml, yml or json format</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.get_init_configs"><code class="docutils literal notranslate"><span class="pre">get_init_configs()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.get_default_cfg"><code class="docutils literal notranslate"><span class="pre">get_default_cfg()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.prepare_cfgs_for_export"><code class="docutils literal notranslate"><span class="pre">prepare_cfgs_for_export()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.resolve_job_id"><code class="docutils literal notranslate"><span class="pre">resolve_job_id()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.validate_work_dir_config"><code class="docutils literal notranslate"><span class="pre">validate_work_dir_config()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.config.config.resolve_job_directories"><code class="docutils literal notranslate"><span class="pre">resolve_job_directories()</span></code></a></li>
 </ul>
   </nav></div>
 

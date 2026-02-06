@@ -1013,7 +1013,7 @@ dataset will not be copied in-memory unless explicitly enabled by setting
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="data_juicer.core.ExecutorFactory.create_executor">
-<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create_executor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">executor_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/factory.html#ExecutorFactory.create_executor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.ExecutorFactory.create_executor" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create_executor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">executor_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="data_juicer.core.executor.base.html#data_juicer.core.executor.base.ExecutorBase" title="data_juicer.core.executor.base.ExecutorBase"><span class="pre">ExecutorBase</span></a></span></span><a class="reference internal" href="../_modules/data_juicer/core/executor/factory.html#ExecutorFactory.create_executor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.ExecutorFactory.create_executor" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1021,7 +1021,7 @@ dataset will not be copied in-memory unless explicitly enabled by setting
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.core.DefaultExecutor">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.core.</span></span><span class="sig-name descname"><span class="pre">DefaultExecutor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/default_executor.html#DefaultExecutor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.DefaultExecutor" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference internal" href="data_juicer.core.executor.base.html#data_juicer.core.executor.base.ExecutorBase" title="data_juicer.core.executor.base.ExecutorBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExecutorBase</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="data_juicer.core.executor.base.html#data_juicer.core.executor.base.ExecutorBase" title="data_juicer.core.executor.base.ExecutorBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExecutorBase</span></code></a>, <a class="reference internal" href="data_juicer.core.executor.dag_execution_mixin.html#data_juicer.core.executor.dag_execution_mixin.DAGExecutionMixin" title="data_juicer.core.executor.dag_execution_mixin.DAGExecutionMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">DAGExecutionMixin</span></code></a>, <a class="reference internal" href="data_juicer.core.executor.event_logging_mixin.html#data_juicer.core.executor.event_logging_mixin.EventLoggingMixin" title="data_juicer.core.executor.event_logging_mixin.EventLoggingMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventLoggingMixin</span></code></a></p>
 <p>This Executor class is used to process a specific dataset.</p>
 <p>It will load the dataset and unify the format, then apply all the
 ops in the config file in order and generate a processed dataset.</p>
@@ -1078,6 +1078,93 @@ Default is “uniform”.</p></li>
 <dd class="field-even"><p>A sampled Dataset.</p>
 </dd>
 </dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_juicer.core.RayExecutor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.core.</span></span><span class="sig-name descname"><span class="pre">RayExecutor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/ray_executor.html#RayExecutor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.RayExecutor" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="data_juicer.core.executor.base.html#data_juicer.core.executor.base.ExecutorBase" title="data_juicer.core.executor.base.ExecutorBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExecutorBase</span></code></a>, <a class="reference internal" href="data_juicer.core.executor.dag_execution_mixin.html#data_juicer.core.executor.dag_execution_mixin.DAGExecutionMixin" title="data_juicer.core.executor.dag_execution_mixin.DAGExecutionMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">DAGExecutionMixin</span></code></a>, <a class="reference internal" href="data_juicer.core.executor.event_logging_mixin.html#data_juicer.core.executor.event_logging_mixin.EventLoggingMixin" title="data_juicer.core.executor.event_logging_mixin.EventLoggingMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventLoggingMixin</span></code></a></p>
+<p>Executor based on Ray.</p>
+<p>Run Data-Juicer data processing in a distributed cluster.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Support Filter, Mapper and Exact Deduplicator operators for now.</p></li>
+<li><p>Only support loading <cite>.json</cite> files.</p></li>
+<li><p>Advanced functions, such as checkpoint, are not supported.</p></li>
+</ol>
+</div></blockquote>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.core.RayExecutor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/ray_executor.html#RayExecutor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.RayExecutor.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialization method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cfg</strong> – optional config dict.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.core.RayExecutor.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load_data_np</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Annotated</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Gt</span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">gt</span></span><span class="o"><span class="pre">=</span></span><span class="m"><span class="pre">0</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_export</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_return</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/ray_executor.html#RayExecutor.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.RayExecutor.run" title="Link to this definition">#</a></dt>
+<dd><p>Running the dataset process pipeline</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>load_data_np</strong> – number of workers when loading the dataset.</p></li>
+<li><p><strong>skip_export</strong> – whether export the results into disk</p></li>
+<li><p><strong>skip_return</strong> – skip return for API called.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>processed dataset.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_juicer.core.PartitionedRayExecutor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.core.</span></span><span class="sig-name descname"><span class="pre">PartitionedRayExecutor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/ray_executor_partitioned.html#PartitionedRayExecutor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.PartitionedRayExecutor" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="data_juicer.core.executor.base.html#data_juicer.core.executor.base.ExecutorBase" title="data_juicer.core.executor.base.ExecutorBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExecutorBase</span></code></a>, <a class="reference internal" href="data_juicer.core.executor.dag_execution_mixin.html#data_juicer.core.executor.dag_execution_mixin.DAGExecutionMixin" title="data_juicer.core.executor.dag_execution_mixin.DAGExecutionMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">DAGExecutionMixin</span></code></a>, <a class="reference internal" href="data_juicer.core.executor.event_logging_mixin.html#data_juicer.core.executor.event_logging_mixin.EventLoggingMixin" title="data_juicer.core.executor.event_logging_mixin.EventLoggingMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventLoggingMixin</span></code></a></p>
+<p>Simplified Ray executor with dataset partitioning using .split().</p>
+<p>Features:
+- Single DatasetBuilder loads the full dataset
+- Uses Ray’s .split() method for partitioning
+- Processes partitions in parallel with Ray tasks
+- Supports convergence points for global operations
+- Merges results back into a single dataset</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.core.PartitionedRayExecutor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/ray_executor_partitioned.html#PartitionedRayExecutor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.PartitionedRayExecutor.__init__" title="Link to this definition">#</a></dt>
+<dd><p>Initialize the partitioned Ray executor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.core.PartitionedRayExecutor.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load_data_np</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Annotated</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Gt</span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">gt</span></span><span class="o"><span class="pre">=</span></span><span class="m"><span class="pre">0</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_return</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/ray_executor_partitioned.html#PartitionedRayExecutor.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.PartitionedRayExecutor.run" title="Link to this definition">#</a></dt>
+<dd><p>Run the simplified partitioned dataset processing pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>load_data_np</strong> – Number of workers for loading dataset</p></li>
+<li><p><strong>skip_return</strong> – Whether to skip returning the dataset</p></li>
+<li><p><strong>job_id</strong> – Optional job ID to resume from checkpoints</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Processed dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_juicer.core.PartitionedRayExecutor.cleanup_temp_files">
+<span class="sig-name descname"><span class="pre">cleanup_temp_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/core/executor/ray_executor_partitioned.html#PartitionedRayExecutor.cleanup_temp_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.core.PartitionedRayExecutor.cleanup_temp_files" title="Link to this definition">#</a></dt>
+<dd><p>Manually clean up temporary files from previous runs.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1690,6 +1777,17 @@ deduplicator</p></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.DefaultExecutor.__init__"><code class="docutils literal notranslate"><span class="pre">DefaultExecutor.__init__()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.DefaultExecutor.run"><code class="docutils literal notranslate"><span class="pre">DefaultExecutor.run()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.DefaultExecutor.sample_data"><code class="docutils literal notranslate"><span class="pre">DefaultExecutor.sample_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.RayExecutor"><code class="docutils literal notranslate"><span class="pre">RayExecutor</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.RayExecutor.__init__"><code class="docutils literal notranslate"><span class="pre">RayExecutor.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.RayExecutor.run"><code class="docutils literal notranslate"><span class="pre">RayExecutor.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.PartitionedRayExecutor"><code class="docutils literal notranslate"><span class="pre">PartitionedRayExecutor</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.PartitionedRayExecutor.__init__"><code class="docutils literal notranslate"><span class="pre">PartitionedRayExecutor.__init__()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.PartitionedRayExecutor.run"><code class="docutils literal notranslate"><span class="pre">PartitionedRayExecutor.run()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.PartitionedRayExecutor.cleanup_temp_files"><code class="docutils literal notranslate"><span class="pre">PartitionedRayExecutor.cleanup_temp_files()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data_juicer.core.Exporter"><code class="docutils literal notranslate"><span class="pre">Exporter</span></code></a><ul class="nav section-nav flex-column">

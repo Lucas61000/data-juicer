@@ -624,6 +624,8 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.data.dataset_builder</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetBuilder</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.executor</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExecutorBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.executor.dag_execution_mixin</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAGExecutionMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.executor.event_logging_mixin</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventLoggingMixin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.ray_exporter</span><span class="w"> </span><span class="kn">import</span> <span class="n">RayExporter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.tracer.ray_tracer</span><span class="w"> </span><span class="kn">import</span> <span class="n">RayTracer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_ops</span>
@@ -634,10 +636,10 @@
 
 
 <div class="viewcode-block" id="TempDirManager">
-<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.executor.ray_executor.TempDirManager">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.TempDirManager">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TempDirManager</span><span class="p">:</span>
 <div class="viewcode-block" id="TempDirManager.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.executor.ray_executor.TempDirManager.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.TempDirManager.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tmp_dir</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tmp_dir</span> <span class="o">=</span> <span class="n">tmp_dir</span></div>
 
@@ -654,8 +656,8 @@
 
 
 <div class="viewcode-block" id="RayExecutor">
-<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.executor.ray_executor.RayExecutor">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">RayExecutor</span><span class="p">(</span><span class="n">ExecutorBase</span><span class="p">):</span>
+<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.RayExecutor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RayExecutor</span><span class="p">(</span><span class="n">ExecutorBase</span><span class="p">,</span> <span class="n">DAGExecutionMixin</span><span class="p">,</span> <span class="n">EventLoggingMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Executor based on Ray.</span>
 
@@ -668,7 +670,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="RayExecutor.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.executor.ray_executor.RayExecutor.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.RayExecutor.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Namespace</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialization method.</span>
@@ -676,10 +678,15 @@
 <span class="sd">        :param cfg: optional config dict.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">executor_type</span> <span class="o">=</span> <span class="s2">&quot;ray&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">work_dir</span>
-        <span class="c1"># TODO: support ray</span>
-        <span class="c1"># self.adapter = Adapter(self.cfg)</span>
+
+        <span class="c1"># Initialize EventLoggingMixin for job management and event logging</span>
+        <span class="n">EventLoggingMixin</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+
+        <span class="c1"># Initialize DAGExecutionMixin for AST/DAG functionality</span>
+        <span class="n">DAGExecutionMixin</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="c1"># init ray</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing Ray ...&quot;</span><span class="p">)</span>
@@ -742,7 +749,7 @@
 
 
 <div class="viewcode-block" id="RayExecutor.run">
-<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.executor.ray_executor.RayExecutor.run">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.core.executor.ray_executor.html#data_juicer.core.RayExecutor.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">load_data_np</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">skip_export</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">skip_return</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Running the dataset process pipeline</span>
@@ -761,15 +768,59 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Preparing process operators...&quot;</span><span class="p">)</span>
         <span class="n">ops</span> <span class="o">=</span> <span class="n">load_ops</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">process</span><span class="p">)</span>
 
+        <span class="c1"># Initialize DAG execution planning (pass ops to avoid redundant loading)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_dag_execution</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="n">ops</span><span class="o">=</span><span class="n">ops</span><span class="p">)</span>
+
+        <span class="c1"># Log job start with DAG context</span>
+        <span class="c1"># Handle both dataset_path (string) and dataset (dict) configurations</span>
+        <span class="n">dataset_info</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;dataset_path&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">dataset_path</span><span class="p">:</span>
+            <span class="n">dataset_info</span><span class="p">[</span><span class="s2">&quot;dataset_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">dataset_path</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">dataset</span><span class="p">:</span>
+            <span class="n">dataset_info</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">dataset</span>
+
+        <span class="n">job_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="n">dataset_info</span><span class="p">,</span>
+            <span class="s2">&quot;work_dir&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
+            <span class="s2">&quot;executor_type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor_type</span><span class="p">,</span>
+            <span class="s2">&quot;dag_node_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_dag</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_dag</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;dag_edge_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_dag</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_dag</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;parallel_groups_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_dag</span><span class="o">.</span><span class="n">parallel_groups</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_dag</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_job_start</span><span class="p">(</span><span class="n">job_config</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ops</span><span class="p">))</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">op_fusion</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Start OP fusion and reordering with strategy &quot;</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">fusion_strategy</span><span class="si">}</span><span class="s2">]...&quot;</span><span class="p">)</span>
             <span class="n">ops</span> <span class="o">=</span> <span class="n">fuse_operators</span><span class="p">(</span><span class="n">ops</span><span class="p">)</span>
 
         <span class="k">with</span> <span class="n">TempDirManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tmp_dir</span><span class="p">):</span>
-            <span class="c1"># 3. data process</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing data...&quot;</span><span class="p">)</span>
+            <span class="c1"># 3. data process with DAG monitoring</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing data with DAG monitoring...&quot;</span><span class="p">)</span>
             <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-            <span class="n">dataset</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">tracer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tracer</span><span class="p">)</span>
+
+            <span class="c1"># Get input row count before processing</span>
+            <span class="n">input_rows</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+            <span class="c1"># Pre-execute DAG monitoring (log operation start events)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_dag</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pre_execute_operations_with_dag_monitoring</span><span class="p">(</span><span class="n">ops</span><span class="p">)</span>
+
+            <span class="c1"># Execute operations (Ray executor uses simple dataset.process)</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">tracer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tracer</span><span class="p">)</span>
+
+            <span class="c1"># Force materialization to get real execution</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Materializing dataset to collect real metrics...&quot;</span><span class="p">)</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">materialize</span><span class="p">()</span>
+
+            <span class="c1"># Get metrics after execution</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+            <span class="n">output_rows</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+
+            <span class="c1"># Post-execute DAG monitoring (log operation completion events with real metrics)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_dag</span><span class="p">:</span>
+                <span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="n">duration</span><span class="p">,</span> <span class="s2">&quot;input_rows&quot;</span><span class="p">:</span> <span class="n">input_rows</span><span class="p">,</span> <span class="s2">&quot;output_rows&quot;</span><span class="p">:</span> <span class="n">output_rows</span><span class="p">}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_post_execute_operations_with_dag_monitoring</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">)</span>
 
             <span class="c1"># 4. data export</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_export</span><span class="p">:</span>
@@ -778,10 +829,14 @@
             <span class="n">tend</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;All Ops are done in </span><span class="si">{</span><span class="n">tend</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">tstart</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s.&quot;</span><span class="p">)</span>
 
-            <span class="c1"># 5. finalize the tracer results</span>
-            <span class="c1"># Finalize sample-level traces after all operators have finished</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracer</span><span class="p">:</span>
-                <span class="n">ray</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tracer</span><span class="o">.</span><span class="n">finalize_traces</span><span class="o">.</span><span class="n">remote</span><span class="p">())</span>
+        <span class="c1"># Log job completion with DAG context</span>
+        <span class="n">job_duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_job_complete</span><span class="p">(</span><span class="n">job_duration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">export_path</span><span class="p">)</span>
+
+        <span class="c1"># 5. finalize the tracer results</span>
+        <span class="c1"># Finalize sample-level traces after all operators have finished</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracer</span><span class="p">:</span>
+            <span class="n">ray</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tracer</span><span class="o">.</span><span class="n">finalize_traces</span><span class="o">.</span><span class="n">remote</span><span class="p">())</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_return</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">dataset</span></div>
