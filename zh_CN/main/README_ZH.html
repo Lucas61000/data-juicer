@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Data Processing for and with Foundation Models &#8212; Data Juicer</title>
+    <title>Data-Juicer: 基础模型时代的数据操作系统 &#8212; Data Juicer</title>
   
   
   
@@ -598,7 +598,7 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Data Processing for and with Foundation Models</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Data-Juicer: 基础模型时代的<em>数据操作</em>系统</span></li>
   </ul>
 </nav>
 </div>
@@ -615,161 +615,230 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <p><span class="xref myst">[英文主页]</span> | <a class="reference internal" href="docs/tutorial/DJ-Cookbook_ZH.html"><span class="std std-doc">[DJ-Cookbook]</span></a> | <a class="reference internal" href="docs/Operators.html"><span class="std std-doc">[算子池]</span></a> | <a class="reference external" href="https://datajuicer.github.io/data-juicer/zh_CN/main/api">[API]</a> | <a class="reference internal" href="docs/awesome_llm_data.html"><span class="std std-doc">[Awesome LLM Data]</span></a></p>
-<section id="data-processing-for-and-with-foundation-models">
-<h1>Data Processing for and with Foundation Models<a class="headerlink" href="#data-processing-for-and-with-foundation-models" title="链接到此标题。">#</a></h1>
- <img src="https://img.alicdn.com/imgextra/i1/O1CN01fUfM5A1vPclzPQ6VI_!!6000000006165-0-tps-1792-1024.jpg" width = "533" height = "300" alt="Data-Juicer"/>
-<p><img alt="" src="https://img.shields.io/badge/language-Python-214870.svg" />
-<img alt="" src="https://img.shields.io/badge/license-Apache--2.0-000000.svg" />
-<a class="reference external" href="https://pypi.org/project/py-data-juicer"><img alt="pypi version" src="https://img.shields.io/pypi/v/py-data-juicer?logo=pypi&amp;color=026cad" /></a>
-<a class="reference external" href="https://hub.docker.com/r/datajuicer/data-juicer"><img alt="Docker version" src="https://img.shields.io/docker/v/datajuicer/data-juicer?logo=docker&amp;label=Docker&amp;color=498bdf" /></a>
-<a class="reference external" href="https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/data_juicer/docker_images/data-juicer-latest.tar.gz"><img alt="Docker on OSS" src="https://img.shields.io/badge/OSS%20latest-none?logo=docker&amp;label=Docker&amp;color=498bdf" /></a>
-<img alt="" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2FHYLcool%2Ff856b14416f08f73d05d32fd992a9c29%2Fraw%2Ftotal_cov.json" /></p>
-<p><a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/tutorial/DJ-Cookbook.html"><img alt="DataModality" src="https://img.shields.io/badge/DataModality-Text,Image,Audio,Video-brightgreen.svg" /></a>
-<a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/hub/RecipeGallery.html"><img alt="Usage" src="https://img.shields.io/badge/Usage-Cleaning,Synthesis,Analysis-FFD21E.svg" /></a>
-<a class="reference external" href="https://pepy.tech/projects/py-data-juicer"><img alt="PyPI Downloads" src="https://static.pepy.tech/personalized-badge/py-data-juicer?period=total&amp;units=INTERNATIONAL_SYSTEM&amp;left_color=BLACK&amp;right_color=GREEN&amp;left_text=downloads" /></a></p>
-<p><a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/Operators.html"><img alt="算子池" src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3-%E7%AE%97%E5%AD%90%E6%B1%A0-blue?logo=Markdown" /></a>
-<a class="reference external" href="https://arxiv.org/abs/2309.02033"><img alt="Paper" src="http://img.shields.io/badge/cs.LG-1.0Paper(SIGMOD'24)-B31B1B?logo=arxiv&amp;logoColor=red" /></a>
-<a class="reference external" href="https://arxiv.org/abs/2501.14755"><img alt="Paper" src="http://img.shields.io/badge/cs.AI-2.0Paper(NeurIPS'25)-B31B1B?logo=arxiv&amp;logoColor=red" /></a></p>
-<p>Data-Juicer 是一个一站式系统，面向大模型的文本及多模态数据处理。我们提供了一个基于 JupyterLab 的 <a class="reference external" href="http://8.138.149.181/">Playground</a>，您可以从浏览器中在线试用 Data-Juicer。 如果Data-Juicer对您的研发有帮助，请支持加星（自动订阅我们的新发布）、以及引用我们的<a class="reference internal" href="#id5">工作</a> 。</p>
-<p><a class="reference external" href="https://www.aliyun.com/product/bigdata/learn">阿里云人工智能平台 PAI</a> 已深度集成Data-Juicer到其数据处理产品中。PAI提供包含数据集管理、算力管理、模型工具链、模型开发、模型训练、模型部署、AI资产管理在内的功能模块，为用户提供高性能、高稳定、企业级的大模型工程化能力。数据处理的使用文档请参考：<a class="reference external" href="https://www.alibabacloud.com/help/zh/pai/user-guide/quickly-submit-a-datajuicer-task">快速提交DataJuicer任务</a>。</p>
-<p>Data-Juicer正在积极更新和维护中，我们将定期强化和新增更多的功能和数据菜谱。热烈欢迎您<a class="reference internal" href="#id4">加入我们</a>，一起推进大模型的数据-模型协同开发和研究应用！</p>
+  <section id="data-juicer">
+<h1>Data-Juicer: 基础模型时代的<em>数据操作</em>系统<a class="headerlink" href="#data-juicer" title="链接到此标题。">#</a></h1>
+<p align="center">
+  <a href="https://pypi.org/project/py-data-juicer"><img src="https://img.shields.io/pypi/v/py-data-juicer?logo=pypi&color=026cad" alt="PyPI"></a>
+  <a href="https://pepy.tech/projects/py-data-juicer"><img src="https://static.pepy.tech/personalized-badge/py-data-juicer?period=total&units=INTERNATIONAL_SYSTEM&left_color=grey&right_color=green&left_text=downloads" alt="Downloads"></a>
+   <a href="https://hub.docker.com/r/datajuicer/data-juicer"><img src="https://img.shields.io/docker/v/datajuicer/data-juicer?logo=docker&label=Docker&color=498bdf" alt="Docker"></a>
+  <br>
+  <a href="https://datajuicer.github.io/data-juicer/zh_CN/main/index_ZH.html"><img src="https://img.shields.io/badge/📖_文档-网站-026cad" alt="Docs"></a>
+  <a href="https://datajuicer.github.io/data-juicer/en/main/docs/Operators.html"><img src="https://img.shields.io/badge/🧩_算子-200+-blue" alt="Operators"></a>
+  <a href="https://github.com/datajuicer/data-juicer-hub"><img src="https://img.shields.io/badge/🍳_配方-50+-brightgreen" alt="Recipes"></a>
+  <br>
+  <a href="https://datajuicer.github.io/data-juicer/en/main/index.html"><img src="https://img.shields.io/badge/🇬🇧_English-主页-red" alt="English"></a>
+  <a href="https://arxiv.org/abs/2501.14755"><img src="https://img.shields.io/badge/NeurIPS'25_Spotlight-2.0-B31B1B?logo=arxiv" alt="Paper"></a>
+  <a href="https://github.com/datajuicer/data-juicer">
+    <img src="https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fgist.githubusercontent.com%2FHYLcool%2Ff856b14416f08f73d05d32fd992a9c29%2Fraw%2Ftotal_cov.json&label=coverage&logo=codecov&color=4c1" alt="Coverage">
+  </a>
+</p>
+<p align="center">
+  <b>多模态 | 云原生 | AI就绪 | 大规模 </b>
+</p>
+<p>Data-Juicer (DJ) 将原始数据转化为 AI 就绪的智能。它将数据处理视为<em>可组合的基础设施</em>——提供模块化构建块，在整个 AI 生命周期中清洗、合成和分析数据，释放每份数据的潜在价值。</p>
+<p>无论您是在去重网络规模的预训练语料库、整理智能体交互轨迹，还是准备特定领域的 RAG 索引，DJ 都可以从您的笔记本电脑无缝扩展到数千节点的集群——无需编写胶水代码。</p>
+<blockquote>
+<div><p><strong>阿里云 PAI</strong> 已深度集成 Data-Juicer 到其数据处理产品中。请参阅 <strong><a class="reference external" href="https://www.alibabacloud.com/help/zh/pai/user-guide/quickly-submit-a-datajuicer-task">快速提交 DataJuicer 任务</a></strong>。</p>
+</div></blockquote>
+<hr class="docutils" />
 <section id="id1">
-<h2>新消息<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h2>
+<h2>🚀 快速开始<a class="headerlink" href="#id1" title="链接到此标题。">#</a></h2>
+<p><strong>零安装探索</strong>：</p>
 <ul class="simple">
-<li><p>🚀[2026-01-15] <a class="reference external" href="https://github.com/datajuicer/data-juicer-agents/blob/main/qa-copilot/README_ZH.md">Data-Juicer Q&amp;A Copilot</a> 已上线 <a class="reference external" href="https://datajuicer.github.io/data-juicer/zh_CN/main/index_ZH.html">文档页</a> | <a class="reference external" href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,N78tgW54U447gJP5aMC95B6qgQhlkVQS4+dp7qQq6MpuRVJIwrSsXmL8oFqU5ajJ&amp;amp;_dt_no_comment=1&amp;amp;origin=11?">钉钉</a> | <a class="reference external" href="https://discord.gg/ngQbB9hEVK">Discord</a> ! 欢迎询问任何与Data-Juicer生态系统有关的问题!</p>
-<ul>
-<li><p>关注 🤖 <a class="reference external" href="https://github.com/datajuicer/data-juicer-agents/blob/main">Data-Juicer Agents</a> | 📃 <a class="reference external" href="https://github.com/datajuicer/data-juicer-agents/blob/main/qa-copilot">Deploy-ready codes</a> | 🎬<a class="reference external" href="https://github.com/datajuicer/data-juicer-agents/blob/main/qa-copilot/DEMO.md"> More demos</a>.</p></li>
+<li><p><a class="reference external" href="http://8.138.149.181/">带教程的 JupyterLab 在线环境</a></p></li>
+<li><p><a class="reference external" href="https://datajuicer.github.io/data-juicer/zh_CN/main/docs_index_ZH.html">询问 DJ Copilot</a></p></li>
 </ul>
-</li>
-</ul>
-<div align="center">
-<img src="https://github.com/user-attachments/assets/a0099ce2-4ed3-4fab-8cfa-b0bbd3beeac9" width=80%>
+<p><strong>安装并运行</strong>：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>py-data-juicer
+dj-process<span class="w"> </span>--config<span class="w"> </span>demos/process_simple/process.yaml
+</pre></div>
 </div>
-<ul class="simple">
-<li><p>🎉 [2025-09-19] 我们的 <a class="reference external" href="https://arxiv.org/abs/2501.14755">Data-Juicer 2.0: Cloud-Scale Adaptive Data Processing for and with Foundation Models</a> 已被接收为 <strong>NeurIPS'25 Spotlight</strong>（处于所有投稿中的前 3.1%）！</p></li>
-<li><p>🎉 [2025-09-19] 我们关于数据配比/选择/合成的两个工作：<a class="reference external" href="https://arxiv.org/abs/2502.04380">Diversity as a Reward: Fine-Tuning LLMs on a Mixture of Domain-Undetermined Data</a> 和 <a class="reference external" href="https://arxiv.org/abs/2503.09499">MindGYM: What Matters in Question Synthesis for Thinking-Centric Fine-Tuning?</a>，已被 <strong>NeurIPS'25</strong> 接收！</p></li>
-<li><p>🛠️ [2025-06-04] 如何在“经验时代”处理反馈数据？我们提出了 <a class="reference external" href="https://arxiv.org/abs/2505.17826">Trinity-RFT: A General-Purpose and Unified Framework for Reinforcement Fine-Tuning of LLMs</a>，该框架利用 Data-Juicer 为 RFT 场景量身定制数据处理管道。</p></li>
-<li><p>🎉 [2025-06-04] 我们的 <a class="reference external" href="https://ieeexplore.ieee.org/document/11027559">Data-Model Co-development 综述</a> 已被 IEEE Transactions on Pattern Analysis and Machine Intelligence（<strong>TPAMI</strong>）接收！欢迎探索并贡献<a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/awesome_llm_data.html">awesome-list</a>。</p></li>
-<li><p>🔎 [2025-06-04] 我们推出了 <a class="reference external" href="https://www.arxiv.org/abs/2505.16915">DetailMaster: Can Your Text-to-Image Model Handle Long Prompts?</a> 一项合成基准测试，揭示了大模型虽擅长处理短描述，但在长提示下性能显著下降的问题。</p></li>
-<li><p>🎉 [2025-05-06] 我们的 <a class="reference external" href="https://arxiv.org/abs/2407.11784">Data-Juicer Sandbox</a> 已被接收为 <strong>ICML'25 Spotlight</strong>（处于所有投稿中的前 2.6%）！</p></li>
-<li><p>💡 [2025-03-13] 我们提出<a class="reference external" href="https://arxiv.org/abs/2503.09499">MindGYM: What Matters in Question Synthesis for Thinking-Centric Fine-Tuning?</a>。一种新的数据合成方法鼓励大模型自我合成高质量、低方差数据，实现高效SFT（如仅使用 <em>400 个样本</em> 即可在 <a class="reference external" href="https://mathllm.github.io/mathvision/#leaderboard">MathVision</a> 上获得 <em>16%</em> 的增益）。</p></li>
-<li><p>🤝 [2025-02-28] DJ 已被集成到 <a class="reference external" href="https://docs.ray.io/en/latest/ray-overview/ray-libraries.html">Ray官方 Ecosystem</a> 和 <a class="reference external" href="https://docs.ray.io/en/latest/ray-more-libs/data_juicer_distributed_data_processing.html">Example Gallery</a>。此外，我们在 DJ2.0 中的流式 JSON 加载补丁已被 <a class="reference external" href="https://github.com/apache/arrow/pull/45084">Apache Arrow 官方集成</a>。</p></li>
-<li><p>🎉 [2025-02-27] 我们的对比数据合成工作， <a class="reference external" href="https://arxiv.org/pdf/2408.04594">ImgDiff</a>， 已被 <strong>CVPR'25</strong> 接收！</p></li>
-<li><p>💡 [2025-02-05] 我们提出了一种新的数据选择方法 <a class="reference external" href="https://www.arxiv.org/abs/2502.04380">Diversity as a Reward: Fine-Tuning LLMs on a Mixture of Domain-Undetermined Data</a>，该方法基于理论指导，将数据多样性建模为奖励信号，在 7 个基准测试中，微调 SOTA LLMs 取得了更好的整体表现。</p></li>
-<li><p>🎉 [2025-01-11] 我们发布了 2.0 版论文 <a class="reference external" href="https://arxiv.org/abs/2501.14755">Data-Juicer 2.0: Cloud-Scale Adaptive Data Processing for and with Foundation Models</a>。DJ现在可以使用阿里云集群中 50 个 Ray 节点上的 6400 个 CPU 核心在 2.1 小时内处理 70B 数据样本，并使用 8 个 Ray 节点上的 1280 个 CPU 核心在 2.8 小时内对 5TB 数据进行重复数据删除。</p></li>
-</ul>
-<details>
-<summary> History News:
-</summary>>
-<ul class="simple">
-<li><p>[2025-01-03] 我们通过 20 多个相关的新 <a class="reference external" href="https://github.com/datajuicer/data-juicer/releases/tag/v1.0.2">OP</a> 以及与 LLaMA-Factory 和 ModelScope-Swift 兼容的统一 <a class="reference external" href="https://github.com/datajuicer/data-juicer/releases/tag/v1.0.3">数据集格式</a> 更好地支持Post-Tuning场景。</p></li>
-<li><p>[2024-12-17] 我们提出了 <em>HumanVBench</em>，它包含 16 个以人为中心的任务，使用合成数据，从内在情感和外在表现的角度对22个视频 MLLM 的能力进行基准测试。请参阅我们的 <a class="reference external" href="https://arxiv.org/abs/2412.17574">论文</a> 中的更多详细信息，并尝试使用它 <a class="reference external" href="https://github.com/datajuicer/data-juicer/tree/HumanVBench">评估</a> 您的模型。</p></li>
-<li><p>[2024-11-22] 我们发布 DJ <a class="reference external" href="https://github.com/datajuicer/data-juicer/releases/tag/v1.0.0">v1.0.0</a>，其中我们重构了 Data-Juicer 的 <em>Operator</em>、<em>Dataset</em>、<em>Sandbox</em> 和许多其他模块以提高可用性，例如支持容错、FastAPI 和自适应资源管理。</p></li>
-<li><p>[2024-08-25] 我们在 KDD'2024 中提供了有关多模态 LLM 数据处理的<a class="reference external" href="https://datajuicer.github.io/data-juicer/_static/tutorial_kdd24.html">教程</a>。</p></li>
-<li><p>[2024-08-09] 我们提出了Img-Diff，它通过<em>对比数据合成</em>来增强多模态大型语言模型的性能，在<a class="reference external" href="https://tsb0601.github.io/mmvp_blog/">MMVP benchmark</a>中比GPT-4V高出12个点。 更多细节请参阅我们的 <a class="reference external" href="https://arxiv.org/abs/2408.04594">论文</a>, 以及从 <a class="reference external" href="https://huggingface.co/datasets/datajuicer/Img-Diff">huggingface</a> 和 <a class="reference external" href="https://modelscope.cn/datasets/Data-Juicer/Img-Diff">modelscope</a>下载这份数据集。</p></li>
-<li><p>[2024-07-24] &quot;天池 Better Synth 多模态大模型数据合成赛&quot;——第四届Data-Juicer大模型数据挑战赛已经正式启动！立即访问<a class="reference external" href="https://tianchi.aliyun.com/competition/entrance/532251">竞赛官网</a>，了解赛事详情。</p></li>
-<li><p>[2024-07-17] 我们利用Data-Juicer<a class="reference external" href="https://datajuicer.github.io/data-juicer-sandbox/zh_CN/main/index_ZH.html">沙盒实验室套件</a>，通过数据与模型间的系统性研发工作流，调优数据和模型，在<a class="reference external" href="https://huggingface.co/spaces/Vchitect/VBench_Leaderboard">VBench</a>文生视频排行榜取得了新的榜首。相关成果已经整理发表在<a class="reference external" href="http://arxiv.org/abs/2407.11784">论文</a>中，并且模型已在<a class="reference external" href="https://modelscope.cn/models/Data-Juicer/Data-Juicer-T2V">ModelScope</a>和<a class="reference external" href="https://huggingface.co/datajuicer/Data-Juicer-T2V">HuggingFace</a>平台发布。</p></li>
-<li><p>[2024-07-12] 我们的MLLM-Data精选列表已经演化为一个模型-数据协同开发的角度系统性<a class="reference external" href="https://arxiv.org/abs/2407.08583">综述</a>。欢迎<a class="reference internal" href="docs/awesome_llm_data.html"><span class="std std-doc">浏览</span></a>或参与贡献!</p></li>
-<li><p>[2024-06-01] ModelScope-Sora&quot;数据导演&quot;创意竞速——第三届Data-Juicer大模型数据挑战赛已经正式启动！立即访问<a class="reference external" href="https://tianchi.aliyun.com/competition/entrance/532219">竞赛官网</a>，了解赛事详情。</p></li>
-<li><p>[2024-03-07] 我们现在发布了 <strong>Data-Juicer <a class="reference external" href="https://github.com/datajuicer/data-juicer/releases/tag/v0.2.0">v0.2.0</a></strong>! 在这个新版本中，我们支持了更多的 <strong>多模态数据(包括视频)</strong> 相关特性。我们还启动了 <strong><a class="reference internal" href="docs/DJ_SORA_ZH.html"><span class="std std-doc">DJ-SORA</span></a></strong> ，为SORA-like大模型构建开放的大规模高质量数据集！</p></li>
-<li><p>[2024-02-20] 我们在积极维护一份关于LLM-Data的<em>精选列表</em>，欢迎<a class="reference internal" href="docs/awesome_llm_data.html"><span class="std std-doc">访问</span></a>并参与贡献！</p></li>
-<li><p>[2024-02-05] 我们的论文被SIGMOD'24 industrial track接收！</p></li>
-<li><p>[2024-01-10] 开启&quot;数据混合&quot;新视界——第二届Data-Juicer大模型数据挑战赛已经正式启动！立即访问<a class="reference external" href="https://tianchi.aliyun.com/competition/entrance/532174">竞赛官网</a>，了解赛事详情。</p></li>
-<li><p>[2024-01-05] <strong>Data-Juicer v0.1.3</strong> 版本发布了。
-在这个新版本中，我们支持了<strong>更多Python版本</strong>（3.8-3.10），同时支持了<strong>多模态</strong>数据集的<a class="reference internal" href="tools/fmt_conversion/multimodal/README_ZH.html"><span class="std std-doc">转换</span></a>和<a class="reference internal" href="docs/Operators.html"><span class="std std-doc">处理</span></a>（包括文本、图像和音频。更多模态也将会在之后支持）！
-此外，我们的论文也更新到了<a class="reference external" href="https://arxiv.org/abs/2309.02033">第三版</a> 。</p></li>
-<li><p>[2023-10-13] 我们的第一届以数据为中心的 LLM 竞赛开始了！
-请访问大赛官网，FT-Data Ranker（<a class="reference external" href="https://tianchi.aliyun.com/competition/entrance/532157">1B赛道</a> 、<a class="reference external" href="https://tianchi.aliyun.com/competition/entrance/532158">7B赛道</a> ) ，了解更多信息。</p></li>
-</ul>
-</details>
+<p><strong>或在 Python 中组合</strong>：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.core.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">NestedDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.ops.filter</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextLengthFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.ops.mapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhitespaceNormalizationMapper</span>
+
+<span class="n">ds</span> <span class="o">=</span> <span class="n">NestedDataset</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
+    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Short&quot;</span><span class="p">,</span> <span class="s2">&quot;This passes the filter.&quot;</span><span class="p">,</span> <span class="s2">&quot;Text   with   spaces&quot;</span><span class="p">]</span>
+<span class="p">})</span>
+<span class="n">res_ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">process</span><span class="p">([</span>
+    <span class="n">TextLengthFilter</span><span class="p">(</span><span class="n">min_len</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+    <span class="n">WhitespaceNormalizationMapper</span><span class="p">()</span>
+<span class="p">])</span>
+
+<span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">res_ds</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
-<section id="demos">
-<h2>Demos<a class="headerlink" href="#demos" title="链接到此标题。">#</a></h2>
-<p>DataJuicer-Agent:数据处理，即刻启程！</p>
-<p><video controls width="100%" height="auto" playsinline>
-  <source src="https://github.com/user-attachments/assets/6eb726b7-6054-4b0c-905e-506b2b9c7927" type="video/mp4">
-  Your browser does not support the video tag.
-</video></p>
-<p>DataJuicer-Sandbox: 降本增效，优化数据-模型协同开发！</p>
-<p><video controls width="100%" height="auto" playsinline>
-  <source src="https://github.com/user-attachments/assets/a45f0eee-0f0e-4ffe-9a42-d9a55370089d" type="video/mp4">
-  Your browser does not support the video tag.
-</video></p>
-</section>
-<section id="data-juicer">
-<h2>为什么选择 Data-Juicer？<a class="headerlink" href="#data-juicer" title="链接到此标题。">#</a></h2>
-<img src="https://img.alicdn.com/imgextra/i4/O1CN015URK6i21KU3XdkUpK_!!6000000006966-2-tps-3994-3956.png" align="center" width="500" />
-<ul>
-<li><p><strong>系统化和可重用</strong>：
-系统化地为用户提供 100 多个核心 <a class="reference internal" href="docs/Operators.html"><span class="std std-doc">算子</span></a> 和 50 多个可重用的数据菜谱和
-专用工具套件，旨在解耦于特定的多模态 LLM 数据集和处理管道运行。支持预训练、后训练、英语、中文等场景中的数据分析、清洗和合成。</p></li>
-<li><p><strong>易用、可扩展</strong>：
-简洁灵活，提供快速<a class="reference internal" href="docs/tutorial/QuickStart_ZH.html"><span class="std std-doc">入门指南</span></a>和包含丰富使用示例的<a class="reference internal" href="docs/tutorial/DJ-Cookbook_ZH.html"><span class="std std-doc">DJ-Cookbook</span></a>。您可以灵活实现自己的OP，<a class="reference internal" href="docs/DeveloperGuide_ZH.html"><span class="std std-doc">自定义</span></a>数据处理工作流。</p>
-<p>Data-Juicer 现采用 AI 自动重写和优化算子的 docstring，并生成详细的算子文档，帮助更快理解每个算子的功能及用法。<br />
-如需了解该文档增强流程的具体实现，欢迎访问 <a class="reference external" href="https://github.com/datajuicer/data-juicer/tree/main/docs/op_doc_enhance_workflow">op_doc_enhance_workflow</a>。</p>
-</li>
-<li><p><strong>高效、稳定</strong>：提供性能优化的<a class="reference internal" href="docs/Distributed_ZH.html"><span class="std std-doc">并行数据处理能力</span></a>（Aliyun-PAI\Ray\CUDA\OP Fusion），
-更快、更少资源消耗，基于大规模生产环境打磨。</p></li>
-<li><p><strong>效果验证、沙盒</strong>：支持数据模型协同开发，通过<a class="reference external" href="https://datajuicer.github.io/data-juicer-sandbox/zh_CN/main/index_ZH.html">沙盒实验室</a>实现快速迭代，提供反馈循环、可视化等功能，让您更好地理解和改进数据和模型。已经有许多基于 DJ 衍生的数据菜谱和模型经过了效用验证，譬如在预训练、文生视频、图文生成等场景。
-<img alt="Data-in-the-loop" src="https://img.alicdn.com/imgextra/i2/O1CN017U7Zz31Y7XtCJ5GOz_!!6000000003012-0-tps-3640-1567.jpg" /></p></li>
-</ul>
-</section>
+<hr class="docutils" />
 <section id="id2">
-<h2>文档<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
-<p>详细文档请看<a class="reference external" href="https://datajuicer.github.io/data-juicer/zh_CN/main/docs_index_ZH.html">此处</a>。</p>
-</section>
+<h2>✨ 为什么选择 Data-Juicer？<a class="headerlink" href="#id2" title="链接到此标题。">#</a></h2>
 <section id="id3">
-<h2>开源协议<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h2>
-<p>Data-Juicer 在 Apache License 2.0 协议下发布。</p>
+<h3>1. 模块化与可扩展架构<a class="headerlink" href="#id3" title="链接到此标题。">#</a></h3>
+<ul class="simple">
+<li><p><strong>200+ 算子</strong> 涵盖文本、图像、音频、视频和多模态数据</p></li>
+<li><p><strong>配方优先</strong>：可复现的 YAML 管道，您可以像代码一样进行版本管理、共享和分叉</p></li>
+<li><p><strong>可组合</strong>：可插入单个算子、链接复杂工作流或编排完整管道</p></li>
+<li><p><strong>热重载</strong>：无需重启管道即可迭代算子</p></li>
+</ul>
 </section>
 <section id="id4">
-<h2>贡献与致谢<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h2>
-<p>Data-Juicer 的发展离不开社区的参与和反馈，非常欢迎各方面的贡献：开发新的算子（无论是简单函数还是现有论文的先进算法）、分享新的数据菜谱和使用场景、提出新功能需求、提升代码效率、修复程序错误、完善项目文档、反馈使用体验等。您可参考<a class="reference internal" href="docs/DeveloperGuide_ZH.html"><span class="std std-doc">开发者指南</span></a>开启贡献；在社区中宣传本项目，或为我们的代码仓库点亮星标 ⭐，同样是对该项目非常宝贵的支持！</p>
-<p>我们由衷感谢所有为本项目做出贡献的<a class="reference external" href="https://github.com/datajuicer/data-juicer/graphs/contributors">代码贡献者</a>，他们是本项目的基石。我们尽力确保以下名单的完整和及时，并期待更多名字的加入（英文字母序排列）。若有疏漏，请随时联系我们。</p>
+<h3>2. 全栈数据智能<a class="headerlink" href="#id4" title="链接到此标题。">#</a></h3>
 <ul class="simple">
-<li><p><strong>发起方：</strong> 阿里巴巴通义实验室</p></li>
-<li><p><strong>联合研发优化：</strong> 阿里云PAI、Anyscale (Ray Team)、中山大学 (<a class="reference external" href="https://github.com/YingShen-SYSU/AIGC">知识工程实验室</a>)、NVIDIA (NeMo Team) 等</p></li>
-<li><p><strong>用户/提供无价反馈：</strong> <a class="reference external" href="https://github.com/agentscope-ai/agentscope">AgentScope</a>、阿里巴巴集团、蚂蚁集团、比亚迪、字节跳动、<a class="reference external" href="https://github.com/modelscope/DiffSynth-Studio">DiffSynth-Studio</a>、袋鼠云、<a class="reference external" href="https://github.com/aigc-apps/EasyAnimate">EasyAnimate</a>、<a class="reference external" href="https://github.com/modelscope/evalscope">Eval-Scope</a>、京东、<a class="reference external" href="https://github.com/hiyouga/LLaMA-Factory">LLaMA-Factory</a>、南京大学、OPPO、北京大学、<a class="reference external" href="https://github.com/modelscope/RM-Gallery">RM-Gallery</a>、中国人民大学、清华大学、<a class="reference external" href="https://github.com/modelscope/Trinity-RFT">Trinity-RFT</a>、中国科学院、中国科学院大学、小红书、小米、喜马拉雅、浙江大学等</p></li>
-<li><p><strong>其它项目：</strong> Data-Juicer 也感谢许多先驱开源项目，例如 <a class="reference external" href="https://github.com/apache/arrow">Apache Arrow</a>、<a class="reference external" href="https://huggingface.co/bigscience/bloom">BLOOM</a>、<a class="reference external" href="https://github.com/huggingface/datasets">Hugging Face Datasets</a>、<a class="reference external" href="https://github.com/togethercomputer/RedPajama-Data/tree/rp_v1">RedPajama-Data</a>、<a class="reference external" href="https://github.com/ray-project/ray">Ray</a>、<a class="reference external" href="https://github.com/vllm-project/vllm">vLLM</a> 等</p></li>
+<li><p><strong>基础模型</strong>：预训练、微调、强化学习和评估级数据整理</p></li>
+<li><p><strong>智能体系统</strong>：清洗工具轨迹、结构化上下文、去标识化和质量把关</p></li>
+<li><p><strong>RAG与分析</strong>：提取、规范化、语义分块、去重和数据画像分析</p></li>
 </ul>
-<p>我们期待您的反馈与合作。如您有合作意向或关于新子项目的提案，欢迎通过 GitHub Issues、Pull Requests、<a class="reference external" href="https://join.slack.com/t/data-juicer/shared_invite/zt-23zxltg9d-Z4d3EJuhZbCLGwtnLWWUDg?spm=a2c22.12281976.0.0.7a8253f30mgpjw">Slack</a>、<a class="reference external" href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,N78tgW54U447gJP5aMC95B6qgQhlkVQS4+dp7qQq6MpuRVJIwrSsXmL8oFqU5ajJ&amp;amp;_dt_no_comment=1&amp;amp;origin=11?">钉钉</a>、 <a class="reference external" href="https://discord.gg/ngQbB9hEVK">Discord</a>或<a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/mailto:datajuicer&#64;outlook.com">邮件</a>与我们联系。</p>
-<p>欢迎加入我们的社群：</p>
+</section>
+<section id="id5">
+<h3>3. 生产就绪的性能<a class="headerlink" href="#id5" title="链接到此标题。">#</a></h3>
+<ul class="simple">
+<li><p><strong>规模</strong>：在 50 个 Ray 节点（6400 核心）上 2 小时处理 700 亿样本</p></li>
+<li><p><strong>效率</strong>：使用 1280 核心在 2.8 小时内对 5TB 进行去重</p></li>
+<li><p><strong>优化</strong>：自动 OP 融合（2-10 倍加速）、自适应并行、CUDA 加速、鲁棒性</p></li>
+<li><p><strong>可观测性</strong>：内置追踪功能，用于调试、审计和迭代改进</p></li>
+</ul>
+<blockquote>
+<div><p><em>⭐ 如果 Data-Juicer 为您节省了时间或改进了您的数据工作，请考虑为仓库加星。</em> 它帮助更多人发现项目，并让您及时了解新发布和功能。</p>
+</div></blockquote>
+</section>
+</section>
+<hr class="docutils" />
+<section id="id6">
+<h2>📰 动态<a class="headerlink" href="#id6" title="链接到此标题。">#</a></h2>
+<details open>
+<summary>[2026-02-02] Release v1.4.6: <b>Copilot、视频字节 I/O 与 Ray 追踪</b></summary>
+<ul class="simple">
+<li><p>🤖 <em>Q&amp;A Copilot</em> — 现已上线我们的<a class="reference external" href="https://datajuicer.github.io/data-juicer/zh_CN/main/index_ZH.html">文档站点</a> | <a class="reference external" href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,N78tgW54U447gJP5aMC95B6qgQhlkVQS4+dp7qQq6MpuRVJIwrSsXmL8oFqU5ajJ&amp;amp;_dt_no_comment=1&amp;amp;origin=11?">钉钉</a> | <a class="reference external" href="https://discord.gg/ngQbB9hEVK">Discord</a>。欢迎询问任何与 Data-Juicer 生态系统相关的问题！</p>
+<ul>
+<li><p>查看 🤖 <a class="reference external" href="https://github.com/datajuicer/data-juicer-agents/blob/main">Data-Juicer Agents</a> | 📃 <a class="reference external" href="https://github.com/datajuicer/data-juicer-agents/blob/main/qa-copilot">部署就绪代码</a> | 🎬<a class="reference external" href="https://github.com/datajuicer/data-juicer-agents/blob/main/qa-copilot/DEMO.md">更多演示</a> 了解更多详情。</p></li>
+</ul>
+</li>
+<li><p>🎬 <em>视频字节 I/O</em> — 视频管道的直接字节处理</p></li>
+<li><p>🫆 <em>Ray 模式追踪器</em> — 在分布式处理中追踪变更的样本</p></li>
+<li><p>🐳 <em>增强与修复</em> — 刷新 Docker 镜像、小幅性能提升、GitHub Insights 流量工作流、Ray 兼容性更新以及 Bug/文档修复。</p></li>
+</ul>
+</details>
+<details open>
+<summary>[2026-01-15] Release v1.4.5: <b>20+ 新 OP、Ray vLLM 管道与 Sphinx 文档升级</b> </summary>
+<ul class="simple">
+<li><p><em>具身 AI OP</em>：添加/增强了用于视频标题生成（VLM）、视频对象分割（YOLOE+SAM2）、视频深度估计（可视化 + 点云）、人体姿态（MMPose）、图像标签（VLM）、单图像 3D 人体网格恢复（SAM 3D Body）的映射器，以及 <em>S3 上传/下载</em>。</p></li>
+<li><p><em>新管道 OP</em>：将多个 OP 组合成一个管道；引入了用于 LLM/VLM 推理的 <em>Ray + vLLM</em> 管道。</p></li>
+<li><p><em>文档升级</em>：迁移到统一的基于 <em>Sphinx</em> 的文档构建/部署工作流，具有隔离的主题/架构仓库。</p></li>
+<li><p><em>增强与修复</em>：依赖更新、改进的 Ray 去重和 S3 加载、OpenAI Responses API 支持、追踪器一致性、Docker 基础更新为 CUDA 12.6.3 + Ubuntu 24.04 + Py3.11，以及多个 Bug 修复。</p></li>
+</ul>
+</details>
+<details>
+<summary>[2025-12-01] Release v1.4.4: <b>NeurIPS'25 Spotlight、6 个新视频/多模态 OP 与 S3 I/O</b> </summary>
+<ul class="simple">
+<li><p>Data-Juicer 2.0 获得 NeurIPS'25 <strong>Spotlight</strong></p></li>
+<li><p><em>仓库拆分</em>：sandbox/recipes/agents 移至独立仓库</p></li>
+<li><p><em>S3 I/O</em> 添加到加载器/导出器</p></li>
+<li><p><em>6 个新的视频和多模态 OP</em>（角色检测、VGGT、全身姿态、手部重建）+ 文档/Ray/视频 I/O 改进和 Bug 修复</p></li>
+</ul>
+</details>
+<p>查看 <a class="reference external" href="https://github.com/datajuicer/data-juicer/releases">所有发布</a> 和 <a class="reference internal" href="docs/news_zh.html"><span class="std std-doc">动态归档</span></a></p>
+</section>
+<hr class="docutils" />
+<section id="id7">
+<h2>🔌 用户与生态系统<a class="headerlink" href="#id7" title="链接到此标题。">#</a></h2>
+<blockquote>
+<div><p>以下列表重点关注<em>面向开发者的集成和使用</em>，按<em>字母顺序</em>排列。<br />
+缺少您的项目/名称？欢迎<a class="reference external" href="https://github.com/datajuicer/data-juicer/pulls">提交 PR</a> 或<a class="reference internal" href="#id12">联系我们</a>。</p>
+</div></blockquote>
+<p>Data-Juicer 可无缝集成到您现有的技术栈，并随着社区贡献而不断发展：</p>
+<section id="id8">
+<h3>扩展<a class="headerlink" href="#id8" title="链接到此标题。">#</a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference external" href="https://github.com/datajuicer/data-juicer-agents">data-juicer-agents</a></strong> — DJ Copilot 和智能体工作流</p></li>
+<li><p><strong><a class="reference external" href="https://github.com/datajuicer/data-juicer-hub">data-juicer-hub</a></strong> — 社区配方和最佳实践</p></li>
+<li><p><strong><a class="reference external" href="https://github.com/datajuicer/data-juicer-sandbox">data-juicer-sandbox</a></strong> — 带反馈循环的数据-模型协同开发</p></li>
+</ul>
+</section>
+<section id="id9">
+<h3>框架与平台<a class="headerlink" href="#id9" title="链接到此标题。">#</a></h3>
+<p><a class="reference external" href="https://www.alibabacloud.com/zh/product/machine-learning?_p_lc=1">阿里云 PAI</a> · <a class="reference external" href="https://delta.io/">Delta Lake</a><a class="reference external" href="https://github.com/agentscope-ai/agentscope">AgentScope</a> · <a class="reference external" href="https://github.com/apache/arrow">Apache Arrow</a> · <a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html">Apache HDFS</a> · <a class="reference external" href="https://hudi.apache.org/">Apache Hudi</a> · <a class="reference external" href="https://iceberg.apache.org/">Apache Iceberg</a> · <a class="reference external" href="https://paimon.apache.org/">Apache Paimon</a> · <a class="reference external" href="https://github.com/modelscope/DiffSynth-Studio">DiffSynth-Studio</a> · <a class="reference external" href="https://github.com/aigc-apps/EasyAnimate">EasyAnimate</a> · <a class="reference external" href="https://github.com/modelscope/evalscope">Eval-Scope</a> · <a class="reference external" href="https://www.huawei.com/en/products/cloud-computing-dc/atlas/ascend">华为昇腾</a> · <a class="reference external" href="https://huggingface.co/">Hugging Face</a> · <a class="reference external" href="https://lancedb.github.io/lance/">LanceDB</a> · <a class="reference external" href="https://github.com/hiyouga/LLaMA-Factory">LLaMA-Factory</a> · <a class="reference external" href="https://modelscope.cn/">ModelScope</a> · <a class="reference external" href="https://github.com/modelscope/ms-swift">ModelScope Swift</a> · <a class="reference external" href="https://github.com/NVIDIA/NeMo">NVIDIA NeMo</a> · <a class="reference external" href="https://docs.ray.io/">Ray</a> · <a class="reference external" href="https://github.com/modelscope/RM-Gallery">RM-Gallery</a> · <a class="reference external" href="https://github.com/modelscope/Trinity-RFT">Trinity-RFT</a> · <a class="reference external" href="https://www.volcengine.com/">火山引擎</a></p>
+</section>
+<section id="id10">
+<h3>企业<a class="headerlink" href="#id10" title="链接到此标题。">#</a></h3>
+<p>阿里巴巴集团、蚂蚁集团、比亚迪、字节跳动、袋鼠云、京东、NVIDIA、OPPO、小红书、小米、喜马拉雅等。</p>
+</section>
+<section id="id11">
+<h3>学术机构<a class="headerlink" href="#id11" title="链接到此标题。">#</a></h3>
+<p>中科院、南京大学、北京大学、中国人民大学、清华大学、中科院大学、浙江大学等。</p>
+</section>
+<section id="id12">
+<h3>贡献与社区<a class="headerlink" href="#id12" title="链接到此标题。">#</a></h3>
+<p>我们相信<em>共同建设</em>。无论您是修复拼写错误、开发新算子还是分享数据处理配方，每一次贡献都塑造着数据处理的未来。</p>
+<p>我们欢迎各个层面的贡献：</p>
+<ul class="simple">
+<li><p><strong><a class="reference external" href="https://github.com/datajuicer/data-juicer/labels/good%20first%20issue">Good First Issues</a></strong> — 添加算子、改进文档、报告问题或修复 Bug</p></li>
+<li><p><strong><a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/DeveloperGuide.html">开发者指南</a></strong> — 优化引擎、添加功能或增强核心基础设施</p></li>
+<li><p><strong><a class="reference external" href="https://github.com/datajuicer/data-juicer-hub">DJ-Hub</a></strong> — 分享知识：配方、论文和最佳实践</p></li>
+<li><p><strong>联系</strong>：<a class="reference external" href="https://join.slack.com/t/data-juicer/shared_invite/zt-23zxltg9d-Z4d3EJuhZbCLGwtnLWWUDg">Slack</a> · <a class="reference external" href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,N78tgW54U447gJP5aMC95B6qgQhlkVQS4+dp7qQq6MpuRVJIwrSsXmL8oFqU5ajJ&amp;amp;_dt_no_comment=1&amp;amp;origin=11?">钉钉</a> · <a class="reference external" href="https://discord.gg/ngQbB9hEVK">Discord</a></p></li>
+</ul>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
-<tr class="row-odd"><th class="head"><p><a class="reference external" href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,N78tgW54U447gJP5aMC95B6qgQhlkVQS4+dp7qQq6MpuRVJIwrSsXmL8oFqU5ajJ&amp;amp;_dt_no_comment=1&amp;amp;origin=11?">钉钉</a></p></th>
-<th class="head"><p><a class="reference external" href="https://discord.gg/ngQbB9hEVK">Discord</a></p></th>
+<tr class="row-odd"><th class="head text-center"><p>Discord</p></th>
+<th class="head text-center"><p>钉钉</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><img src="https://gw.alicdn.com/imgextra/i3/O1CN01bBPoaX1EwZsiYudtd_!!6000000000416-2-tps-656-660.png" width="100" height="100"></p></td>
-<td><p><img src="https://gw.alicdn.com/imgextra/i1/O1CN011Oj8CB1f8Bw5JpgJA_!!6000000003961-0-tps-762-769.jpg" width="100" height="100"></p></td>
+<tr class="row-even"><td class="text-center"><p><img src="https://gw.alicdn.com/imgextra/i1/O1CN011Oj8CB1f8Bw5JpgJA_!!6000000003961-0-tps-762-769.jpg" width="100"></p></td>
+<td class="text-center"><p><img src="https://gw.alicdn.com/imgextra/i3/O1CN01bBPoaX1EwZsiYudtd_!!6000000000416-2-tps-656-660.png" width="100"></p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<p>Data-Juicer 由用户和社区共同打造：</p>
+<ul class="simple">
+<li><p><strong>发起方</strong>：阿里巴巴通义实验室</p></li>
+<li><p><strong>联合开发</strong>：阿里云 PAI、Anyscale（Ray 团队）、中山大学、NVIDIA（NeMo 团队）以及<a class="reference external" href="https://github.com/datajuicer/data-juicer/graphs/contributors">全球贡献者</a></p></li>
+<li><p><strong>启发来源</strong>：Apache Arrow、Ray、Hugging Face Datasets、BLOOM、RedPajama-Data、...</p></li>
+</ul>
 </section>
-<section id="id5">
-<h2>参考文献<a class="headerlink" href="#id5" title="链接到此标题。">#</a></h2>
-<p>如果您发现Data-Juicer对您的研发有帮助，请引用以下工作，<a class="reference external" href="https://arxiv.org/abs/2309.02033">1.0paper</a>，<a class="reference external" href="https://arxiv.org/abs/2501.14755">2.0paper</a>。</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@inproceedings</span><span class="p">{</span><span class="n">djv1</span><span class="p">,</span>
-  <span class="n">title</span><span class="o">=</span><span class="p">{</span><span class="n">Data</span><span class="o">-</span><span class="n">Juicer</span><span class="p">:</span> <span class="n">A</span> <span class="n">One</span><span class="o">-</span><span class="n">Stop</span> <span class="n">Data</span> <span class="n">Processing</span> <span class="n">System</span> <span class="k">for</span> <span class="n">Large</span> <span class="n">Language</span> <span class="n">Models</span><span class="p">},</span>
-  <span class="n">author</span><span class="o">=</span><span class="p">{</span><span class="n">Daoyuan</span> <span class="n">Chen</span> <span class="ow">and</span> <span class="n">Yilun</span> <span class="n">Huang</span> <span class="ow">and</span> <span class="n">Zhijian</span> <span class="n">Ma</span> <span class="ow">and</span> <span class="n">Hesen</span> <span class="n">Chen</span> <span class="ow">and</span> <span class="n">Xuchen</span> <span class="n">Pan</span> <span class="ow">and</span> <span class="n">Ce</span> <span class="n">Ge</span> <span class="ow">and</span> <span class="n">Dawei</span> <span class="n">Gao</span> <span class="ow">and</span> <span class="n">Yuexiang</span> <span class="n">Xie</span> <span class="ow">and</span> <span class="n">Zhaoyang</span> <span class="n">Liu</span> <span class="ow">and</span> <span class="n">Jinyang</span> <span class="n">Gao</span> <span class="ow">and</span> <span class="n">Yaliang</span> <span class="n">Li</span> <span class="ow">and</span> <span class="n">Bolin</span> <span class="n">Ding</span> <span class="ow">and</span> <span class="n">Jingren</span> <span class="n">Zhou</span><span class="p">},</span>
-  <span class="n">booktitle</span><span class="o">=</span><span class="p">{</span><span class="n">International</span> <span class="n">Conference</span> <span class="n">on</span> <span class="n">Management</span> <span class="n">of</span> <span class="n">Data</span><span class="p">},</span>
-  <span class="n">year</span><span class="o">=</span><span class="p">{</span><span class="mi">2024</span><span class="p">}</span>
+</section>
+<hr class="docutils" />
+<section id="id13">
+<h2>文档<a class="headerlink" href="#id13" title="链接到此标题。">#</a></h2>
+<p>详细文档请查看<a class="reference external" href="https://datajuicer.github.io/data-juicer/zh_CN/main/docs_index_ZH.html">此处</a>。</p>
+<p><strong>快速链接：</strong></p>
+<ul class="simple">
+<li><p><strong><a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/Operators.html">算子池</a></strong> — 浏览 200+ 带示例的算子</p></li>
+<li><p><strong><a class="reference external" href="https://github.com/datajuicer/data-juicer-hub">data-juicer-hub</a></strong> — 社区驱动的配方和最佳实践</p></li>
+<li><p><strong><a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/DeveloperGuide.html">开发者指南</a></strong> — 构建您自己的代码并为 DJ 贡献</p></li>
+<li><p><strong><a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/tutorial/DJ-Cookbook.html">data-juicer-cookbook</a></strong> — 资源归档</p></li>
+<li><p><strong><a class="reference external" href="https://datajuicer.github.io/data-juicer/en/main/docs/awesome_llm_data">awesome_llm_data</a></strong> — 数据-模型协同开发的&quot;Awesome List&quot;</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="id14">
+<h2>📄 许可证与致谢<a class="headerlink" href="#id14" title="链接到此标题。">#</a></h2>
+<p>Data-Juicer 在 <a class="reference external" href="https://github.com/datajuicer/data-juicer/blob/main/LICENSE">Apache License 2.0</a> 下发布。<br />
+如果您项目中要致谢DataJuicer：请使用我们的<a class="reference external" href="https://dail-wlcb.oss-cn-wulanchabu.aliyuncs.com/data_juicer/assets/DJ-Org-Logo.jpeg">Badge</a>，或文本譬如 &quot;本项目使用Data-Juicer: <a class="github reference external" href="https://github.com/datajuicer">datajuicer</a>&quot;。</p>
+</section>
+<hr class="docutils" />
+<section id="id15">
+<h2>📖 引用<a class="headerlink" href="#id15" title="链接到此标题。">#</a></h2>
+<p>如果您发现 Data-Juicer 帮助了您的项目，请考虑如下引用：</p>
+<div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@inproceedings</span><span class="p">{</span><span class="nl">djv1</span><span class="p">,</span>
+<span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Data-Juicer: A One-Stop Data Processing System for Large Language Models}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Chen, Daoyuan and Huang, Yilun and Ma, Zhijian and Chen, Hesen and Pan, Xuchen and Ge, Ce and Gao, Dawei and Xie, Yuexiang and Liu, Zhaoyang and Gao, Jinyang and Li, Yaliang and Ding, Bolin and Zhou, Jingren}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">booktitle</span><span class="p">=</span><span class="s">{SIGMOD}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2024}</span>
 <span class="p">}</span>
 
-<span class="nd">@article</span><span class="p">{</span><span class="n">djv2</span><span class="p">,</span>
-  <span class="n">title</span><span class="o">=</span><span class="p">{</span><span class="n">Data</span><span class="o">-</span><span class="n">Juicer</span> <span class="mf">2.0</span><span class="p">:</span> <span class="n">Cloud</span><span class="o">-</span><span class="n">Scale</span> <span class="n">Adaptive</span> <span class="n">Data</span> <span class="n">Processing</span> <span class="k">for</span> <span class="ow">and</span> <span class="k">with</span> <span class="n">Foundation</span> <span class="n">Models</span><span class="p">},</span>
-  <span class="n">author</span><span class="o">=</span><span class="p">{</span><span class="n">Chen</span><span class="p">,</span> <span class="n">Daoyuan</span> <span class="ow">and</span> <span class="n">Huang</span><span class="p">,</span> <span class="n">Yilun</span> <span class="ow">and</span> <span class="n">Pan</span><span class="p">,</span> <span class="n">Xuchen</span> <span class="ow">and</span> <span class="n">Jiang</span><span class="p">,</span> <span class="n">Nana</span> <span class="ow">and</span> <span class="n">Wang</span><span class="p">,</span> <span class="n">Haibin</span> <span class="ow">and</span> <span class="n">Zhang</span><span class="p">,</span> <span class="n">Yilei</span> <span class="ow">and</span> <span class="n">Ge</span><span class="p">,</span> <span class="n">Ce</span> <span class="ow">and</span> <span class="n">Chen</span><span class="p">,</span> <span class="n">Yushuo</span> <span class="ow">and</span> <span class="n">Zhang</span><span class="p">,</span> <span class="n">Wenhao</span> <span class="ow">and</span> <span class="n">Ma</span><span class="p">,</span> <span class="n">Zhijian</span> <span class="ow">and</span> <span class="n">Huang</span><span class="p">,</span> <span class="n">Jun</span> <span class="ow">and</span> <span class="n">Lin</span><span class="p">,</span> <span class="n">Wei</span> <span class="ow">and</span> <span class="n">Li</span><span class="p">,</span> <span class="n">Yaliang</span> <span class="ow">and</span> <span class="n">Ding</span><span class="p">,</span> <span class="n">Bolin</span> <span class="ow">and</span> <span class="n">Zhou</span><span class="p">,</span> <span class="n">Jingren</span><span class="p">},</span>
-  <span class="n">journal</span><span class="o">=</span><span class="p">{</span><span class="n">Advances</span> <span class="ow">in</span> <span class="n">Neural</span> <span class="n">Information</span> <span class="n">Processing</span> <span class="n">Systems</span><span class="p">},</span>
-  <span class="n">year</span><span class="o">=</span><span class="p">{</span><span class="mi">2025</span><span class="p">}</span>
+<span class="nc">@article</span><span class="p">{</span><span class="nl">djv2</span><span class="p">,</span>
+<span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Data-Juicer 2.0: Cloud-Scale Adaptive Data Processing for and with Foundation Models}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Chen, Daoyuan and Huang, Yilun and Pan, Xuchen and Jiang, Nana and Wang, Haibin and Zhang, Yilei and Ge, Ce and Chen, Yushuo and Zhang, Wenhao and Ma, Zhijian and Huang, Jun and Lin, Wei and Li, Yaliang and Ding, Bolin and Zhou, Jingren}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{NeurIPS}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2025}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <details>
-<summary>更多Data-Juicer团队关于数据的论文:
-</summary>>
+<summary><b>更多出版物</b>（点击展开）</summary>
 <ul class="simple">
 <li><p>(ICML'25 Spotlight) <a class="reference external" href="https://arxiv.org/abs/2407.11784">Data-Juicer Sandbox: A Feedback-Driven Suite for Multimodal Data-Model Co-development</a></p></li>
 <li><p>(CVPR'25) <a class="reference external" href="https://arxiv.org/abs/2408.04594">ImgDiff: Contrastive Data Synthesis for Vision Large Language Models</a></p></li>
@@ -813,13 +882,25 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">新消息</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demos">Demos</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-juicer">为什么选择 Data-Juicer？</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">文档</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">开源协议</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">贡献与致谢</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">参考文献</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">🚀 快速开始</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">✨ 为什么选择 Data-Juicer？</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">1. 模块化与可扩展架构</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">2. 全栈数据智能</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">3. 生产就绪的性能</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">📰 动态</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">🔌 用户与生态系统</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">扩展</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">框架与平台</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">企业</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id11">学术机构</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id12">贡献与社区</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id13">文档</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id14">📄 许可证与致谢</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id15">📖 引用</a></li>
 </ul>
   </nav></div>
 
