@@ -33,7 +33,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=34d13042" />
-    <link rel="stylesheet" type="text/css" href="../_static/ask-ai-widget.css?v=62e39679" />
+    <link rel="stylesheet" type="text/css" href="../_static/ask-ai-widget.css?v=028e49fc" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -51,7 +51,7 @@
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=fab4d2ee"></script>
+    <script src="../_static/ask-ai-widget.js?v=bd1ac865"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -619,7 +619,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.ops.deduplicator.ray_video_deduplicator.RayVideoDeduplicator">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.deduplicator.ray_video_deduplicator.</span></span><span class="sig-name descname"><span class="pre">RayVideoDeduplicator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/deduplicator/ray_video_deduplicator.html#RayVideoDeduplicator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.deduplicator.ray_video_deduplicator.RayVideoDeduplicator" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference internal" href="data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.RayBasicDeduplicator" title="data_juicer.ops.deduplicator.ray_basic_deduplicator.RayBasicDeduplicator"><code class="xref py py-class docutils literal notranslate"><span class="pre">RayBasicDeduplicator</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="data_juicer.ops.deduplicator.ray_basic_deduplicator.html#data_juicer.ops.deduplicator.ray_basic_deduplicator.RayBasicDeduplicator" title="data_juicer.ops.deduplicator.ray_basic_deduplicator.RayBasicDeduplicator"><code class="xref py py-class docutils literal notranslate"><span class="pre">RayBasicDeduplicator</span></code></a></p>
 <p>Deduplicates samples at document-level using exact matching of videos in Ray distributed mode.</p>
 <p>This operator computes the MD5 hash of video streams in each sample and compares them to
 identify duplicates. It uses Ray distributed mode for parallel processing. The hash is

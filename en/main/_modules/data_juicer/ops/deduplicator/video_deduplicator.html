@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=34d13042" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/ask-ai-widget.css?v=62e39679" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/ask-ai-widget.css?v=028e49fc" />
   
   <!-- So that users can add custom icons -->
   <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -50,7 +50,7 @@
     <script src="../../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../../_static/ask-ai-widget.js?v=fab4d2ee"></script>
+    <script src="../../../../_static/ask-ai-widget.js?v=bd1ac865"></script>
     <link rel="icon" href="../../../../_static/icon.png"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -628,7 +628,7 @@
 
 
 <div class="viewcode-block" id="VideoDeduplicator">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.video_deduplicator.html#data_juicer.ops.deduplicator.video_deduplicator.VideoDeduplicator">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.VideoDeduplicator">[docs]</a>
 <span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="nd">@LOADED_VIDEOS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VideoDeduplicator</span><span class="p">(</span><span class="n">Deduplicator</span><span class="p">):</span>
@@ -643,7 +643,7 @@
 <span class="sd">    &#39;hash&#39; if text is considered.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="VideoDeduplicator.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.video_deduplicator.html#data_juicer.ops.deduplicator.video_deduplicator.VideoDeduplicator.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.VideoDeduplicator.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">consider_text</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialization.</span>
@@ -661,7 +661,7 @@
 
 
 <div class="viewcode-block" id="VideoDeduplicator.compute_hash">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.video_deduplicator.html#data_juicer.ops.deduplicator.video_deduplicator.VideoDeduplicator.compute_hash">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.VideoDeduplicator.compute_hash">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="c1"># get hash of text first</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">consider_text</span><span class="p">:</span>
@@ -695,7 +695,7 @@
 
 
 <div class="viewcode-block" id="VideoDeduplicator.process">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.video_deduplicator.html#data_juicer.ops.deduplicator.video_deduplicator.VideoDeduplicator.process">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.VideoDeduplicator.process">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">show_num</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        For doc-level, dataset --&gt; dataset.</span>

@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=34d13042" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/ask-ai-widget.css?v=62e39679" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/ask-ai-widget.css?v=028e49fc" />
   
   <!-- So that users can add custom icons -->
   <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -50,7 +50,7 @@
     <script src="../../../../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../../../../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../../../../_static/ask-ai-widget.js?v=fab4d2ee"></script>
+    <script src="../../../../_static/ask-ai-widget.js?v=bd1ac865"></script>
     <link rel="icon" href="../../../../_static/icon.png"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -625,7 +625,7 @@
 
 
 <div class="viewcode-block" id="RayVideoDeduplicator">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.ray_video_deduplicator.RayVideoDeduplicator">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.RayVideoDeduplicator">[docs]</a>
 <span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="nd">@LOADED_VIDEOS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RayVideoDeduplicator</span><span class="p">(</span><span class="n">RayBasicDeduplicator</span><span class="p">):</span>
@@ -638,7 +638,7 @@
 <span class="sd">    operator supports &#39;ray_actor&#39; or &#39;redis&#39; backends for deduplication.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="RayVideoDeduplicator.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.ray_video_deduplicator.RayVideoDeduplicator.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.RayVideoDeduplicator.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ray_actor&quot;</span><span class="p">,</span> <span class="n">redis_address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialization.</span>
@@ -651,7 +651,7 @@
 
 
 <div class="viewcode-block" id="RayVideoDeduplicator.calculate_hash">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.ray_video_deduplicator.html#data_juicer.ops.deduplicator.ray_video_deduplicator.RayVideoDeduplicator.calculate_hash">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.RayVideoDeduplicator.calculate_hash">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">calculate_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sample</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">sample</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">video_key</span><span class="p">]:</span>
             <span class="k">return</span> <span class="n">RayBasicDeduplicator</span><span class="o">.</span><span class="n">EMPTY_HASH_VALUE</span>

@@ -33,7 +33,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=34d13042" />
-    <link rel="stylesheet" type="text/css" href="../_static/ask-ai-widget.css?v=62e39679" />
+    <link rel="stylesheet" type="text/css" href="../_static/ask-ai-widget.css?v=028e49fc" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -51,7 +51,7 @@
     <script src="../_static/sidebar.js?v=3fc1065c"></script>
     <script src="../_static/switcher-mobile.js?v=07875724"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="../_static/ask-ai-widget.js?v=fab4d2ee"></script>
+    <script src="../_static/ask-ai-widget.js?v=bd1ac865"></script>
     <link rel="icon" href="../_static/icon.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -887,7 +887,7 @@ Default is None (no reservation).</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="data_juicer.ops.deduplicator.ray_bts_minhash_deduplicator.RayBTSMinhashDeduplicatorWithUid">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">data_juicer.ops.deduplicator.ray_bts_minhash_deduplicator.</span></span><span class="sig-name descname"><span class="pre">RayBTSMinhashDeduplicatorWithUid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/deduplicator/ray_bts_minhash_deduplicator.html#RayBTSMinhashDeduplicatorWithUid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.deduplicator.ray_bts_minhash_deduplicator.RayBTSMinhashDeduplicatorWithUid" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference internal" href="data_juicer.ops.deduplicator.html#data_juicer.ops.deduplicator.RayBTSMinhashDeduplicator" title="data_juicer.ops.deduplicator.ray_bts_minhash_deduplicator.RayBTSMinhashDeduplicator"><code class="xref py py-class docutils literal notranslate"><span class="pre">RayBTSMinhashDeduplicator</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#data_juicer.ops.deduplicator.ray_bts_minhash_deduplicator.RayBTSMinhashDeduplicator" title="data_juicer.ops.deduplicator.ray_bts_minhash_deduplicator.RayBTSMinhashDeduplicator"><code class="xref py py-class docutils literal notranslate"><span class="pre">RayBTSMinhashDeduplicator</span></code></a></p>
 <p>A MinhashLSH deduplicator based on RAY.</p>
 <p>Unlike <cite>RayBTSMinhashDeduplicator</cite>, this class requires the input dataset to contain an additional column
 named ‘__dj__uid’ of type int, where each value is unique across samples. This column serves two main purposes:</p>
