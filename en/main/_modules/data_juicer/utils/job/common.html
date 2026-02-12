@@ -633,12 +633,12 @@
 
 
 <div class="viewcode-block" id="JobUtils">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">JobUtils</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Common utilities for DataJuicer job operations.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="JobUtils.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">base_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize job utilities.</span>
@@ -668,7 +668,7 @@
 
 
 <div class="viewcode-block" id="JobUtils.load_job_summary">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.load_job_summary">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.load_job_summary">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_job_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load job summary from the work directory.&quot;&quot;&quot;</span>
         <span class="n">job_summary_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;job_summary.json&quot;</span>
@@ -685,7 +685,7 @@
 
 
 <div class="viewcode-block" id="JobUtils.load_dataset_mapping">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.load_dataset_mapping">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.load_dataset_mapping">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_dataset_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load dataset mapping information.&quot;&quot;&quot;</span>
         <span class="n">mapping_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;metadata&quot;</span> <span class="o">/</span> <span class="s2">&quot;dataset_mapping.json&quot;</span>
@@ -711,7 +711,7 @@
         <span class="k">return</span> <span class="n">fallback_file</span> <span class="k">if</span> <span class="n">fallback_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="JobUtils.load_event_logs">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.load_event_logs">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.load_event_logs">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_event_logs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load and parse event logs.&quot;&quot;&quot;</span>
         <span class="n">events_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_latest_events_file</span><span class="p">()</span>
@@ -734,7 +734,7 @@
 
 
 <div class="viewcode-block" id="JobUtils.extract_process_thread_ids">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.extract_process_thread_ids">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.extract_process_thread_ids">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extract_process_thread_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extract process and thread IDs from event logs.</span>
@@ -758,7 +758,7 @@
 
 
 <div class="viewcode-block" id="JobUtils.find_processes_by_ids">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.find_processes_by_ids">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.find_processes_by_ids">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">find_processes_by_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process_ids</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find running processes by their PIDs.&quot;&quot;&quot;</span>
         <span class="n">processes</span> <span class="o">=</span> <span class="p">[]</span>
@@ -787,7 +787,7 @@
 
 
 <div class="viewcode-block" id="JobUtils.find_threads_by_ids">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.find_threads_by_ids">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.find_threads_by_ids">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">find_threads_by_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thread_ids</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find running threads by their IDs (if possible).&quot;&quot;&quot;</span>
         <span class="c1"># Note: Python doesn&#39;t provide a direct way to enumerate all threads</span>
@@ -797,7 +797,7 @@
 
 
 <div class="viewcode-block" id="JobUtils.get_partition_status">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.get_partition_status">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.get_partition_status">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_partition_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current status of all partitions.&quot;&quot;&quot;</span>
         <span class="n">dataset_mapping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_dataset_mapping</span><span class="p">()</span>
@@ -880,7 +880,7 @@
 
 
 <div class="viewcode-block" id="JobUtils.calculate_overall_progress">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.calculate_overall_progress">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.calculate_overall_progress">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">calculate_overall_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate overall job progress.&quot;&quot;&quot;</span>
         <span class="n">partition_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_partition_status</span><span class="p">()</span>
@@ -923,7 +923,7 @@
 
 
 <div class="viewcode-block" id="JobUtils.get_operation_pipeline">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobUtils.get_operation_pipeline">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.JobUtils.get_operation_pipeline">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_operation_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the operation pipeline from config.&quot;&quot;&quot;</span>
         <span class="n">config_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;partition-checkpoint-eventlog.yaml&quot;</span>
@@ -973,7 +973,7 @@
 
 
 <div class="viewcode-block" id="list_running_jobs">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.list_running_jobs">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.common.html#data_juicer.utils.job.list_running_jobs">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">list_running_jobs</span><span class="p">(</span><span class="n">base_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;outputs/partition-checkpoint-eventlog&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;List all DataJuicer jobs and their status.&quot;&quot;&quot;</span>
     <span class="n">base_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">base_dir</span><span class="p">)</span>

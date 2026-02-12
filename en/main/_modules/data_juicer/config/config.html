@@ -1172,6 +1172,28 @@
                 <span class="s2">&quot;is true.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+                <span class="s2">&quot;--min_common_dep_num_to_combine&quot;</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The minimum number of common dependencies required to determine whether to merge two operation &quot;</span>
+                <span class="s2">&quot;environment specifications. If set to -1, it means no combination of operation environments, where &quot;</span>
+                <span class="s2">&quot;every OP has its own runtime environment during processing without any merging. If set to &gt;= 0, &quot;</span>
+                <span class="s2">&quot;environments of OPs that share at least min_common_dep_num_to_combine common dependencies will be &quot;</span>
+                <span class="s2">&quot;merged. It will open the operator environment manager to automatically analyze and merge runtime &quot;</span>
+                <span class="s2">&quot;environment for different OPs. It helps different OPs share and reuse the same runtime environment to &quot;</span>
+                <span class="s2">&quot;reduce resource utilization. It&#39;s -1 in default. Only available in ray mode. &quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+                <span class="s2">&quot;--conflict_resolve_strategy&quot;</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">,</span>
+                <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="s2">&quot;overwrite&quot;</span><span class="p">,</span> <span class="s2">&quot;latest&quot;</span><span class="p">],</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Strategy for resolving dependency conflicts, default is &#39;split&#39; strategy. &#39;split&#39;: Keep the two &quot;</span>
+                <span class="s2">&quot;specs split when there is a conflict. &#39;overwrite&#39;: Overwrite the existing dependency with one &quot;</span>
+                <span class="s2">&quot;from the later OP. &#39;latest&#39;: Use the latest version of all specified dependency versions. &quot;</span>
+                <span class="s2">&quot;Only available when min_common_dep_num_to_combine &gt;= 0.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
                 <span class="s2">&quot;--op_fusion&quot;</span><span class="p">,</span>
                 <span class="nb">type</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span>
                 <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>

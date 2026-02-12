@@ -618,12 +618,14 @@
 
 <div class="viewcode-block" id="load_ops">
 <a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.load_ops">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">load_ops</span><span class="p">(</span><span class="n">process_list</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_ops</span><span class="p">(</span><span class="n">process_list</span><span class="p">,</span> <span class="n">op_env_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load op list according to the process list from config file.</span>
 
 <span class="sd">    :param process_list: A process list. Each item is an op name and its</span>
 <span class="sd">        arguments.</span>
+<span class="sd">    :param op_env_manager: The OPEnvManager to try to merge environment specs of different OPs that have common</span>
+<span class="sd">        dependencies. Only available when min_common_dep_num_to_combine &gt;= 0.</span>
 <span class="sd">    :return: The op instance list.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ops</span> <span class="o">=</span> <span class="p">[]</span>
@@ -637,6 +639,22 @@
     <span class="c1"># store the OP configs into each OP</span>
     <span class="k">for</span> <span class="n">op_cfg</span><span class="p">,</span> <span class="n">op</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">new_process_list</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
         <span class="n">op</span><span class="o">.</span><span class="n">_op_cfg</span> <span class="o">=</span> <span class="n">op_cfg</span>
+
+    <span class="c1"># update op runtime environment if OPEnvManager is enabled</span>
+    <span class="k">if</span> <span class="n">op_env_manager</span><span class="p">:</span>
+        <span class="c1"># first round: record and merge possible common env specs</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">:</span>
+            <span class="n">op_name</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">_name</span>
+            <span class="n">op_env_spec</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">get_env_spec</span><span class="p">()</span>
+            <span class="n">op_env_manager</span><span class="o">.</span><span class="n">record_op_env_spec</span><span class="p">(</span><span class="n">op_name</span><span class="p">,</span> <span class="n">op_env_spec</span><span class="p">)</span>
+        <span class="c1"># second round: update op runtime environment</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">:</span>
+            <span class="n">op_name</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">_name</span>
+            <span class="n">op_env_spec</span> <span class="o">=</span> <span class="n">op_env_manager</span><span class="o">.</span><span class="n">get_op_env_spec</span><span class="p">(</span><span class="n">op_name</span><span class="p">)</span>
+            <span class="n">op</span><span class="o">.</span><span class="n">_requirements</span> <span class="o">=</span> <span class="n">op_env_spec</span><span class="o">.</span><span class="n">pip_pkgs</span>
+            <span class="c1"># if the runtime_env is not set for this OP, update the runtime_env as well</span>
+            <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">runtime_env</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">op</span><span class="o">.</span><span class="n">runtime_env</span> <span class="o">=</span> <span class="n">op_env_spec</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">ops</span></div>
 

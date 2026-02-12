@@ -629,6 +629,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Registry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">data_juicer.utils.resource_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_cuda_available</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.op_env</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OPEnvSpec</span><span class="p">,</span>
+    <span class="n">analyze_lazy_loaded_requirements_for_code_file</span><span class="p">,</span>
+    <span class="n">op_requirements_to_op_env_spec</span><span class="p">,</span>
+<span class="p">)</span>
+
 <span class="n">OPERATORS</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;Operators&quot;</span><span class="p">)</span>
 <span class="n">UNFORKABLE</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;Unforkable&quot;</span><span class="p">)</span>
 <span class="n">NON_STATS_FILTERS</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;Non-stats Filters&quot;</span><span class="p">)</span>
@@ -926,8 +932,19 @@
 <div class="viewcode-block" id="OP">
 <a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.base_op.OP">[文档]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OP</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">OPMetaClass</span><span class="p">):</span>
+    <span class="c1"># the name of this operator. Automatically set by the registry</span>
+    <span class="n">_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="c1"># the accelerator to run this operator. Either &quot;cpu&quot; or &quot;cuda&quot;</span>
     <span class="n">_accelerator</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+
+    <span class="c1"># whether this operator is a batched operator</span>
     <span class="n">_batched_op</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># extra requirements for this operator. Should be:</span>
+    <span class="c1">#   1. a list of packages</span>
+    <span class="c1">#   2. a string of the path to the requirements.txt file</span>
+    <span class="n">_requirements</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="OP.__init__">
 <a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.base_op.OP.__init__">[文档]</a>
@@ -1065,6 +1082,15 @@
                 <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
                 <span class="n">method</span> <span class="o">=</span> <span class="n">wrap_func_with_nested_access</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
                 <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="OP.get_env_spec">
+<a class="viewcode-back" href="../../../api/data_juicer.ops.base_op.html#data_juicer.ops.base_op.OP.get_env_spec">[文档]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_env_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OPEnvSpec</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+
+        <span class="n">auto_analyzed_requirements</span> <span class="o">=</span> <span class="n">analyze_lazy_loaded_requirements_for_code_file</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">op_requirements_to_op_env_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_requirements</span><span class="p">,</span> <span class="n">auto_analyzed_requirements</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="OP.use_auto_proc">

@@ -618,12 +618,16 @@
 <span id="data-juicer-ops-load-module"></span><h1>data_juicer.ops.load module<a class="headerlink" href="#module-data_juicer.ops.load" title="Link to this heading">#</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="data_juicer.ops.load.load_ops">
-<span class="sig-prename descclassname"><span class="pre">data_juicer.ops.load.</span></span><span class="sig-name descname"><span class="pre">load_ops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">process_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/load.html#load_ops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.load.load_ops" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">data_juicer.ops.load.</span></span><span class="sig-name descname"><span class="pre">load_ops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">process_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_env_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/data_juicer/ops/load.html#load_ops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_juicer.ops.load.load_ops" title="Link to this definition">#</a></dt>
 <dd><p>Load op list according to the process list from config file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>process_list</strong> – A process list. Each item is an op name and its
-arguments.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>process_list</strong> – A process list. Each item is an op name and its
+arguments.</p></li>
+<li><p><strong>op_env_manager</strong> – The OPEnvManager to try to merge environment specs of different OPs that have common
+dependencies. Only available when min_common_dep_num_to_combine &gt;= 0.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The op instance list.</p>
