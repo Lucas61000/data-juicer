@@ -94,14 +94,79 @@ This will:
 4. **Flexible Export**: Each branch can export to different paths
    灵活的导出：每个分支可以导出到不同的路径
 
+## Execution mode / Ray 与 Ray 模式
+
+Two backends for running branches in parallel:
+
+- **`backend: thread`** (default): Common process and each branch run **locally**. Branches are executed in parallel with a **thread pool**. No extra dependency.
+- **`backend: ray`**: Common process can run on the driver (default) or on a Ray worker when `run_common_on_ray: true` (pure Ray). Each branch runs as a **Ray remote task**. Requires `pip install ray` and (optionally) a Ray cluster.
+
+**注意**：`executor_type: 'ray'` 是整条线性流水线用 Ray，与分支执行器不同。分支执行器用 `executor_type: branch`，再通过 `branch.backend: ray` 让各分支以 Ray 任务运行。
+
+### Enabling Ray backend 启用 Ray 后端
+
+```yaml
+executor_type: 'branch'
+branch:
+  backend: ray   # default is "thread"
+common_process: [...]
+branches: [...]
+```
+
+Ray is auto-initialized if not already. In Ray mode, `run()` returns `dict[branch_name] -> None` (results only on disk at each `export_path`).
+
+### Pure Ray: common on Ray too 纯 Ray：common 也上 Ray
+
+When all work should run on the cluster (no heavy common process on the driver), set `run_common_on_ray: true`:
+
+```yaml
+branch:
+  backend: ray
+  run_common_on_ray: true   # common process runs as a Ray task; branches also on Ray
+```
+
+**Requirement**: `dataset_path` and `work_dir` must be **accessible from every Ray worker** (e.g. NFS, S3, or a path on shared storage). The common task loads the dataset from `dataset_path` and writes checkpoints under `work_dir`; branches read the common result via object store or disk.
+
+**要求**：`dataset_path` 与 `work_dir` 须对**所有 Ray worker 可访问**（如 NFS、S3 或共享存储路径）。
+
+## MVP example 最小可运行示例
+
+Minimal structure (thread backend): set `executor_type: branch`, `common_process`, and `branches` with per-branch `process` and `export_path`. Top-level `export_path` is unused (each branch has its own). Run:
+
+```bash
+python tools/process_data.py --config <your_branch_config>.yaml
+# or: dj process --config <your_branch_config>.yaml
+```
+
+For **Ray backend**, add under `branch:` set `backend: ray`. For **pure Ray** (common on Ray too), add `run_common_on_ray: true`; then `dataset_path` and `work_dir` must be worker-accessible. Full example configs (thread / ray / ray-pure) are maintained in [dj-hub](https://github.com/datajuicer/dj-hub).
+
+## Branch options (optional)
+
+Under top-level key `branch` you can tune execution (WIP, see Issue #915):
+
+```yaml
+branch:
+  backend: thread       # "thread" (default) or "ray"
+  run_common_on_ray: false  # when backend=ray, if true run common as a Ray task (pure Ray)
+  parallel: true        # run branches in parallel (default: true; ignored when backend=ray)
+  fail_fast: true       # stop on first branch failure (default: true)
+  max_workers: null     # thread pool size when backend=thread; null = one per branch
+  retries: 0            # per-branch retry count (default: 0)
+```
+
+- With `backend: ray`, each branch runs as a Ray remote task; common dataset is shared via object store when possible, else via disk. Branch configs are minimal. When `run_common_on_ray: true`, the common process also runs as one Ray task (dataset_path and work_dir must be worker-accessible).
+
 ## Implementation Details 实现细节
 
 - Common process checkpoints are saved in `{work_dir}/.branch_ckpt/common/`
+- **Ray backend**: common runs on driver by default, or on a Ray task when `run_common_on_ray: true`. Common result is then put in object store (or saved to disk) and consumed by branch tasks. Branch configs are minimal. On first failure, remaining tasks are cancelled when `fail_fast` is true. `retries` resubmits only failed branches.
 - Branch checkpoints are saved in `{work_dir}/.branch_ckpt/{branch_name}/`
-- Each branch uses a separate DefaultExecutor instance
-- Branches can be executed sequentially or in parallel (depending on executor implementation)
+- Each branch uses a separate DefaultExecutor instance (locally for thread backend; inside each Ray task for Ray backend)
+- **Thread backend**: branches run in parallel by default (thread pool); use `branch.parallel: false` for sequential
+- **Ray backend**: return value is `{branch_name: None}` (results only on disk at each `export_path`)
 
 - 公共流程检查点保存在 `{work_dir}/.branch_ckpt/common/`
+- **Ray 后端**：优先用 object store 传 common 数据集；失败则落盘到 `{work_dir}/.branch_ckpt/common/dataset/`；仅传最小 config；支持 fail_fast 取消与 retries 重试
 - 分支检查点保存在 `{work_dir}/.branch_ckpt/{branch_name}/`
-- 每个分支使用单独的 DefaultExecutor 实例
-- 分支可以顺序或并行执行（取决于执行器实现）
+- 每个分支使用单独的 DefaultExecutor 实例（thread 在本地，ray 在各自 Ray 任务内）
+- 默认线程池并行；Ray 后端下分支以 Ray 任务运行，返回值仅包含导出路径

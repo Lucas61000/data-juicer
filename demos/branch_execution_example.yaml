@@ -10,6 +10,12 @@ work_dir: './outputs/branch-demo'
 # Use branch executor
 executor_type: 'branch'
 
+# Optional: parallel, fail_fast, max_workers, retries (see docs/BranchExecution.md)
+# branch:
+#   parallel: true
+#   fail_fast: true
+#   retries: 0
+
 # Common process that will be executed once
 # 公共处理流程，只会执行一次
 common_process:
