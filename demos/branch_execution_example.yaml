@@ -1,0 +1,45 @@
+# Example configuration for branch execution
+# 分支执行示例配置
+
+# global parameters
+project_name: 'branch-execution-demo'
+dataset_path: './demos/data/demo-dataset-annotation-human-preference.jsonl'
+np: 4
+work_dir: './outputs/branch-demo'
+
+# Use branch executor
+executor_type: 'branch'
+
+# Common process that will be executed once
+# 公共处理流程，只会执行一次
+common_process:
+  - miner_u_mapper:
+      # miner U configuration
+      # ...
+  - document_deduplicator:
+      # deduplication configuration
+      # ...
+
+# Branches that will be executed in parallel from the common checkpoint
+# 从公共检查点并行执行的分支
+branches:
+  - name: "data_augmentation"
+    process:
+      - data_augmentation_mapper:
+          # data augmentation configuration
+          # ...
+    export_path: './outputs/branch-demo/data_augmentation.jsonl'
+  
+  - name: "html_enhancement"
+    process:
+      - html_enhancement_mapper:
+          # html enhancement configuration
+          # ...
+    export_path: './outputs/branch-demo/html_enhancement.jsonl'
+
+# Note: The common process will be executed once, and its result will be used
+# as the starting point for all branches. Each branch will then execute its
+# own process and export to its own export_path.
+# 
+# 注意：公共流程只会执行一次，其结果将作为所有分支的起点。
+# 然后每个分支将执行自己的流程并导出到自己的 export_path。

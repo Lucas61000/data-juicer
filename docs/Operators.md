@@ -43,7 +43,7 @@ Data-Juicer 中的算子分为以下 8 种类型。
 |------|:------:|-------------|
 | [aggregator](#aggregator) | 4 | Aggregate for batched samples, such as summary or conclusion. 对批量样本进行汇总，如得出总结或结论。 |
 | [deduplicator](#deduplicator) | 10 | Detects and removes duplicate samples. 识别、删除重复样本。 |
-| [filter](#filter) | 56 | Filters out low-quality samples. 过滤低质量样本。 |
+| [filter](#filter) | 58 | Filters out low-quality samples. 过滤低质量样本。 |
 | [formatter](#formatter) | 8 | Discovers, loads, and canonicalizes source data. 发现、加载、规范化原始数据。 |
 | [grouper](#grouper) | 3 | Group samples to batched samples. 将样本分组，每一组组成一个批量样本。 |
 | [mapper](#mapper) | 103 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
@@ -104,6 +104,7 @@ All the specific operators are listed below, each featured with several capabili
 | audio_size_filter | 📣Audio 💻CPU 🟢Stable | Keep data samples based on the size of their audio files. 根据音频文件的大小保留数据样本。 | [info](operators/filter/audio_size_filter.md) | - |
 | average_line_length_filter | 🔤Text 💻CPU 🟢Stable | Filter to keep samples with average line length within a specific range. 过滤器，以保持平均线长度在特定范围内的样本。 | [info](operators/filter/average_line_length_filter.md) | - |
 | character_repetition_filter | 🔤Text 💻CPU 🟢Stable | Filter to keep samples with character-level n-gram repetition ratio within a specific range. 过滤器将具有字符级n-gram重复比的样本保持在特定范围内。 | [info](operators/filter/character_repetition_filter.md) | - |
+| combined_logical_filter | 💻CPU 🔴Alpha | A combined filter operator that applies multiple filter operators with logical operations (AND/OR). 将多个筛选运算符应用于逻辑运算 (AND/OR) 的组合筛选运算符。 | [info](operators/filter/combined_logical_filter.md) | - |
 | flagged_words_filter | 🔤Text 💻CPU 🟢Stable | Filter to keep samples with flagged-word ratio in a specified range. 过滤器将标记词比率的样本保留在指定范围内。 | [info](operators/filter/flagged_words_filter.md) | - |
 | general_field_filter | 💻CPU 🟡Beta | Filter to keep samples based on a general field filter condition. 根据常规字段筛选条件保留样本。 | [info](operators/filter/general_field_filter.md) | - |
 | image_aesthetics_filter | 🏞Image 🚀GPU 🧩HF 🟢Stable | Filter to keep samples with aesthetics scores within a specific range. 过滤以保持美学分数在特定范围内的样品。 | [info](operators/filter/image_aesthetics_filter.md) | - |
@@ -126,6 +127,7 @@ All the specific operators are listed below, each featured with several capabili
 | llm_perplexity_filter | 🚀GPU 🧩HF 🟡Beta | Filter to keep samples with perplexity scores within a specified range, computed using a specified LLM. 过滤器将困惑分数的样本保留在指定范围内，使用指定的LLM计算。 | [info](operators/filter/llm_perplexity_filter.md) | - |
 | llm_quality_score_filter | 💻CPU 🟡Beta | Filter to keep samples with a high quality score estimated by a language model. 过滤器，以保留具有语言模型估计的高质量分数的样本。 | [info](operators/filter/llm_quality_score_filter.md) | - |
 | llm_task_relevance_filter | 💻CPU 🟡Beta | Filter to keep samples with high relevance scores to validation tasks estimated by an LLM. 过滤器以保留与LLM估计的验证任务具有高相关性分数的样本。 | [info](operators/filter/llm_task_relevance_filter.md) | - |
+| logical_filter | 💻CPU 🟡Beta | Filter to combine multiple filter operators with logical operations (AND/OR). 筛选器将多个筛选器运算符与逻辑运算 (AND/OR) 组合在一起。 | [info](operators/filter/logical_filter.md) | - |
 | maximum_line_length_filter | 🔤Text 💻CPU 🟢Stable | Filter to keep samples with a maximum line length within a specified range. 筛选器将最大行长度的样本保持在指定范围内。 | [info](operators/filter/maximum_line_length_filter.md) | - |
 | perplexity_filter | 🔤Text 💻CPU 🟢Stable | Filter to keep samples with perplexity score in a specified range. 过滤以保持困惑分数在指定范围内的样本。 | [info](operators/filter/perplexity_filter.md) | - |
 | phrase_grounding_recall_filter | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Filter to keep samples based on the phrase grounding recall of phrases extracted from text in images. 根据从图像中的文本中提取的短语接地召回来过滤以保留样本。 | [info](operators/filter/phrase_grounding_recall_filter.md) | - |
