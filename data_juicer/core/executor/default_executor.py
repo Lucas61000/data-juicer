@@ -161,7 +161,16 @@ class DefaultExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
         logger.info("Preparing process operators...")
         ops = load_ops(self.cfg.process)
 
-        # Initialize DAG execution planning (pass ops to avoid redundant loading)
+        # Apply optimizations BEFORE DAG init (so DAG reflects optimized ops)
+        # The optimization manager handles:
+        # - enable_optimizer: true -> uses optimizer_strategies
+        # - op_fusion: true with fusion_strategy="greedy" -> filter_fusion
+        # - op_fusion: true with fusion_strategy="probe" -> op_reorder + filter_fusion
+        from data_juicer.core.optimization_manager import apply_optimizations
+
+        ops = apply_optimizations(ops, self.cfg)
+
+        # Initialize DAG execution planning with OPTIMIZED ops
         self._initialize_dag_execution(self.cfg, ops=ops)
 
         # Log job start with DAG context
@@ -181,15 +190,6 @@ class DefaultExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
             "parallel_groups_count": len(self.pipeline_dag.parallel_groups) if self.pipeline_dag else 0,
         }
         self.log_job_start(job_config, len(ops))
-
-        # Apply optimizations (supports both enable_optimizer and legacy op_fusion configs)
-        # The optimization manager handles:
-        # - enable_optimizer: true -> uses optimizer_strategies
-        # - op_fusion: true with fusion_strategy="greedy" -> filter_fusion
-        # - op_fusion: true with fusion_strategy="probe" -> op_reorder + filter_fusion
-        from data_juicer.core.optimization_manager import apply_optimizations
-
-        ops = apply_optimizations(ops, self.cfg)
 
         # adaptive batch size
         if self.cfg.adaptive_batch_size:
