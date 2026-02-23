@@ -41,10 +41,13 @@ DEFAULT_STRATEGIES = ["op_reorder", "filter_fusion"]
 class PipelinePerformanceTester:
     """Performance tester for comparing baseline vs optimized pipeline execution."""
 
-    def __init__(self, output_dir: str = "./outputs/pipeline_perf_test", strategies: list = None):
+    def __init__(
+        self, output_dir: str = "./outputs/pipeline_perf_test", strategies: list = None, executor_type: str = "default"
+    ):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.strategies = strategies or DEFAULT_STRATEGIES
+        self.executor_type = executor_type
 
         # Setup logging
         log_file = self.output_dir / "perf_test.log"
@@ -81,6 +84,7 @@ class PipelinePerformanceTester:
             # Use the new optimizer config instead of legacy op_fusion
             "enable_optimizer": mode == "optimized",
             "optimizer_strategies": self.strategies,
+            "executor_type": self.executor_type,
             "process": recipe_config.get("process", []),
         }
 
@@ -220,6 +224,7 @@ class PipelinePerformanceTester:
             f.write(f"- **Test Date**: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"- **Recipe**: {results['metadata']['recipe_path']}\n")
             f.write(f"- **Dataset**: {results['metadata']['dataset_path']}\n")
+            f.write(f"- **Executor**: {results['metadata']['executor_type']}\n")
             f.write(f"- **Strategies**: {', '.join(results['metadata']['strategies'])}\n")
             f.write(f"- **Validation**: {'PASSED' if validation['validation_passed'] else 'FAILED'}\n")
             f.write(f"- **Faster Mode**: {comparison['faster_mode'].title()}\n")
@@ -295,12 +300,14 @@ class PipelinePerformanceTester:
         logger.info(f"Recipe: {recipe_path}")
         logger.info(f"Dataset: {dataset_path}")
         logger.info(f"Strategies: {self.strategies}")
+        logger.info(f"Executor: {self.executor_type}")
 
         # Store metadata
         self.results["metadata"] = {
             "recipe_path": recipe_path,
             "dataset_path": dataset_path,
             "strategies": self.strategies,
+            "executor_type": self.executor_type,
             "test_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
@@ -362,16 +369,31 @@ def _worker_process(config_path: str, mode: str, result_queue: mp.Queue):
         args = ["--config", config_path]
         cfg = init_configs(args=args)
 
-        # Create executor
-        executor = DefaultExecutor(cfg)
+        # Create executor based on executor_type
+        executor_type = getattr(cfg, "executor_type", "default")
+        if executor_type == "ray":
+            from data_juicer.core import RayExecutor
+
+            executor = RayExecutor(cfg)
+        else:
+            executor = DefaultExecutor(cfg)
 
         # Run and collect metrics
         start_time = time.time()
         dataset = executor.run()
         end_time = time.time()
 
-        # Collect results
-        dataset_length = len(dataset) if dataset is not None else 0
+        # Collect results - handle both Dataset and RayDataset
+        if dataset is not None:
+            if hasattr(dataset, "data") and hasattr(dataset.data, "count"):
+                # RayDataset
+                dataset_length = dataset.data.count()
+            elif hasattr(dataset, "__len__"):
+                dataset_length = len(dataset)
+            else:
+                dataset_length = 0
+        else:
+            dataset_length = 0
         result = {
             "execution_time": end_time - start_time,
             "output_samples": dataset_length,
@@ -414,6 +436,13 @@ def main():
         "Example: --strategies filter_fusion (test only filter fusion)",
     )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument(
+        "--executor",
+        type=str,
+        default="default",
+        choices=["default", "ray"],
+        help="Executor type: 'default' (local) or 'ray' (distributed). Default: default",
+    )
 
     args = parser.parse_args()
 
@@ -428,8 +457,10 @@ def main():
         strategies = [s.strip() for s in args.strategies.split(",")]
         logger.info(f"Testing strategies: {strategies}")
 
+    logger.info(f"Using executor: {args.executor}")
+
     # Create tester and run test
-    tester = PipelinePerformanceTester(args.output_dir, strategies=strategies)
+    tester = PipelinePerformanceTester(args.output_dir, strategies=strategies, executor_type=args.executor)
 
     try:
         results = tester.run_test(args.recipe_path, args.dataset_path)

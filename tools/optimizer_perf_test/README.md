@@ -18,6 +18,7 @@ python tools/optimizer_perf_test/run_test.py \
 - `--dataset-path PATH`: Path to the dataset file (required)
 - `--output-dir PATH`: Output directory (default: `./outputs/pipeline_perf_test`)
 - `--strategies LIST`: Comma-separated list of strategies to test (default: `op_reorder,filter_fusion`)
+- `--executor TYPE`: Executor type: `default` (local) or `ray` (distributed). Default: `default`
 - `--verbose`: Enable verbose logging
 
 ## Testing Specific Strategies
@@ -39,6 +40,16 @@ python tools/optimizer_perf_test/run_test.py \
 ```
 
 Available strategies: `op_reorder`, `filter_fusion`, `mapper_fusion`
+
+## Testing with Ray Executor
+
+Test with Ray distributed executor:
+```bash
+python tools/optimizer_perf_test/run_test.py \
+  --recipe-path configs/optimization/optimizer_benchmark.yaml \
+  --dataset-path test_data/benchmark_10k.jsonl \
+  --executor ray
+```
 
 ## Generating Test Data
 
