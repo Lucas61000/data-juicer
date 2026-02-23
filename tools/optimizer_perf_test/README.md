@@ -6,7 +6,7 @@ Benchmark tool for comparing pipeline execution with and without the optimizer.
 
 ```bash
 python tools/optimizer_perf_test/run_test.py \
-  --recipe-path configs/optimization/optimizer_benchmark.yaml \
+  --recipe-path tools/optimizer_perf_test/configs/optimizer_benchmark.yaml \
   --dataset-path test_data/benchmark_10k.jsonl \
   --output-dir outputs/optimizer_bench \
   --verbose
@@ -26,7 +26,7 @@ python tools/optimizer_perf_test/run_test.py \
 Test only filter fusion:
 ```bash
 python tools/optimizer_perf_test/run_test.py \
-  --recipe-path configs/optimization/optimizer_benchmark.yaml \
+  --recipe-path tools/optimizer_perf_test/configs/optimizer_benchmark.yaml \
   --dataset-path test_data/benchmark_10k.jsonl \
   --strategies filter_fusion
 ```
@@ -34,7 +34,7 @@ python tools/optimizer_perf_test/run_test.py \
 Test only operation reordering:
 ```bash
 python tools/optimizer_perf_test/run_test.py \
-  --recipe-path configs/optimization/optimizer_benchmark.yaml \
+  --recipe-path tools/optimizer_perf_test/configs/optimizer_benchmark.yaml \
   --dataset-path test_data/benchmark_10k.jsonl \
   --strategies op_reorder
 ```
@@ -46,7 +46,7 @@ Available strategies: `op_reorder`, `filter_fusion`, `mapper_fusion`
 Test with Ray distributed executor:
 ```bash
 python tools/optimizer_perf_test/run_test.py \
-  --recipe-path configs/optimization/optimizer_benchmark.yaml \
+  --recipe-path tools/optimizer_perf_test/configs/optimizer_benchmark.yaml \
   --dataset-path test_data/benchmark_10k.jsonl \
   --executor ray
 ```

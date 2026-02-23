@@ -49,7 +49,7 @@ class OptimizationManager:
             if isinstance(self.optimization_strategies, str):
                 self.optimization_strategies = self.optimization_strategies.split(",")
 
-            logger.info(f"🔧 Core optimizer enabled with strategies: {self.optimization_strategies}")
+            logger.info(f"Pipeline optimizer enabled with strategies: {self.optimization_strategies}")
 
         # Check for legacy op_fusion config (backward compatibility)
         elif self.cfg and hasattr(self.cfg, "op_fusion") and self.cfg.op_fusion:
@@ -60,11 +60,11 @@ class OptimizationManager:
             if fusion_strategy == "probe":
                 # Probe strategy = reorder by speed + filter fusion
                 self.optimization_strategies = ["op_reorder", "filter_fusion"]
-                logger.info("🔧 Legacy op_fusion (probe) mapped to optimizer strategies: op_reorder, filter_fusion")
+                logger.info("Legacy op_fusion (probe) mapped to: op_reorder, filter_fusion")
             else:
                 # Greedy strategy = filter fusion only (preserves original order)
                 self.optimization_strategies = ["filter_fusion"]
-                logger.info("🔧 Legacy op_fusion (greedy) mapped to optimizer strategy: filter_fusion")
+                logger.info("Legacy op_fusion (greedy) mapped to: filter_fusion")
 
         else:
             self.optimization_enabled = False
@@ -84,55 +84,35 @@ class OptimizationManager:
             return ops
 
         try:
-            logger.info("🔧 Applying core optimizer to operations...")
-
             # Create AST from operations
             ast = self._create_ast_from_ops(ops)
 
-            # Print original operation order
+            # Get original operation order for comparison
             original_order = [getattr(op, "_name", getattr(op, "name", str(op))) for op in ops]
-            logger.info("📋 Original operation order:")
-            for i, op_name in enumerate(original_order, 1):
-                logger.info(f"   {i}. {op_name}")
-
-            # Print original AST structure
-            logger.info("📋 Original AST structure:")
-            self._print_ast_structure(ast, "BEFORE")
+            logger.debug(f"Original ops: {original_order}")
 
             # Apply core optimizer with properly initialized strategies
             strategy_objects = self._initialize_strategies()
             optimizer = PipelineOptimizer(strategy_objects)
             optimized_ast = optimizer.optimize(ast)
 
-            # Print optimized AST structure
-            logger.info("📋 Optimized AST structure:")
-            self._print_ast_structure(optimized_ast, "AFTER")
-
             # Extract optimized operations from the AST
             optimized_ops = self._extract_ops_from_ast(optimized_ast, ops)
 
-            # Print final optimized operation order
+            # Log summary
             optimized_order = [getattr(op, "_name", getattr(op, "name", str(op))) for op in optimized_ops]
-            logger.info("📋 Final optimized operation order:")
-            for i, op_name in enumerate(optimized_order, 1):
-                logger.info(f"   {i}. {op_name}")
 
-            # Show the difference
             if original_order != optimized_order:
-                logger.info("🔄 Operation order has been optimized!")
-                logger.info("📊 Changes:")
-                for i, (orig, opt) in enumerate(zip(original_order, optimized_order)):
-                    if orig != opt:
-                        logger.info(f"   Position {i+1}: {orig} → {opt}")
+                logger.info(f"Optimized: {len(original_order)} ops -> {len(optimized_order)} ops")
+                logger.debug(f"New order: {optimized_order}")
             else:
-                logger.info("ℹ️ No changes to operation order")
+                logger.debug("No changes to operation order")
 
-            logger.info("✅ Core optimizer applied successfully")
             return optimized_ops
 
         except Exception as e:
-            logger.error(f"❌ Failed to apply core optimizer: {e}")
-            logger.warning("⚠️ Continuing with original operation order")
+            logger.error(f"Optimizer failed: {e}")
+            logger.warning("Continuing with original operation order")
             return ops
 
     def _create_ast_from_ops(self, ops: List[Any]) -> PipelineAST:
@@ -183,8 +163,6 @@ class OptimizationManager:
         - Fused ops (fused_filter, fused_mapper) are constructed from their configs
         """
         try:
-            logger.info(f"🔍 Extracting operations from AST with {len(original_ops)} original operations")
-
             # Create a mapping from operation names to original operation objects
             op_map = {}
             for op in original_ops:
@@ -196,23 +174,19 @@ class OptimizationManager:
                     op_name = str(op)
                 op_map[op_name] = op
 
-            logger.info(f"🔍 Created operation map with {len(op_map)} operations")
-
             # Extract operations from AST, handling fused operations
             optimized_ops = []
             used_ops = set()  # Track which original ops have been used
 
             self._extract_ops_recursive(ast.root, op_map, optimized_ops, used_ops)
 
-            logger.info(f"📋 Extracted {len(optimized_ops)} operations from optimized AST")
             return optimized_ops
 
         except Exception as e:
-            logger.error(f"❌ Failed to extract optimized operations: {e}")
+            logger.error(f"Failed to extract optimized operations: {e}")
             import traceback
 
-            logger.error(f"❌ Traceback: {traceback.format_exc()}")
-            logger.warning("⚠️ Returning original operations")
+            logger.debug(f"Traceback: {traceback.format_exc()}")
             return original_ops
 
     def _extract_ops_recursive(self, node: OpNode, op_map: Dict[str, Any], result: List[Any], used_ops: set):
@@ -227,19 +201,17 @@ class OptimizationManager:
                 fused_op = self._create_fused_filter(node, op_map, used_ops)
                 if fused_op:
                     result.append(fused_op)
-                    logger.info(f"🔧 Created FusedFilter with {len(fused_op.fused_filters)} filters")
             elif node.name == "fused_mapper":
                 # Handle fused mapper - create FusedMapper from component mappers
                 fused_op = self._create_fused_mapper(node, op_map, used_ops)
                 if fused_op:
                     result.append(fused_op)
-                    logger.info(f"🔧 Created FusedMapper")
             elif node.name in op_map:
                 # Regular operation - look up in map
                 result.append(op_map[node.name])
                 used_ops.add(node.name)
             else:
-                logger.warning(f"⚠️ Could not find operation '{node.name}' in original operations")
+                logger.warning(f"Operation '{node.name}' not found in original operations")
 
         # Process children
         if node.children:
@@ -257,7 +229,7 @@ class OptimizationManager:
             detailed_ops = fused_config.get("detailed_ops", [])
 
             if not fused_op_list:
-                logger.warning("⚠️ fused_filter has empty fused_op_list")
+                logger.warning("fused_filter has empty fused_op_list")
                 return None
 
             # Collect the filter objects from original ops
@@ -269,10 +241,10 @@ class OptimizationManager:
                     filters.append(op_map[op_name])
                     used_ops.add(op_name)
                 else:
-                    logger.warning(f"⚠️ Could not find filter '{op_name}' for fusion")
+                    logger.warning(f"Filter '{op_name}' not found for fusion")
 
             if not filters:
-                logger.warning("⚠️ No filters found for fused_filter")
+                logger.warning("No filters found for fused_filter")
                 return None
 
             # Create the FusedFilter
@@ -281,11 +253,11 @@ class OptimizationManager:
                 fused_filters=filters,
             )
 
-            logger.info(f"✅ Created FusedFilter with filters: {detailed_ops}")
+            logger.info(f"Fused {len(filters)} filters: {detailed_ops}")
             return fused_filter
 
         except Exception as e:
-            logger.error(f"❌ Failed to create FusedFilter: {e}")
+            logger.error(f"Failed to create FusedFilter: {e}")
             return None
 
     def _create_fused_mapper(self, node: OpNode, op_map: Dict[str, Any], used_ops: set) -> Any:
@@ -299,7 +271,7 @@ class OptimizationManager:
             detailed_ops = fused_config.get("detailed_ops", [])
 
             if not fused_op_list:
-                logger.warning("⚠️ fused_mapper has empty fused_op_list")
+                logger.warning("fused_mapper has empty fused_op_list")
                 return None
 
             # Collect the mapper objects from original ops
@@ -310,10 +282,10 @@ class OptimizationManager:
                     mappers.append(op_map[op_name])
                     used_ops.add(op_name)
                 else:
-                    logger.warning(f"⚠️ Could not find mapper '{op_name}' for fusion")
+                    logger.warning(f"Mapper '{op_name}' not found for fusion")
 
             if not mappers:
-                logger.warning("⚠️ No mappers found for fused_mapper")
+                logger.warning("No mappers found for fused_mapper")
                 return None
 
             # Create the FusedMapper
@@ -322,23 +294,17 @@ class OptimizationManager:
                 fused_mappers=mappers,
             )
 
-            logger.info(f"✅ Created FusedMapper with mappers: {detailed_ops}")
+            logger.info(f"Fused {len(mappers)} mappers: {detailed_ops}")
             return fused_mapper
 
         except Exception as e:
-            logger.error(f"❌ Failed to create FusedMapper: {e}")
+            logger.error(f"Failed to create FusedMapper: {e}")
             return None
 
     def _get_operation_order_from_ast(self, ast: PipelineAST) -> List[str]:
         """Get the operation order from the AST using depth-first traversal."""
         order = []
-
-        logger.info(f"🔍 Starting AST traversal from root: {ast.root}")
-
-        # Use depth-first traversal to get all operations
         self._traverse_ast_dfs(ast.root, order)
-
-        logger.info(f"🔍 Extracted operation order from AST: {order}")
         return order
 
     def _traverse_ast_dfs(self, node: OpNode, order: List[str]):
@@ -349,12 +315,10 @@ class OptimizationManager:
         # Skip root node but process its children
         if node.name != "root":
             order.append(node.name)
-            logger.info(f"🔍 Added to order: {node.name}")
 
         # Recursively traverse all children
         if node.children:
-            for i, child in enumerate(node.children):
-                logger.info(f"🔍 Processing child {i+1}/{len(node.children)}: {child.name}")
+            for child in node.children:
                 self._traverse_ast_dfs(child, order)
 
     def is_optimization_enabled(self) -> bool:
@@ -377,67 +341,20 @@ class OptimizationManager:
 
             if strategy_obj is not None:
                 strategy_objects.append(strategy_obj)
-                logger.info(f"🔧 Initialized strategy: {strategy_name}")
+                logger.debug(f"Initialized strategy: {strategy_name}")
             else:
-                logger.warning(f"⚠️ Failed to initialize strategy: {strategy_name}")
+                logger.warning(f"Failed to initialize strategy: {strategy_name}")
 
         if not strategy_objects:
-            logger.warning("⚠️ No valid strategies initialized, using default op_reorder strategy")
+            logger.warning("No valid strategies initialized, using default op_reorder strategy")
             default_strategy = StrategyRegistry.create_strategy("op_reorder")
             if default_strategy is not None:
                 strategy_objects = [default_strategy]
             else:
-                logger.error("❌ Failed to create default strategy")
+                logger.error("Failed to create default strategy")
                 strategy_objects = []
 
-        logger.info(f"🔧 Initialized {len(strategy_objects)} optimization strategies")
         return strategy_objects
-
-    def _print_ast_structure(self, ast: PipelineAST, phase: str):
-        """Print the AST structure for debugging purposes."""
-        logger.info(f"🔍 {phase} optimization - AST structure:")
-
-        if not ast or not ast.root:
-            logger.info("   Empty AST")
-            return
-
-        # Print the AST tree structure
-        self._print_ast_node(ast.root, 0, phase)
-
-    def _print_ast_node(self, node: OpNode, depth: int, phase: str):
-        """Recursively print AST node structure."""
-        indent = "  " * depth
-
-        if node.name == "root":
-            logger.info(f"{indent}🌳 ROOT")
-        else:
-            # Get operation type emoji
-            type_emoji = "🔧" if node.op_type == OpType.MAPPER else "🔍" if node.op_type == OpType.FILTER else "⚙️"
-            logger.info(f"{indent}{type_emoji} {node.op_type.name}: {node.name}")
-
-            # Print key config parameters if available
-            if node.config:
-                important_configs = {}
-                for key, value in node.config.items():
-                    if key in [
-                        "text_key",
-                        "image_key",
-                        "audio_key",
-                        "video_key",
-                        "threshold",
-                        "min_length",
-                        "max_length",
-                    ]:
-                        important_configs[key] = value
-
-                if important_configs:
-                    config_str = ", ".join([f"{k}={v}" for k, v in important_configs.items()])
-                    logger.info(f"{indent}    📝 Config: {config_str}")
-
-        # Print children
-        if node.children:
-            for child in node.children:
-                self._print_ast_node(child, depth + 1, phase)
 
 
 # Global optimization manager instance

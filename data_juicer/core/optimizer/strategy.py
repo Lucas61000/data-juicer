@@ -73,7 +73,7 @@ class StrategyRegistry:
             strategy_class: The strategy class to register
         """
         cls._strategies[name] = strategy_class
-        logger.debug(f"🔧 Registered optimization strategy: {name} -> {strategy_class.__name__}")
+        logger.debug(f"Registered strategy: {name}")
 
     @classmethod
     def get_strategy_class(cls, name: str) -> Optional[Type[OptimizationStrategy]]:
@@ -109,13 +109,13 @@ class StrategyRegistry:
         """
         strategy_class = cls.get_strategy_class(name)
         if strategy_class is None:
-            logger.warning(f"⚠️ Unknown strategy '{name}'. Available strategies: {cls.get_available_strategies()}")
+            logger.warning(f"Unknown strategy '{name}'. Available: {cls.get_available_strategies()}")
             return None
 
         try:
             return strategy_class(**kwargs)
         except Exception as e:
-            logger.error(f"❌ Failed to create strategy '{name}': {e}")
+            logger.error(f"Failed to create strategy '{name}': {e}")
             return None
 
 

@@ -832,7 +832,7 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
         if not load_configs_only and hasattr(cfg, "job_id") and cfg.job_id:
             # Check if this is a resumption attempt by looking for existing job directory
             if cfg.work_dir and os.path.exists(cfg.work_dir):
-                logger.info(f"🔍 Checking for job resumption: {cfg.job_id}")
+                logger.info(f"Checking for job resumption: {cfg.job_id}")
                 cfg._same_yaml_config = validate_config_for_resumption(cfg, cfg.work_dir, args)
             else:
                 # New job, set flag to True
@@ -989,7 +989,7 @@ def init_setup_from_cfg(cfg: Namespace, load_configs_only=False):
             )
         # Log deprecation warning
         logger.warning(
-            "⚠️ 'op_fusion' is deprecated. Use 'enable_optimizer: true' with "
+            "'op_fusion' is deprecated. Use 'enable_optimizer: true' with "
             "'optimizer_strategies: [filter_fusion]' instead. "
             f"Your op_fusion config (fusion_strategy={cfg.fusion_strategy}) "
             "will be automatically mapped to the optimization framework."
@@ -1025,10 +1025,10 @@ def init_setup_from_cfg(cfg: Namespace, load_configs_only=False):
         from data_juicer.core.optimizer.strategy import StrategyRegistry
 
         available_strategies = StrategyRegistry.get_available_strategies()
-        logger.info(f"🔧 Pipeline optimizer enabled with strategies: {cfg.optimizer_strategies}")
-        logger.debug(f"🔧 Available optimization strategies: {available_strategies}")
+        logger.info(f"Pipeline optimizer enabled: {cfg.optimizer_strategies}")
+        logger.debug(f"Available strategies: {available_strategies}")
     else:
-        logger.debug("🔧 Pipeline optimizer disabled")
+        logger.debug("Pipeline optimizer disabled")
 
     # Apply text_key modification during initializing configs
     # users can freely specify text_key for different ops using `text_key`
@@ -1376,18 +1376,18 @@ def validate_config_for_resumption(cfg: Namespace, work_dir: str, original_args:
         cli_match = len(cli_differences) == 0
 
         if not config_match or not cli_match:
-            logger.error("❌ Config validation failed - configurations don't match:")
+            logger.error("Config validation failed - configurations don't match:")
             if not config_match:
                 logger.error("   [config] Config file content differs")
             if not cli_match:
                 logger.error("   [cli] CLI arguments differ:")
                 for diff in cli_differences:
-                    logger.error(f"      {diff['key']}: {diff['original']} → {diff['current']}")
-            logger.error("💡 Use the same config file and CLI arguments for resumption")
+                    logger.error(f"      {diff['key']}: {diff['original']} -> {diff['current']}")
+            logger.error("Use the same config file and CLI arguments for resumption")
             cfg._same_yaml_config = False
             return False
 
-        logger.info("✅ Config validation passed - configurations match exactly")
+        logger.info("Config validation passed")
         cfg._same_yaml_config = True
         return True
 

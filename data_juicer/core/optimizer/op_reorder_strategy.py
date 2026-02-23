@@ -44,48 +44,28 @@ class OpReorderStrategy(OptimizationStrategy):
         if not ast.root or not ast.root.children:
             return ast
 
-        logger.info("🔄 Applying operation reordering optimization...")
-
         # Get all operations from the AST
         operations = self._extract_operations(ast.root)
 
-        # Log original order
-        logger.info("📋 Original operation order:")
-        for i, op in enumerate(operations, 1):
-            op_type = "🔧 MAPPER" if op.op_type == OpType.MAPPER else "🔍 FILTER"
-            logger.info(f"  {i}. {op_type}: {op.name}")
+        # Log original order at debug level
+        original_names = [op.name for op in operations]
+        logger.debug(f"Original order: {original_names}")
 
         # Analyze dependencies
         dependencies = self._analyze_dependencies(operations)
-        logger.info(f"🔗 Found {len(dependencies)} dependencies between operations")
-
-        # Log specific dependencies
         if dependencies:
-            logger.info("🔗 Operation dependencies:")
-            for op_name, deps in dependencies.items():
-                if deps:
-                    logger.info(f"  {op_name} depends on: {', '.join(deps)}")
-        else:
-            logger.info("🔗 No dependencies found - operations can be freely reordered")
+            logger.debug(f"Found {len(dependencies)} operation dependencies")
 
         # Perform topological sort
         optimal_order = self._topological_sort(operations, dependencies)
 
-        # Create a mapping from operation names to operation nodes
-        op_map = {op.name: op for op in operations}
-
-        # Log optimized order
-        logger.info("⚡ Optimized operation order:")
-        for i, op_name in enumerate(optimal_order, 1):
-            op_node = op_map.get(op_name)
-            if op_node:
-                op_type = "🔧 MAPPER" if op_node.op_type == OpType.MAPPER else "🔍 FILTER"
-                logger.info(f"  {i}. {op_type}: {op_name}")
-
         # Reorder operations in the AST
         new_ast = self._reorder_ast(ast, optimal_order)
 
-        logger.info(f"✅ Reordered {len(operations)} operations for optimal performance")
+        # Log if order changed
+        if original_names != optimal_order:
+            logger.debug(f"Reordered: {optimal_order}")
+
         return new_ast
 
     def _extract_operations(self, root: OpNode) -> List[OpNode]:
