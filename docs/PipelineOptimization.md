@@ -6,11 +6,12 @@ This document describes Data-Juicer's pipeline optimization framework, which pro
 
 The Pipeline Optimization Framework transforms user-defined processing pipelines into optimized execution plans. It operates at a higher level than Ray's built-in optimizations, providing domain-specific optimizations that understand data processing semantics.
 
-**Key capabilities:**
-- **Filter Pushdown** - Push predicates to data sources to reduce I/O
-- **Projection Pushdown** - Only read required columns
+**Current capabilities:**
 - **Operator Reordering** - Run selective/cheap operations first
-- **Operator Fusion** - Combine operations that share intermediate variables
+- **Operator Fusion** - Combine filters/mappers that share intermediate variables
+
+**Planned capabilities:**
+- **Filter Pushdown** - Push predicates to data sources to reduce I/O (requires DataConnector integration)
 - **Cost-based Optimization** - Use statistics for optimization decisions
 
 ## Ray's Built-in Optimizations vs. Data-Juicer Optimization Framework
@@ -88,9 +89,9 @@ Ray operates at the **execution level** without understanding the **semantics** 
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Concrete Example: Why Both Layers Matter
+### Illustrative Example: How Both Layers Work Together
 
-Consider this pipeline processing a 1TB dataset from ODPS:
+Consider this pipeline processing a large dataset from ODPS:
 
 ```yaml
 dataset_path: "odps://project/web_crawl"
@@ -106,62 +107,53 @@ process:
 **Without Data-Juicer Optimization (Ray only):**
 
 ```
-1. Read entire 1TB from ODPS (all columns)
+1. Read entire dataset from ODPS (all columns)
 2. Execute filters in user-specified order:
-   - text_length_filter: processes 1TB
-   - language_id_score_filter: processes 1TB (model inference!)
-   - perplexity_filter: processes 1TB (model inference!)
-   - image_size_filter: loads all images, processes 1TB
+   - text_length_filter: processes full dataset
+   - language_id_score_filter: model inference on full dataset
+   - perplexity_filter: model inference on full dataset
+   - image_size_filter: loads all images
    - image_aspect_ratio_filter: loads all images AGAIN
 3. Ray fuses the map operations within each filter
-4. Total: ~1TB read, ~5TB processed, images loaded twice
 ```
 
 **With Data-Juicer Optimization + Ray:**
 
 ```
-1. Filter Pushdown: Push text_length_filter to ODPS
+1. Filter Pushdown (future): Push text_length_filter to ODPS
    → SELECT text, images FROM web_crawl WHERE LENGTH(text) BETWEEN 100 AND 10000
-   → Only 200GB transferred (80% reduction)
+   → Reduces data transfer
 
-2. Projection Pushdown: Only read 'text' and 'images' columns
-   → Skip 'metadata', 'html', 'urls' columns (30% reduction)
+2. Operator Reordering:
+   - Run cheap filters (text_length, image_size) before expensive ones
+   - Expensive model inference runs on smaller dataset
 
-3. Operator Reordering:
-   - text_length_filter: already pushed down
-   - image_size_filter: cheap, run early (removes 40%)
-   - image_aspect_ratio_filter: cheap, run next (removes 10%)
-   - language_id_score_filter: expensive, run on 50% of data
-   - perplexity_filter: expensive, run on 40% of data
-
-4. Operator Fusion: Fuse image filters
+3. Operator Fusion: Fuse image filters
    - image_size_filter + image_aspect_ratio_filter → load images ONCE
 
-5. Ray executes the optimized plan with its own optimizations
-
-6. Total: ~140GB read, ~400GB processed, images loaded once
+4. Ray executes the optimized plan with its own optimizations
 ```
 
-**Performance Comparison:**
+**Potential Benefits** (actual gains depend on workload characteristics):
 
-| Metric | Ray Only | DJ + Ray | Improvement |
-|--------|----------|----------|-------------|
-| Data Read | 1 TB | 140 GB | **7x less I/O** |
-| Data Processed | ~5 TB | ~400 GB | **12x less work** |
-| Image Loads | 2x per image | 1x per image | **2x less loading** |
-| Model Inference | On 100% data | On 40% data | **2.5x less inference** |
-| Estimated Time | 3 hours | 25 minutes | **7x faster** |
+| Optimization | Potential Benefit | When It Helps Most |
+|--------------|-------------------|-------------------|
+| Filter Pushdown | Reduced I/O | Database/cloud sources with selective filters |
+| Operator Reordering | Less wasted compute | Pipelines with expensive ops and selective cheap filters |
+| Operator Fusion | Reduced redundant work | Operations sharing intermediate data (e.g., loaded images) |
 
-### When Data-Juicer Optimization Matters Most
+> **Note**: Actual performance improvements vary significantly based on dataset characteristics, filter selectivity, and infrastructure. Benchmarking on your specific workload is recommended.
 
-| Scenario | DJ Optimization Value | Why |
-|----------|----------------------|-----|
-| Large datasets (>100GB) | **Very High** | I/O reduction dominates |
-| ODPS/database sources | **Very High** | Filter pushdown possible |
-| Multimodal data (images/video) | **High** | Avoid reloading media |
-| Pipelines with model inference | **High** | Run cheap filters first |
-| Simple text pipelines | **Medium** | Reordering still helps |
-| Small datasets (<1GB) | **Low** | Overhead may exceed benefit |
+### When Data-Juicer Optimization May Help
+
+| Scenario | Potential Value | Why |
+|----------|----------------|-----|
+| Large datasets | Higher | I/O and compute reduction more impactful |
+| ODPS/database sources | Higher | Filter pushdown possible (when implemented) |
+| Multimodal data (images/video) | Higher | Avoid redundant media loading via fusion |
+| Pipelines with model inference | Higher | Reordering can reduce expensive inference calls |
+| Simple text pipelines | Moderate | Reordering may still help |
+| Small datasets (<1GB) | Lower | Optimization overhead may exceed benefit |
 
 ### Complementary, Not Competing
 
@@ -711,21 +703,15 @@ For execution details (partitioning, checkpointing, event logging), see [Partiti
 
 ## Performance Impact
 
-### Optimization Impact by Data Size
+### Expected Optimization Impact by Data Size
 
-| Dataset Size | Filter Pushdown | Projection | Op Reorder | Fusion |
-|-------------|-----------------|------------|------------|--------|
-| < 1 GB | Low | Low | Medium | Low |
-| 1-100 GB | High | Medium | High | Medium |
-| > 100 GB | Very High | High | High | Medium |
+| Dataset Size | Filter Pushdown | Op Reorder | Fusion |
+|-------------|-----------------|------------|--------|
+| < 1 GB | Low | Low-Medium | Low |
+| 1-100 GB | Medium-High | Medium-High | Medium |
+| > 100 GB | High | High | Medium |
 
-### Benchmark Results (Synthetic)
-
-| Scenario | Without Optimization | With Optimization | Speedup |
-|----------|---------------------|-------------------|---------|
-| ODPS 1TB, 3 pushable filters | 45 min | 8 min | 5.6x |
-| Image pipeline, 5 image filters | 120 min | 40 min | 3x |
-| Text pipeline, 10 filters | 30 min | 12 min | 2.5x |
+> **Note**: These are expected relative impacts, not measured benchmarks. Actual performance depends on workload characteristics such as filter selectivity, operator costs, and data source capabilities. We encourage users to benchmark on their specific use cases and share results.
 
 ## Future Work
 
