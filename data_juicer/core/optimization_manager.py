@@ -6,7 +6,7 @@ This module provides a centralized way to apply optimization strategies
 to data processing pipelines across different executors.
 """
 
-from typing import Any, List
+from typing import Any, Dict, List
 
 from loguru import logger
 
@@ -176,12 +176,14 @@ class OptimizationManager:
         return ast
 
     def _extract_ops_from_ast(self, ast: PipelineAST, original_ops: List[Any]) -> List[Any]:
-        """Extract optimized operations from the AST."""
+        """Extract optimized operations from the AST.
+
+        This method handles both regular operations and fused operations:
+        - Regular ops are looked up in the original ops map
+        - Fused ops (fused_filter, fused_mapper) are constructed from their configs
+        """
         try:
             logger.info(f"🔍 Extracting operations from AST with {len(original_ops)} original operations")
-
-            # Get the optimized operation order from the AST
-            optimized_order = self._get_operation_order_from_ast(ast)
 
             # Create a mapping from operation names to original operation objects
             op_map = {}
@@ -196,22 +198,13 @@ class OptimizationManager:
 
             logger.info(f"🔍 Created operation map with {len(op_map)} operations")
 
-            # Reorder operations according to the optimized AST
+            # Extract operations from AST, handling fused operations
             optimized_ops = []
-            for op_name in optimized_order:
-                if op_name in op_map:
-                    optimized_ops.append(op_map[op_name])
-                else:
-                    logger.warning(f"⚠️ Could not find operation '{op_name}' in original operations")
+            used_ops = set()  # Track which original ops have been used
 
-            # Add any operations that weren't in the AST (shouldn't happen, but safety check)
-            for op in original_ops:
-                op_name = getattr(op, "_name", getattr(op, "name", str(op)))
-                if op_name not in optimized_order:
-                    logger.warning(f"⚠️ Operation '{op_name}' not found in optimized order, adding at end")
-                    optimized_ops.append(op)
+            self._extract_ops_recursive(ast.root, op_map, optimized_ops, used_ops)
 
-            logger.info(f"📋 Reordered {len(optimized_ops)} operations based on optimization")
+            logger.info(f"📋 Extracted {len(optimized_ops)} operations from optimized AST")
             return optimized_ops
 
         except Exception as e:
@@ -221,6 +214,120 @@ class OptimizationManager:
             logger.error(f"❌ Traceback: {traceback.format_exc()}")
             logger.warning("⚠️ Returning original operations")
             return original_ops
+
+    def _extract_ops_recursive(self, node: OpNode, op_map: Dict[str, Any], result: List[Any], used_ops: set):
+        """Recursively extract operations from AST nodes."""
+        if not node:
+            return
+
+        # Skip root node
+        if node.name != "root":
+            if node.name == "fused_filter":
+                # Handle fused filter - create FusedFilter from component filters
+                fused_op = self._create_fused_filter(node, op_map, used_ops)
+                if fused_op:
+                    result.append(fused_op)
+                    logger.info(f"🔧 Created FusedFilter with {len(fused_op.fused_filters)} filters")
+            elif node.name == "fused_mapper":
+                # Handle fused mapper - create FusedMapper from component mappers
+                fused_op = self._create_fused_mapper(node, op_map, used_ops)
+                if fused_op:
+                    result.append(fused_op)
+                    logger.info(f"🔧 Created FusedMapper")
+            elif node.name in op_map:
+                # Regular operation - look up in map
+                result.append(op_map[node.name])
+                used_ops.add(node.name)
+            else:
+                logger.warning(f"⚠️ Could not find operation '{node.name}' in original operations")
+
+        # Process children
+        if node.children:
+            for child in node.children:
+                self._extract_ops_recursive(child, op_map, result, used_ops)
+
+    def _create_fused_filter(self, node: OpNode, op_map: Dict[str, Any], used_ops: set) -> Any:
+        """Create a FusedFilter from an AST node."""
+        try:
+            from data_juicer.core.optimizer.fused_op import FusedFilter
+
+            # Get the fused op config
+            fused_config = node.config.get("general_fused_op", {})
+            fused_op_list = fused_config.get("fused_op_list", [])
+            detailed_ops = fused_config.get("detailed_ops", [])
+
+            if not fused_op_list:
+                logger.warning("⚠️ fused_filter has empty fused_op_list")
+                return None
+
+            # Collect the filter objects from original ops
+            filters = []
+            for op_config in fused_op_list:
+                # op_config is like {"text_length_filter": {...}}
+                op_name = list(op_config.keys())[0]
+                if op_name in op_map:
+                    filters.append(op_map[op_name])
+                    used_ops.add(op_name)
+                else:
+                    logger.warning(f"⚠️ Could not find filter '{op_name}' for fusion")
+
+            if not filters:
+                logger.warning("⚠️ No filters found for fused_filter")
+                return None
+
+            # Create the FusedFilter
+            fused_filter = FusedFilter(
+                name="fused_filter",
+                fused_filters=filters,
+            )
+
+            logger.info(f"✅ Created FusedFilter with filters: {detailed_ops}")
+            return fused_filter
+
+        except Exception as e:
+            logger.error(f"❌ Failed to create FusedFilter: {e}")
+            return None
+
+    def _create_fused_mapper(self, node: OpNode, op_map: Dict[str, Any], used_ops: set) -> Any:
+        """Create a FusedMapper from an AST node."""
+        try:
+            from data_juicer.core.optimizer.fused_op import FusedMapper
+
+            # Get the fused op config
+            fused_config = node.config.get("general_fused_op", {})
+            fused_op_list = fused_config.get("fused_op_list", [])
+            detailed_ops = fused_config.get("detailed_ops", [])
+
+            if not fused_op_list:
+                logger.warning("⚠️ fused_mapper has empty fused_op_list")
+                return None
+
+            # Collect the mapper objects from original ops
+            mappers = []
+            for op_config in fused_op_list:
+                op_name = list(op_config.keys())[0]
+                if op_name in op_map:
+                    mappers.append(op_map[op_name])
+                    used_ops.add(op_name)
+                else:
+                    logger.warning(f"⚠️ Could not find mapper '{op_name}' for fusion")
+
+            if not mappers:
+                logger.warning("⚠️ No mappers found for fused_mapper")
+                return None
+
+            # Create the FusedMapper
+            fused_mapper = FusedMapper(
+                name="fused_mapper",
+                fused_mappers=mappers,
+            )
+
+            logger.info(f"✅ Created FusedMapper with mappers: {detailed_ops}")
+            return fused_mapper
+
+        except Exception as e:
+            logger.error(f"❌ Failed to create FusedMapper: {e}")
+            return None
 
     def _get_operation_order_from_ast(self, ast: PipelineAST) -> List[str]:
         """Get the operation order from the AST using depth-first traversal."""
