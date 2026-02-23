@@ -804,7 +804,13 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         """Prepare process operators."""
         ops = load_ops(self.cfg.process)
 
-        # Check for op_fusion configuration with safe attribute access
+        # Apply core optimizer if enabled (before OP fusion)
+        if self.cfg.get("enable_optimizer", False):
+            from data_juicer.core.optimization_manager import apply_optimizations
+
+            ops = apply_optimizations(ops, self.cfg)
+
+        # Check for op_fusion configuration with safe attribute access (legacy feature)
         if hasattr(self.cfg, "op_fusion") and self.cfg.op_fusion:
             logger.info(f"Start OP fusion and reordering with strategy [{self.cfg.fusion_strategy}]...")
             ops = fuse_operators(ops)

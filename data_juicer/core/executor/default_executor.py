@@ -183,7 +183,13 @@ class DefaultExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
         }
         self.log_job_start(job_config, len(ops))
 
-        # OP fusion
+        # Apply core optimizer if enabled (before OP fusion)
+        if self.cfg.get("enable_optimizer", False):
+            from data_juicer.core.optimization_manager import apply_optimizations
+
+            ops = apply_optimizations(ops, self.cfg)
+
+        # OP fusion (legacy feature, separate from core optimizer)
         if self.cfg.op_fusion:
             probe_res = None
             if self.cfg.fusion_strategy == "probe":
