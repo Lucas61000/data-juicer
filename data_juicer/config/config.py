@@ -574,21 +574,17 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
                 "--op_fusion",
                 type=bool,
                 default=False,
-                help="Whether to fuse operators that share the same intermediate "
-                "variables automatically. Op fusion increases memory usage "
-                "but significantly speeds up the whole process by avoiding "
-                "re-computation of shared intermediate variables.",
+                help="[DEPRECATED] Use 'enable_optimizer' with 'optimizer_strategies' instead. "
+                "Legacy option for fusing operators. When enabled, automatically maps to "
+                "the optimization framework: greedy -> filter_fusion, probe -> op_reorder + filter_fusion.",
             )
             parser.add_argument(
                 "--fusion_strategy",
                 type=str,
                 default="probe",
-                help='OP fusion strategy. Support ["greedy", "probe"] now. "greedy" '  # noqa: E251
-                "means keep the basic OP order and put the fused OP to the last "
-                'of each fused OP group. "probe" means Data-Juicer will probe '
-                "the running speed for each OP at the beginning and reorder the "
-                "OPs and fused OPs according to their probed speed (fast to "
-                'slow). It\'s "probe" in default.',
+                help="[DEPRECATED] Use optimizer_strategies instead. "
+                'Legacy fusion strategy: "greedy" (filter_fusion only) or '
+                '"probe" (op_reorder + filter_fusion).',
             )
             parser.add_argument(
                 "--adaptive_batch_size",
@@ -628,13 +624,16 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
                 "--enable_optimizer",
                 type=bool,
                 default=False,
-                help="Enable/disable the core pipeline optimizer.",
+                help="Enable the core pipeline optimizer for operation reordering and fusion. "
+                "This is the recommended way to enable optimizations (replaces legacy op_fusion).",
             )
             parser.add_argument(
                 "--optimizer_strategies",
                 type=List[str],
                 default=["op_reorder"],
-                help="List of optimization strategies to apply when optimizer is enabled.",
+                help="List of optimization strategies to apply. Available strategies: "
+                "'op_reorder' (reorder ops for efficiency), 'filter_fusion' (fuse consecutive filters), "
+                "'mapper_fusion' (fuse consecutive mappers). Example: ['op_reorder', 'filter_fusion']",
             )
             parser.add_argument("--ray_address", type=str, default="auto", help="The address of the Ray cluster.")
 
@@ -980,7 +979,7 @@ def init_setup_from_cfg(cfg: Namespace, load_configs_only=False):
             os.makedirs(cfg.temp_dir, exist_ok=True)
         tempfile.tempdir = cfg.temp_dir
 
-    # The checkpoint mode is not compatible with op fusion for now.
+    # Handle legacy op_fusion config (now handled by optimization framework)
     if cfg.get("op_fusion", False):
         cfg.use_checkpoint = False
         cfg.fusion_strategy = cfg.fusion_strategy.lower()
@@ -988,6 +987,13 @@ def init_setup_from_cfg(cfg: Namespace, load_configs_only=False):
             raise NotImplementedError(
                 f"Unsupported OP fusion strategy [{cfg.fusion_strategy}]. " f"Should be one of {FUSION_STRATEGIES}."
             )
+        # Log deprecation warning
+        logger.warning(
+            "⚠️ 'op_fusion' is deprecated. Use 'enable_optimizer: true' with "
+            "'optimizer_strategies: [filter_fusion]' instead. "
+            f"Your op_fusion config (fusion_strategy={cfg.fusion_strategy}) "
+            "will be automatically mapped to the optimization framework."
+        )
 
     # update huggingface datasets cache directory only when ds_cache_dir is set
     from datasets import config

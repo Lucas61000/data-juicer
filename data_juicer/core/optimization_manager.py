@@ -29,16 +29,18 @@ class OptimizationManager:
         self._check_optimization_enabled()
 
     def _check_optimization_enabled(self):
-        """Check if optimization is enabled via config."""
-        # Check config for optimization settings
-        if self.cfg and hasattr(self.cfg, "enable_optimizer"):
-            self.optimization_enabled = self.cfg.enable_optimizer
-        else:
-            self.optimization_enabled = False
+        """Check if optimization is enabled via config.
 
-        if self.optimization_enabled:
+        Supports both new `enable_optimizer` config and legacy `op_fusion` config.
+        Legacy `op_fusion` is automatically mapped to appropriate optimizer strategies:
+        - op_fusion with fusion_strategy="greedy" -> filter_fusion strategy
+        - op_fusion with fusion_strategy="probe" -> op_reorder + filter_fusion strategies
+        """
+        # Check for new-style enable_optimizer config
+        if self.cfg and hasattr(self.cfg, "enable_optimizer") and self.cfg.enable_optimizer:
+            self.optimization_enabled = True
             # Get strategies from config
-            if self.cfg and hasattr(self.cfg, "optimizer_strategies"):
+            if hasattr(self.cfg, "optimizer_strategies"):
                 self.optimization_strategies = self.cfg.optimizer_strategies
             else:
                 self.optimization_strategies = ["op_reorder"]  # Default strategy
@@ -48,7 +50,24 @@ class OptimizationManager:
                 self.optimization_strategies = self.optimization_strategies.split(",")
 
             logger.info(f"🔧 Core optimizer enabled with strategies: {self.optimization_strategies}")
+
+        # Check for legacy op_fusion config (backward compatibility)
+        elif self.cfg and hasattr(self.cfg, "op_fusion") and self.cfg.op_fusion:
+            self.optimization_enabled = True
+            fusion_strategy = getattr(self.cfg, "fusion_strategy", "greedy")
+
+            # Map legacy fusion_strategy to optimizer strategies
+            if fusion_strategy == "probe":
+                # Probe strategy = reorder by speed + filter fusion
+                self.optimization_strategies = ["op_reorder", "filter_fusion"]
+                logger.info("🔧 Legacy op_fusion (probe) mapped to optimizer strategies: op_reorder, filter_fusion")
+            else:
+                # Greedy strategy = filter fusion only (preserves original order)
+                self.optimization_strategies = ["filter_fusion"]
+                logger.info("🔧 Legacy op_fusion (greedy) mapped to optimizer strategy: filter_fusion")
+
         else:
+            self.optimization_enabled = False
             self.optimization_strategies = []
 
     def apply_optimizations(self, ops: List[Any]) -> List[Any]:

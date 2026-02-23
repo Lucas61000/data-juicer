@@ -16,7 +16,6 @@ from data_juicer.core.executor.event_logging_mixin import EventLoggingMixin
 from data_juicer.core.exporter import Exporter
 from data_juicer.core.tracer import Tracer
 from data_juicer.ops import load_ops
-from data_juicer.ops.op_fusion import fuse_operators
 from data_juicer.ops.selector import (
     FrequencySpecifiedFieldSelector,
     TopkSpecifiedFieldSelector,
@@ -183,21 +182,14 @@ class DefaultExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
         }
         self.log_job_start(job_config, len(ops))
 
-        # Apply core optimizer if enabled (before OP fusion)
-        if self.cfg.get("enable_optimizer", False):
-            from data_juicer.core.optimization_manager import apply_optimizations
+        # Apply optimizations (supports both enable_optimizer and legacy op_fusion configs)
+        # The optimization manager handles:
+        # - enable_optimizer: true -> uses optimizer_strategies
+        # - op_fusion: true with fusion_strategy="greedy" -> filter_fusion
+        # - op_fusion: true with fusion_strategy="probe" -> op_reorder + filter_fusion
+        from data_juicer.core.optimization_manager import apply_optimizations
 
-            ops = apply_optimizations(ops, self.cfg)
-
-        # OP fusion (legacy feature, separate from core optimizer)
-        if self.cfg.op_fusion:
-            probe_res = None
-            if self.cfg.fusion_strategy == "probe":
-                logger.info("Probe the OP speed for OP reordering...")
-                probe_res, _ = self.adapter.probe_small_batch(dataset, ops)
-
-            logger.info(f"Start OP fusion and reordering with strategy " f"[{self.cfg.fusion_strategy}]...")
-            ops = fuse_operators(ops, probe_res)
+        ops = apply_optimizations(ops, self.cfg)
 
         # adaptive batch size
         if self.cfg.adaptive_batch_size:
