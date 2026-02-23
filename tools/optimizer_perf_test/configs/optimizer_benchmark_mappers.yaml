@@ -1,0 +1,23 @@
+# Benchmark config for mapper_fusion optimization
+# Tests the performance benefit of fusing multiple simple text mappers
+#
+# This config has 6 consecutive simple text mappers that can be fused.
+# Expected benefit: reduced iteration overhead, better cache locality.
+
+project_name: 'optimizer-benchmark-mappers'
+np: 4
+use_cache: false
+
+process:
+  # 6 simple text cleaning mappers (all fusable)
+  - clean_html_mapper: {}
+
+  - clean_links_mapper: {}
+
+  - clean_email_mapper: {}
+
+  - clean_copyright_mapper: {}
+
+  - punctuation_normalization_mapper: {}
+
+  - whitespace_normalization_mapper: {}

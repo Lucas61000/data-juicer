@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+"""
+Mapper Fusion Strategy for the core optimizer.
+
+This strategy fuses consecutive mapper operations to reduce dataset iteration overhead.
+"""
+
 from typing import List
 
 from loguru import logger
@@ -8,7 +15,14 @@ from data_juicer.core.pipeline_ast import OpNode, OpType, PipelineAST
 
 @register_strategy("mapper_fusion")
 class MapperFusionStrategy(OptimizationStrategy):
-    """Strategy for fusing mapper operations in the pipeline."""
+    """Strategy for fusing mapper operations in the pipeline.
+
+    Benefits of mapper fusion:
+    - Reduced dataset iteration overhead (1 pass instead of N passes)
+    - Better CPU cache locality (data stays hot between mappers)
+    - Reduced multiprocessing setup overhead
+    - For GPU mappers: data stays on GPU between operations
+    """
 
     def __init__(self):
         """Initialize the mapper fusion strategy."""
@@ -40,21 +54,26 @@ class MapperFusionStrategy(OptimizationStrategy):
             mapper_groups = self._group_mappers(chain)
 
             for group in mapper_groups:
-                if len(group) > 1:
-                    # Create fused operation with clean naming
+                if len(group) > 1 and all(PipelineAST.is_mapper_op(n) for n in group):
+                    # Create fused operation
                     fused_name = "fused_mapper"
                     detailed_ops = [n.name for n in group]
-                    logger.info(f"Fusing mapper operations into {fused_name}: {detailed_ops}")
+                    logger.info(f"Fusing mapper operations: {detailed_ops}")
 
-                    # Create fused node using FusedMapper
+                    # Create operation configs (preserve original configs)
+                    op_configs = []
+                    for op in group:
+                        op_config = {op.name: op.config or {}}
+                        op_configs.append(op_config)
+
+                    # Create fused node with config that optimization_manager can use
                     fused_node = OpNode(
                         name=fused_name,
                         op_type=OpType.MAPPER,
                         config={
-                            "fused_mapper": {
-                                "name": fused_name,
-                                "fused_mappers": detailed_ops,
-                                "detailed_ops": detailed_ops,  # For display purposes
+                            "general_fused_op": {
+                                "fused_op_list": op_configs,
+                                "detailed_ops": detailed_ops,
                             }
                         },
                     )
@@ -69,20 +88,12 @@ class MapperFusionStrategy(OptimizationStrategy):
         return new_ast
 
     def _get_unique_op_chains(self, node: OpNode) -> List[List[OpNode]]:
-        """Get unique chains of operations from the tree.
-
-        Args:
-            node: Root node of the tree
-
-        Returns:
-            List of unique operation chains
-        """
+        """Get unique chains of operations from the tree."""
         chains = []
         seen_chains = set()
 
         def traverse(current: OpNode, chain: List[OpNode]):
             if not current.children:
-                # End of chain, check if we've seen this sequence before
                 chain_key = tuple(n.name for n in chain)
                 if chain_key not in seen_chains:
                     chains.append(chain.copy())
@@ -98,164 +109,94 @@ class MapperFusionStrategy(OptimizationStrategy):
         return chains
 
     def _group_mappers(self, chain: List[OpNode]) -> List[List[OpNode]]:
-        """Group mapper operations that can be fused together.
+        """Group consecutive mapper operations that can be fused.
 
         Args:
             chain: List of operations in the pipeline
 
         Returns:
-            List of mapper operation groups
+            List of operation groups (mappers grouped, others as singles)
         """
         groups = []
         current_group = []
 
-        logger.info(f"Grouping mappers from chain: {[n.name for n in chain]}")
-
         for node in chain:
             if not PipelineAST.is_mapper_op(node):
-                # If we encounter a non-mapper, finalize current group
+                # Non-mapper: finalize current mapper group
                 if current_group:
-                    logger.info(f"Finalizing mapper group: {[n.name for n in current_group]}")
                     groups.append(current_group)
                     current_group = []
-                # Add the non-mapper node as a separate group
+                # Add non-mapper as a separate group
                 groups.append([node])
             else:
-                # This is a mapper node
+                # Mapper: try to add to current group
                 if not current_group:
-                    # Start a new group
                     current_group = [node]
-                    logger.info(f"Starting new mapper group with: {node.name}")
+                elif self._can_fuse_with_group(node, current_group):
+                    current_group.append(node)
                 else:
-                    # Check if current mapper can be fused with the group
-                    if self._can_fuse_with_group(node, current_group):
-                        current_group.append(node)
-                        logger.info(f"Added {node.name} to current group: {[n.name for n in current_group]}")
-                    else:
-                        # Finalize current group and start a new one
-                        logger.info(f"Finalizing mapper group due to dependency: {[n.name for n in current_group]}")
-                        groups.append(current_group)
-                        current_group = [node]
-                        logger.info(f"Starting new mapper group with: {node.name}")
+                    # Can't fuse, start new group
+                    groups.append(current_group)
+                    current_group = [node]
 
         # Don't forget the last group
         if current_group:
-            logger.info(f"Finalizing final mapper group: {[n.name for n in current_group]}")
             groups.append(current_group)
 
-        logger.info(f"Final mapper groups: {[[n.name for n in group] for group in groups]}")
         return groups
 
     def _can_fuse_with_group(self, node: OpNode, group: List[OpNode]) -> bool:
         """Check if a mapper can be fused with a group.
+
+        Mappers can be fused if:
+        1. No inter-variable dependencies
+        2. No operation-specific ordering requirements
 
         Args:
             node: Operation to check
             group: Group of operations
 
         Returns:
-            True if the operation can be fused with the group
+            True if the operation can be fused
         """
-        # Check dependencies
         for op in group:
-            if self._has_dependency(node, op) or self._has_dependency(op, node):
-                logger.info(f"Cannot fuse {node.name} with group {[n.name for n in group]} due to dependency")
+            if self._has_dependency(node, op):
                 return False
-
-        logger.info(f"Can fuse {node.name} with group {[n.name for n in group]}")
         return True
 
     def _has_dependency(self, op1: OpNode, op2: OpNode) -> bool:
-        """Check if op1 depends on op2.
+        """Check if op1 depends on op2's output.
 
         Args:
             op1: First operation
             op2: Second operation
 
         Returns:
-            True if op1 depends on op2
+            True if there's a dependency
         """
-        # 1. Check intermediate variables (for mappers that produce/consume inter_vars)
-        op1_vars = set(op1.config.get("inter_vars", []))
-        op2_vars = set(op2.config.get("inter_vars", []))
+        config1 = op1.config or {}
+        config2 = op2.config or {}
+
+        # Check intermediate variables
+        op1_vars = set(config1.get("inter_vars", []))
+        op2_vars = set(config2.get("inter_vars", []))
         if op1_vars & op2_vars:
-            logger.info(f"Dependency found via inter_vars: {op1.name} <-> {op2.name}")
             return True
 
-        # 2. Check field dependencies (mappers that modify the same fields)
-        if self._check_field_dependencies(op1, op2):
-            logger.info(f"Dependency found via field dependencies: {op1.name} <-> {op2.name}")
+        # Check operation-specific dependencies
+        return self._has_operation_specific_dependency(op1, op2)
+
+    def _has_operation_specific_dependency(self, op1: OpNode, op2: OpNode) -> bool:
+        """Check operation-specific dependencies that prevent fusion."""
+        op1_name = op1.name.lower()
+        op2_name = op2.name.lower()
+
+        # Unicode fixing should come before other text processing
+        if "fix_unicode" in op2_name and any(p in op1_name for p in ["punctuation", "whitespace", "clean"]):
             return True
 
-        # 3. Check operation-specific dependencies
-        if self._check_operation_specific_dependencies(op1, op2):
-            logger.info(f"Dependency found via operation-specific dependencies: {op1.name} <-> {op2.name}")
-            return True
-
-        return False
-
-    def _check_field_dependencies(self, op1: OpNode, op2: OpNode) -> bool:
-        """Check if operations modify the same fields."""
-        # For mappers, we allow fusion even if they modify the same fields
-        # since they can be executed sequentially
-        # Only prevent fusion for specific logical dependencies
-        return False
-
-    def _get_modified_fields(self, op: OpNode) -> set:
-        """Get the fields that an operation modifies."""
-        # This is a simplified mapping - in practice, you'd want to analyze the actual operation logic
-        field_mapping = {
-            "clean_email_mapper": {"text"},
-            "clean_links_mapper": {"text"},
-            "fix_unicode_mapper": {"text"},
-            "punctuation_normalization_mapper": {"text"},
-            "whitespace_normalization_mapper": {"text"},
-            "text_lowercase_mapper": {"text"},
-            "text_uppercase_mapper": {"text"},
-            "remove_words_mapper": {"text"},
-            "remove_characters_mapper": {"text"},
-            "replace_words_mapper": {"text"},
-            "replace_characters_mapper": {"text"},
-            "split_text_mapper": {"text"},
-            "join_text_mapper": {"text"},
-            "text_length_mapper": {"text"},
-            "text_quality_mapper": {"text"},
-        }
-
-        return field_mapping.get(op.name, set())
-
-    def _check_operation_specific_dependencies(self, op1: OpNode, op2: OpNode) -> bool:
-        """Check operation-specific dependencies."""
-        # Define specific dependencies that prevent fusion
-
-        # Unicode fixing should come before punctuation normalization
-        if op1.name == "punctuation_normalization_mapper" and op2.name == "fix_unicode_mapper":
-            return True
-
-        if op1.name == "fix_unicode_mapper" and op2.name == "punctuation_normalization_mapper":
-            return True
-
-        # Email/links cleaning should come before punctuation normalization
-        if op1.name == "punctuation_normalization_mapper" and op2.name in ["clean_email_mapper", "clean_links_mapper"]:
-            return True
-
-        if op1.name in ["clean_email_mapper", "clean_links_mapper"] and op2.name == "punctuation_normalization_mapper":
-            return True
-
-        # Whitespace normalization should come after most other text operations
-        if op1.name == "whitespace_normalization_mapper" and op2.name in [
-            "clean_email_mapper",
-            "clean_links_mapper",
-            "fix_unicode_mapper",
-            "punctuation_normalization_mapper",
-        ]:
-            return True
-
-        if (
-            op1.name
-            in ["clean_email_mapper", "clean_links_mapper", "fix_unicode_mapper", "punctuation_normalization_mapper"]
-            and op2.name == "whitespace_normalization_mapper"
-        ):
+        # Whitespace normalization should come after content cleaning
+        if "whitespace" in op1_name and any(p in op2_name for p in ["clean_email", "clean_links", "clean_html"]):
             return True
 
         return False

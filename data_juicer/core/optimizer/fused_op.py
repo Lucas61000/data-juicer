@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from loguru import logger
 
-from data_juicer.ops import load_ops
 from data_juicer.ops.base_op import OPERATORS, Filter, Mapper
 from data_juicer.utils.constant import Fields
 
@@ -626,47 +625,59 @@ class FusedFilter(Filter):
 
 @OPERATORS.register_module("fused_mapper")
 class FusedMapper(Mapper):
-    """A fused operator for mappers that can execute multiple mappers in one pass."""
+    """A fused operator for mappers that can execute multiple mappers in one pass.
+
+    Benefits of mapper fusion:
+    - Reduced dataset iteration overhead (1 pass instead of N passes)
+    - Better CPU cache locality (data stays hot between mappers)
+    - Reduced multiprocessing setup overhead
+    - For GPU mappers: data stays on GPU between operations
+    """
 
     _batched_op = True
 
-    def __init__(self, name: str, fused_mappers: List[str], batch_size: int = 32):
+    def __init__(self, name: str, fused_mappers: List[Mapper], **kwargs):
         """Initialize the fused mapper.
 
         Args:
             name: Name of the fused mapper
-            fused_mappers: List of mapper names to be fused
-            batch_size: Batch size for processing
+            fused_mappers: List of mapper objects to fuse (actual Mapper instances)
+            **kwargs: Extra config arguments (e.g., batch_size, num_proc, etc.)
         """
-        self._name = name
         super().__init__()
-        self.batch_size = batch_size
+        self._name = name
+        self.fused_mappers = fused_mappers
 
-        # Load the mapper operations
-        self.fused_mappers = []
-        for mapper_name in fused_mappers:
-            # Skip if this is a fused_mapper to avoid recursive instantiation
-            if mapper_name == "fused_mapper":
-                logger.warning("Skipping recursive fused_mapper in FusedMapper initialization")
-                continue
-
-            mapper_config = {mapper_name: {}}
-            mapper = load_ops([mapper_config])[0]
-            self.fused_mappers.append(mapper)
+        # Store extra config arguments
+        self.batch_size = kwargs.get("batch_size", None)
+        self.num_proc = kwargs.get("num_proc", None)
+        self.text_key = kwargs.get("text_key", None)
+        self.image_key = kwargs.get("image_key", None)
+        self.audio_key = kwargs.get("audio_key", None)
+        self.video_key = kwargs.get("video_key", None)
 
         # Set accelerator to 'cuda' if any of the fused mappers use CUDA
-        accelerator_methods = set([op.accelerator for op in self.fused_mappers])
-        if "cuda" in accelerator_methods:
-            self.accelerator = "cuda"
+        if fused_mappers:
+            accelerator_methods = set([getattr(op, "accelerator", "cpu") for op in self.fused_mappers])
+            if "cuda" in accelerator_methods:
+                self.accelerator = "cuda"
+            else:
+                self.accelerator = "cpu"
 
-        # Update num_proc with the minimum of all fused mappers
-        self.num_proc = min([op.runtime_np() for op in self.fused_mappers])
+            # Update num_proc with the minimum of all fused mappers if not specified
+            if self.num_proc is None:
+                self.num_proc = min([op.runtime_np() for op in self.fused_mappers])
 
-        # Store original operation configs
-        self._op_cfg = {name: [op._op_cfg for op in self.fused_mappers]}
+        # Store mapper names for logging
+        self._mapper_names = [getattr(op, "_name", type(op).__name__) for op in self.fused_mappers]
+
+        logger.debug(f"FusedMapper '{name}' created with {len(fused_mappers)} mappers: {self._mapper_names}")
 
     def process_batched(self, samples, rank=None):
-        """Process samples through all fused mappers.
+        """Process samples through all fused mappers sequentially.
+
+        This is the core fusion benefit: instead of N separate dataset.map() calls,
+        we apply all N mappers in a single pass through the data.
 
         Args:
             samples: Batch of samples to process
@@ -675,40 +686,37 @@ class FusedMapper(Mapper):
         Returns:
             Processed samples
         """
-        # Process mappers sequentially
         for op in self.fused_mappers:
-            process_args = {"rank": rank} if op.accelerator == "cuda" else {}
-            samples = op.process_batched(samples, **process_args)
+            try:
+                # Check if mapper supports batched processing
+                if hasattr(op, "process_batched"):
+                    process_args = {}
+                    if getattr(op, "accelerator", "cpu") == "cuda":
+                        process_args["rank"] = rank
+                    samples = op.process_batched(samples, **process_args)
+                else:
+                    # Fallback to single-sample processing
+                    logger.warning(
+                        f"Mapper {getattr(op, '_name', type(op).__name__)} doesn't support batched processing"
+                    )
+            except Exception as e:
+                op_name = getattr(op, "_name", type(op).__name__)
+                logger.error(f"Error in fused mapper '{op_name}': {e}")
+                raise
         return samples
 
-    def run(self, dataset, *, exporter=None, tracer=None):
-        """Run the fused mapper on a dataset.
+    def process_single(self, sample):
+        """Process a single sample through all fused mappers.
 
         Args:
-            dataset: Dataset to process
-            exporter: Optional exporter for results
-            tracer: Optional tracer for monitoring
+            sample: Single sample to process
 
         Returns:
-            Processed dataset
+            Processed sample
         """
-        # Prepare the dataset
-        from data_juicer.core.data import NestedDataset
-
-        if not isinstance(dataset, NestedDataset):
-            dataset = NestedDataset(dataset)
-
-        # Initialize each mapper
         for op in self.fused_mappers:
-            dataset = Mapper.run(op, dataset)
-
-        # Process the dataset
-        new_dataset = dataset.map(
-            self.process_batched,
-            num_proc=self.num_proc,
-            with_rank=self.use_cuda(),
-            batch_size=self.batch_size,
-            desc=self._name + "_process",
-        )
-
-        return new_dataset
+            if hasattr(op, "process_single"):
+                sample = op.process_single(sample)
+            elif hasattr(op, "process"):
+                sample = op.process(sample)
+        return sample
