@@ -4,18 +4,12 @@ from loguru import logger
 
 from data_juicer.core.optimizer.strategy import OptimizationStrategy, register_strategy
 from data_juicer.core.pipeline_ast import OpNode, OpType, PipelineAST
-from data_juicer.utils.constant import InterVars, StatsKeys
-from data_juicer.utils.registry import Registry
 
-# Type of intermediate vars
-INTER_LINES = Registry(InterVars.lines)
-INTER_WORDS = Registry(InterVars.words)
-LOADED_IMAGES = Registry(InterVars.loaded_images)
-LOADED_AUDIOS = Registry(InterVars.loaded_audios)
-LOADED_VIDEOS = Registry(InterVars.loaded_videos)
-INTER_SAMPLED_FRAMES = Registry(InterVars.sampled_frames)
-
-ALL_INTER_VARS = [INTER_LINES, INTER_WORDS, LOADED_AUDIOS, LOADED_IMAGES, LOADED_VIDEOS, INTER_SAMPLED_FRAMES]
+# Import the intermediate variable registries from op_fusion
+# These registries are populated when filters register themselves
+from data_juicer.ops.op_fusion import ALL_INTER_VARS
+from data_juicer.utils.constant import StatsKeys
+from data_juicer.utils.ray_utils import is_ray_mode
 
 
 @register_strategy("filter_fusion")
@@ -47,6 +41,12 @@ class FilterFusionStrategy(OptimizationStrategy):
         if not ast.root:
             return ast
 
+        # Skip filter fusion in Ray mode - Ray already parallelizes filters efficiently
+        # and fusion adds overhead without benefit
+        if is_ray_mode():
+            logger.info("Skipping filter fusion in Ray mode - Ray already parallelizes filters efficiently")
+            return ast
+
         # Create a new AST
         new_ast = PipelineAST()
         new_ast.root = OpNode(name="root", op_type=OpType.ROOT, config={})
@@ -65,7 +65,9 @@ class FilterFusionStrategy(OptimizationStrategy):
                     # Create fused operation with clean naming
                     fused_name = "fused_filter"
                     detailed_ops = [n.name for n in group]
-                    logger.info(f"Fusing filter operations into {fused_name}: {detailed_ops}")
+                    # Get the shared registry for logging
+                    registry = self._get_filter_inter_var_registry(group[0].name)
+                    logger.info(f"Fusing {len(group)} filters sharing '{registry}': {detailed_ops}")
 
                     # Create operation configs
                     op_configs = []
@@ -123,8 +125,33 @@ class FilterFusionStrategy(OptimizationStrategy):
         traverse(node, [])
         return chains
 
+    def _get_filter_inter_var_registry(self, op_name: str) -> Optional[str]:
+        """Get the intermediate variable registry a filter belongs to.
+
+        Only filters that share expensive intermediate computations (like loaded
+        images/videos/audio) benefit from fusion. Simple text filters don't
+        belong to any registry and should not be fused.
+
+        Args:
+            op_name: Name of the filter operation
+
+        Returns:
+            Registry name if the filter belongs to one, None otherwise
+        """
+        for inter_vars in ALL_INTER_VARS:
+            if op_name in inter_vars.modules:
+                return inter_vars.name
+        return None
+
     def _group_filters_with_insights(self, chain: List[OpNode]) -> List[List[OpNode]]:
-        """Group filter operations using analyzer insights for better decisions.
+        """Group filter operations by shared intermediate variables.
+
+        Only fuses filters that share the same intermediate variable registry
+        (e.g., LOADED_IMAGES, LOADED_VIDEOS, LOADED_AUDIOS). This ensures fusion
+        only happens when there's actual benefit from sharing expensive I/O.
+
+        Filters that don't belong to any registry (simple text filters) are NOT
+        fused - they're kept as individual operations.
 
         Args:
             chain: List of operations in the pipeline
@@ -133,33 +160,62 @@ class FilterFusionStrategy(OptimizationStrategy):
             List of filter operation groups
         """
         groups = []
-        current_group = []
+        # Group filters by their intermediate variable registry
+        # Key: registry name (or None for no-registry filters)
+        # Value: list of filters in that registry
+        registry_groups: Dict[Optional[str], List[OpNode]] = {}
 
         for node in chain:
             if not PipelineAST.is_filter_op(node):
-                # If we encounter a non-filter, finalize current group
-                if current_group:
-                    groups.append(current_group)
-                    current_group = []
+                # Non-filter: first flush any accumulated filter groups
+                for registry_name, filter_list in registry_groups.items():
+                    if len(filter_list) > 1 and registry_name is not None:
+                        # Only fuse if 2+ filters share the same registry
+                        groups.append(filter_list)
+                    else:
+                        # Single filter or no registry - add individually
+                        for f in filter_list:
+                            groups.append([f])
+                registry_groups = {}
                 # Add the non-filter node as a separate group
                 groups.append([node])
             else:
-                # This is a filter node
-                if not current_group:
-                    # Start a new group
-                    current_group = [node]
-                else:
-                    # Check if current filter can be fused with the group using insights
-                    if self._can_fuse_with_group_insights(node, current_group):
-                        current_group.append(node)
-                    else:
-                        # Finalize current group and start a new one
-                        groups.append(current_group)
-                        current_group = [node]
+                # This is a filter node - determine its registry
+                registry = self._get_filter_inter_var_registry(node.name)
 
-        # Don't forget the last group
-        if current_group:
-            groups.append(current_group)
+                # Check for dependencies with existing filters in the same registry
+                can_add_to_registry = True
+                if registry in registry_groups:
+                    for existing_filter in registry_groups[registry]:
+                        if self._has_dependency(node, existing_filter) or self._has_dependency(existing_filter, node):
+                            can_add_to_registry = False
+                            break
+
+                if can_add_to_registry and registry in registry_groups:
+                    registry_groups[registry].append(node)
+                else:
+                    # Start a new group for this registry (or add to None group)
+                    if registry not in registry_groups:
+                        registry_groups[registry] = [node]
+                    else:
+                        # Dependency conflict - flush current registry group and start new
+                        filter_list = registry_groups[registry]
+                        if len(filter_list) > 1 and registry is not None:
+                            groups.append(filter_list)
+                        else:
+                            for f in filter_list:
+                                groups.append([f])
+                        registry_groups[registry] = [node]
+
+        # Flush remaining filter groups
+        for registry_name, filter_list in registry_groups.items():
+            if len(filter_list) > 1 and registry_name is not None:
+                # Only fuse if 2+ filters share the same registry
+                groups.append(filter_list)
+            else:
+                # Single filter or no registry - add individually
+                for f in filter_list:
+                    groups.append([f])
 
         return groups
 
@@ -469,11 +525,11 @@ class FilterFusionStrategy(OptimizationStrategy):
         op1_models = set()
         op2_models = set()
 
-        # Check for model keys in config
+        # Check for model keys in config (only add if value is not None)
         for key in ["model_key", "sp_model_key", "kl_model_key"]:
-            if key in config1:
+            if key in config1 and config1[key] is not None:
                 op1_models.add(config1[key])
-            if key in config2:
+            if key in config2 and config2[key] is not None:
                 op2_models.add(config2[key])
 
         # If they share any models, they have a dependency

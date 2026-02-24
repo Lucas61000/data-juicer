@@ -1,11 +1,15 @@
-import concurrent.futures
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 from loguru import logger
 
 from data_juicer.ops.base_op import OPERATORS, Filter, Mapper
 from data_juicer.utils.constant import Fields
+
+# Try to import av for video container handling
+try:
+    import av
+except ImportError:
+    av = None
 
 
 @OPERATORS.register_module("fused_filter")
@@ -195,12 +199,41 @@ class FusedFilter(Filter):
         if self.has_dependencies:
             return "sequential"
 
+        # Check if running in Ray context - use sequential to avoid double parallelization
+        if self._is_ray_context():
+            logger.debug("Ray context detected - using sequential execution to avoid overhead")
+            return "sequential"
+
         # Use analyzer insights for better decisions
         if self.analyzer_insights:
             return self._analyzer_based_strategy_selection()
 
         # Fallback to original logic
         return self._fallback_strategy_selection()
+
+    def _is_ray_context(self) -> bool:
+        """Check if we're running inside a Ray worker."""
+        try:
+            import ray
+
+            # Check if Ray is initialized and we're in a worker context
+            if ray.is_initialized():
+                # Try to get runtime context - this works inside Ray tasks/actors
+                try:
+                    ctx = ray.get_runtime_context()
+                    # If we can get worker info, we're in a Ray worker
+                    return ctx.worker.mode is not None
+                except Exception:
+                    # If runtime context fails, check if we're in a Ray task
+                    # by checking environment variable set by Ray
+                    import os
+
+                    return "RAY_ADDRESS" in os.environ or "RAY_RAYLET_PID" in os.environ
+            return False
+        except ImportError:
+            return False
+        except Exception:
+            return False
 
     def _analyzer_based_strategy_selection(self) -> str:
         """Select execution strategy based on analyzer insights."""
@@ -292,24 +325,19 @@ class FusedFilter(Filter):
             return "parallel"
 
     def _should_skip_fusion(self, sample_size: int = 1000) -> bool:
-        """Determine if fusion should be skipped based on performance analysis and analyzer insights.
+        """Determine if fusion should be skipped.
+
+        Since filters are only fused when they share intermediate variables
+        (INTER_WORDS, LOADED_IMAGES, etc.), fusion should always be beneficial.
+        Always return False to avoid overhead from performance testing.
 
         Args:
-            sample_size: Number of samples being processed
+            sample_size: Number of samples being processed (unused)
 
         Returns:
-            True if fusion should be skipped, False if fusion is beneficial
+            Always False - never skip fusion for filters sharing intermediate vars
         """
-        # Prevent recursion during performance testing
-        if self._in_performance_test:
-            return False
-
-        # Use analyzer insights for better decisions
-        if self.analyzer_insights:
-            return self._analyzer_based_fusion_decision(sample_size)
-
-        # Fallback to original logic
-        return self._fallback_fusion_decision(sample_size)
+        return False
 
     def _analyzer_based_fusion_decision(self, sample_size: int) -> bool:
         """Make fusion decisions based on analyzer insights."""
@@ -441,8 +469,6 @@ class FusedFilter(Filter):
 
     def compute_stats_batched(self, samples, rank=None):
         """Compute statistics for all fused filters using the best strategy."""
-        import av
-
         # Check if we should skip fusion based on performance analysis
         if self._should_skip_fusion(len(samples[Fields.stats])):
             from loguru import logger
@@ -461,31 +487,19 @@ class FusedFilter(Filter):
         num_samples = len(samples[Fields.stats])
         samples[Fields.context] = [{} for _ in range(num_samples)]
 
-        if self.execution_strategy == "parallel":
-            # Parallel execution for independent filters
-            with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_proc) as executor:
-                futures = []
-                for group in self.independent_groups:
-                    for op in group:
-                        if op.accelerator == "cuda":
-                            futures.append(executor.submit(op.compute_stats_batched, samples, rank=rank, context=True))
-                        else:
-                            futures.append(executor.submit(op.compute_stats_batched, samples, context=True))
+        # Sequential execution - simpler and avoids issues with dataset batch objects
+        # The main benefit of fusion is sharing intermediate variables, not parallelization
+        # Pass context=True so filters know to use shared intermediate variables
+        for op in self.fused_filters:
+            if op.accelerator == "cuda":
+                samples = op.compute_stats_batched(samples, rank=rank, context=True)
+            else:
+                samples = op.compute_stats_batched(samples, context=True)
 
-                # Wait for all operations to complete
-                concurrent.futures.wait(futures)
-        else:
-            # Sequential execution for dependent or complex filters
-            for op in self.fused_filters:
-                if op.accelerator == "cuda":
-                    samples = op.compute_stats_batched(samples, rank=rank)
-                else:
-                    samples = op.compute_stats_batched(samples)
-
-        # Clean up contexts
+        # Clean up contexts (video containers if av is available)
         for ctx in samples[Fields.context]:
             for context_key in ctx:
-                if isinstance(ctx[context_key], av.container.InputContainer):
+                if av is not None and isinstance(ctx[context_key], av.container.InputContainer):
                     ctx[context_key].streams.video[0].close()
                     ctx[context_key].close()
 
@@ -514,47 +528,8 @@ class FusedFilter(Filter):
 
             return result
 
-        if self.execution_strategy == "parallel":
-            # Parallel execution - all filters see original data
-            return self._process_batched_parallel(samples)
-        else:
-            # Sequential execution - each filter sees previous filter's output
-            return self._process_batched_sequential(samples)
-
-    def _process_batched_parallel(self, samples):
-        """Process filters in parallel (all see original data)."""
-        # Initialize result array
-        res = None
-
-        # Process independent groups in parallel
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_proc) as executor:
-            futures = []
-            for group in self.independent_groups:
-                group_futures = []
-                for op in group:
-                    future = executor.submit(op.process_batched, samples)
-                    group_futures.append(future)
-                futures.append(group_futures)
-
-            # Process results in dependency order
-            for group_futures in futures:
-                group_results = []
-                for future in group_futures:
-                    this_res = np.array(list(future.result()))
-                    group_results.append(this_res)
-
-                # Combine results within group
-                group_res = group_results[0]
-                for this_res in group_results[1:]:
-                    group_res = np.logical_and(group_res, this_res)
-
-                # Combine with overall results
-                if res is not None:
-                    res = np.logical_and(res, group_res)
-                else:
-                    res = group_res
-
-        return res
+        # Sequential execution - each filter sees previous filter's output
+        return self._process_batched_sequential(samples)
 
     def _process_batched_sequential(self, samples):
         """Process filters sequentially (each sees previous output)."""
@@ -585,16 +560,22 @@ class FusedFilter(Filter):
             Processed dataset
         """
         # Prepare the dataset
-        from data_juicer.core.data import NestedDataset
+        from data_juicer.core.data import NestedDataset, add_same_content_to_new_column
 
         if not isinstance(dataset, NestedDataset):
             dataset = NestedDataset(dataset)
 
-        # Initialize each filter
-        for op in self.fused_filters:
-            dataset = Filter.run(op, dataset)
+        # Initialize stats field if not present (required for filters)
+        if Fields.stats not in dataset.features:
+            dataset = dataset.map(
+                add_same_content_to_new_column,
+                fn_kwargs={"new_column_name": Fields.stats, "initial_value": {}},
+                num_proc=self.runtime_np(),
+                batch_size=self.batch_size,
+                desc="Adding new column for stats",
+            )
 
-        # Compute stats for all filters
+        # Compute stats for all filters in one pass using fused compute_stats
         new_dataset = dataset.map(
             self.compute_stats,
             num_proc=self.runtime_np(),
