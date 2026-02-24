@@ -388,5 +388,7 @@ def apply_optimizations(ops: List[Any], cfg=None) -> List[Any]:
     Returns:
         Optimized list of operations
     """
-    manager = get_optimization_manager(cfg)
+    # Always create a new manager with the provided config
+    # to ensure enable_optimizer setting is respected
+    manager = OptimizationManager(cfg)
     return manager.apply_optimizations(ops)
