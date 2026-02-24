@@ -1,0 +1,47 @@
+# Benchmark config for op_reorder optimization - VERY AGGRESSIVE FILTERING
+#
+# This config uses very aggressive cheap filters to remove ~60-70% of data
+# to maximize the benefit of operation reordering.
+
+project_name: 'optimizer-benchmark-reorder'
+np: 4
+use_cache: false
+
+process:
+  # BAD ORDER: expensive filters first (run on 100% of data)
+
+  # Expensive: requires loading stopwords model and tokenization
+  - stopwords_filter:
+      lang: en
+      min_ratio: 0.05
+      max_ratio: 0.95
+
+  # Expensive: requires loading flagged words list and tokenization
+  - flagged_words_filter:
+      lang: en
+      max_ratio: 0.01
+
+  # VERY AGGRESSIVE cheap filters below:
+
+  # Remove docs < 1000 chars (roughly half of C4 docs)
+  - text_length_filter:
+      min_len: 1000
+      max_len: 50000
+
+  # Remove docs < 150 words
+  - words_num_filter:
+      min_num: 150
+      max_num: 10000
+
+  # Remove docs with < 80% alphanumeric
+  - alphanumeric_filter:
+      min_ratio: 0.80
+      max_ratio: 1.0
+
+  # Remove docs with high special char ratio
+  - special_characters_filter:
+      min_ratio: 0.0
+      max_ratio: 0.2
+
+# Expected: cheap filters remove 50-60% of data
+# Expensive filters run on only 40-50% of data after reordering
