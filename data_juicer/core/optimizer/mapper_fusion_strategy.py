@@ -11,6 +11,7 @@ from loguru import logger
 
 from data_juicer.core.optimizer.strategy import OptimizationStrategy, register_strategy
 from data_juicer.core.pipeline_ast import OpNode, OpType, PipelineAST
+from data_juicer.utils.ray_utils import is_ray_mode
 
 
 @register_strategy("mapper_fusion")
@@ -38,6 +39,11 @@ class MapperFusionStrategy(OptimizationStrategy):
             Optimized pipeline AST
         """
         if not ast.root:
+            return ast
+
+        # Skip mapper fusion in Ray mode - Ray already parallelizes mappers efficiently
+        if is_ray_mode():
+            logger.info("Skipping mapper fusion in Ray mode - Ray already parallelizes mappers efficiently")
             return ast
 
         # Create a new AST
