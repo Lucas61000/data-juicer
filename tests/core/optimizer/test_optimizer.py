@@ -45,8 +45,9 @@ class TestPipelineOptimizer(unittest.TestCase):
     def test_init_default_strategies(self):
         """Test initialization with default strategies."""
         optimizer = PipelineOptimizer()
-        self.assertEqual(len(optimizer.strategies), 1)
-        self.assertIsInstance(optimizer.strategies[0], FilterFusionStrategy)
+        # Default strategies: OpPruning, OpReorder, MapperFusion, FilterFusion
+        self.assertEqual(len(optimizer.strategies), 4)
+        self.assertIsInstance(optimizer.strategies[3], FilterFusionStrategy)
     
     def test_init_custom_strategies(self):
         """Test initialization with custom strategies."""
@@ -60,7 +61,7 @@ class TestPipelineOptimizer(unittest.TestCase):
         optimizer = PipelineOptimizer()
         strategy = MockStrategy()
         optimizer.add_strategy(strategy)
-        self.assertEqual(len(optimizer.strategies), 2)
+        self.assertEqual(len(optimizer.strategies), 5)  # 4 default + 1 added
         self.assertIn(strategy, optimizer.strategies)
     
     def test_remove_strategy(self):
@@ -69,7 +70,7 @@ class TestPipelineOptimizer(unittest.TestCase):
         strategy = MockStrategy("test_strategy")
         optimizer.add_strategy(strategy)
         optimizer.remove_strategy("test_strategy")
-        self.assertEqual(len(optimizer.strategies), 1)
+        self.assertEqual(len(optimizer.strategies), 4)  # Back to 4 default
         self.assertNotIn(strategy, optimizer.strategies)
     
     def test_optimize_empty_pipeline(self):

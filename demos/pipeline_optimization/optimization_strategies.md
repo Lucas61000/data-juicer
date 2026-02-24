@@ -6,10 +6,113 @@ This document details the behavior and performance characteristics of Data-Juice
 
 | Strategy | What It Does | Typical Benefit | Ray Support |
 |----------|--------------|-----------------|-------------|
+| **op_pruning** | Removes no-op and duplicate operations | ~16% speedup | Yes |
 | **op_reorder** | Moves cheap filters before expensive ones | 5-33% speedup | Yes |
 | **filter_fusion** | Shares intermediate variables between filters | ~15% speedup | Skipped (auto) |
 | **mapper_fusion** | Combines mappers into single pass | ~14% speedup | Skipped (auto) |
 | **Combined** | All strategies together | ~20% speedup | Partial (op_reorder only) |
+
+## Operation Pruning (op_pruning)
+
+### How It Works
+
+Operation pruning identifies and removes **redundant operations** that don't change the output:
+1. **No-op filters**: Filters with pass-through conditions (e.g., min=0, max=inf)
+2. **Duplicate operations**: Consecutive identical operations
+3. **No-op mappers**: Mappers with empty configuration (e.g., no chars to remove)
+
+**Key principle:** Remove operations that don't change the output to save processing time.
+
+```
+Before: text_length_filter(min=0, max=inf) → text_length_filter(min=100, max=5000) → ...
+After:  text_length_filter(min=100, max=5000) → ...
+```
+
+### Prunable Operations
+
+**No-op Filters** (automatically removed when conditions pass everything):
+- `text_length_filter` with min_len=0 and max_len>=10^8
+- `words_num_filter` with min_num=0 and max_num>=10^8
+- `alphanumeric_filter` with min_ratio=0 and max_ratio=1
+- `special_characters_filter` with min_ratio=0 and max_ratio=1
+- `character_repetition_filter` with max_ratio=1
+- `word_repetition_filter` with max_ratio=1
+- `stopwords_filter` with min_ratio=0
+- `flagged_words_filter` with max_ratio=1
+- `suffix_filter` with empty suffixes list
+
+**No-op Mappers** (automatically removed when config is empty):
+- `remove_specific_chars_mapper` with empty chars_to_remove
+- `replace_content_mapper` with empty pattern
+
+### Example
+
+```yaml
+# BAD: Contains redundant operations
+process:
+  - text_length_filter:      # No-op: passes everything
+      min_len: 0
+      max_len: 999999999
+  - text_length_filter:      # Useful: actual constraint
+      min_len: 100
+      max_len: 50000
+  - words_num_filter:        # No-op: passes everything
+      min_num: 0
+      max_num: 999999999
+  - words_num_filter:        # Useful: actual constraint
+      min_num: 20
+      max_num: 5000
+  - special_characters_filter:  # Useful: actual constraint
+      min_ratio: 0.0
+      max_ratio: 0.3
+  - special_characters_filter:  # Duplicate: same as previous
+      min_ratio: 0.0
+      max_ratio: 0.3
+
+# With op_pruning enabled, becomes:
+# 1. text_length_filter (min=100, max=50000)
+# 2. words_num_filter (min=20, max=5000)
+# 3. special_characters_filter (min=0, max=0.3)
+# Pruned: 3 operations (2 no-ops + 1 duplicate)
+```
+
+### Performance Results
+
+**Dataset:** C4 (356K samples)
+**Pipeline:** 14 operations (3 mappers + 11 filters, 6 redundant)
+
+| Executor | Baseline | Optimized | Speedup | Improvement |
+|----------|----------|-----------|---------|-------------|
+| Default  | 77.5s    | 65.2s     | 1.19x   | **+15.9%**  |
+
+**Operation count:** 14 ops → 8 ops (6 pruned, 43% reduction)
+
+### Configuration
+
+```yaml
+enable_optimizer: true
+optimizer_strategies:
+  - op_pruning  # Remove redundant operations
+
+process:
+  # Your operations - redundant ones will be removed automatically
+  - text_length_filter:
+      min_len: 0          # This will be pruned (no-op)
+      max_len: 999999999
+  - text_length_filter:
+      min_len: 100        # This will be kept
+      max_len: 50000
+```
+
+### When to Use op_pruning
+
+**Always recommended** - it's safe and works with any executor:
+- Automatically identifies redundant operations
+- Preserves semantic correctness (only removes true no-ops)
+- Works with both default and Ray executors
+- No configuration needed - just enable it
+
+---
 
 ## Operation Reordering (op_reorder)
 
@@ -259,11 +362,12 @@ python tools/optimizer_benchmark/run_benchmark.py \
 
 | Strategy | Best For | Typical Speedup | Ray Compatible |
 |----------|----------|-----------------|----------------|
+| **op_pruning** | Pipelines with potential redundancy | ~16% | Yes |
 | **op_reorder** | All pipelines | 5-33% | Yes |
 | **filter_fusion** | 3+ filters sharing vars | ~15% | Default only |
 | **mapper_fusion** | 3+ consecutive mappers | ~14% | Default only |
 
-**Recommendation:** Start with `op_reorder` for all pipelines. Add fusion strategies for default executor when you have multiple compatible operations.
+**Recommendation:** Start with `op_pruning` and `op_reorder` for all pipelines. Add fusion strategies for default executor when you have multiple compatible operations.
 
 ---
 
@@ -365,6 +469,7 @@ python tools/optimizer_benchmark/run_benchmark.py \
 
 ### Files
 
+- `data_juicer/core/optimizer/op_pruning_strategy.py` - Operation pruning (no-op/duplicate removal)
 - `data_juicer/core/optimizer/op_reorder_strategy.py` - Operation reordering
 - `data_juicer/core/optimizer/filter_fusion_strategy.py` - Filter fusion
 - `data_juicer/core/optimizer/mapper_fusion_strategy.py` - Mapper fusion
