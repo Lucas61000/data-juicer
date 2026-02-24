@@ -82,7 +82,7 @@ fused_filter (1 pass, parallel execution)
 Use the benchmark tool to measure optimization impact:
 
 ```bash
-python tools/optimizer_perf_test/run_test.py \
+python tools/optimizer_benchmark/run_benchmark.py \
   --recipe-path demos/pipeline_optimization/configs/basic.yaml \
   --dataset-path path/to/your/data.jsonl \
   --output-dir outputs/optimization_benchmark
