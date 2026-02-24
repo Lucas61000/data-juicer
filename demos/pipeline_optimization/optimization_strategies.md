@@ -9,6 +9,7 @@ This document details the behavior and performance characteristics of Data-Juice
 | **op_reorder** | Moves cheap filters before expensive ones | 5-33% speedup | Yes |
 | **filter_fusion** | Shares intermediate variables between filters | ~15% speedup | Skipped (auto) |
 | **mapper_fusion** | Combines mappers into single pass | ~14% speedup | Skipped (auto) |
+| **Combined** | All strategies together | ~20% speedup | Partial (op_reorder only) |
 
 ## Operation Reordering (op_reorder)
 
@@ -230,33 +231,26 @@ executor_type: ray
 Test optimization performance on your data:
 
 ```bash
-# Test op_reorder
+# Test all strategies (recommended)
 python tools/optimizer_benchmark/run_benchmark.py \
-  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_reorder.yaml \
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_combined.yaml \
+  --dataset-path your_data.jsonl \
+  --strategies op_reorder,filter_fusion,mapper_fusion \
+  --executor default
+
+# Test individual strategies
+python tools/optimizer_benchmark/run_benchmark.py \
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_combined.yaml \
   --dataset-path your_data.jsonl \
   --strategies op_reorder \
   --executor default
 
-# Test filter fusion
+# Test with Ray executor
 python tools/optimizer_benchmark/run_benchmark.py \
-  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_words.yaml \
-  --dataset-path your_data.jsonl \
-  --strategies filter_fusion \
-  --executor default
-
-# Test mapper fusion
-python tools/optimizer_benchmark/run_benchmark.py \
-  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_mappers.yaml \
-  --dataset-path your_data.jsonl \
-  --strategies mapper_fusion \
-  --executor default
-
-# Test all strategies together
-python tools/optimizer_benchmark/run_benchmark.py \
-  --recipe-path your_config.yaml \
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_combined.yaml \
   --dataset-path your_data.jsonl \
   --strategies op_reorder,filter_fusion,mapper_fusion \
-  --executor default
+  --executor ray
 ```
 
 ---
@@ -270,6 +264,100 @@ python tools/optimizer_benchmark/run_benchmark.py \
 | **mapper_fusion** | 3+ consecutive mappers | ~14% | Default only |
 
 **Recommendation:** Start with `op_reorder` for all pipelines. Add fusion strategies for default executor when you have multiple compatible operations.
+
+---
+
+## Combined Strategies
+
+### Using All Strategies Together
+
+For maximum performance, enable all three strategies. The optimizer automatically handles strategy interactions:
+- `op_reorder` runs first to optimize filter order
+- `filter_fusion` and `mapper_fusion` are auto-skipped on Ray executor
+
+### Combined Benchmark Results
+
+**Dataset:** C4 (356K samples)
+**Pipeline:** 6 mappers + 6 filters (2 expensive, 4 cheap in bad order)
+
+#### With 12 CPUs (recommended for single-node)
+
+| Executor | Baseline | Optimized | Speedup | Improvement | Notes |
+|----------|----------|-----------|---------|-------------|-------|
+| **Default** | 75.0s | 65.2s | 1.15x | **+13.0%** | All 3 strategies applied |
+| **Ray** | 102.1s | 99.5s | 1.03x | **+2.5%** | Only op_reorder (fusion auto-skipped) |
+
+#### With 4 CPUs
+
+| Executor | Baseline | Optimized | Speedup | Improvement | Notes |
+|----------|----------|-----------|---------|-------------|-------|
+| **Default** | 130.7s | 104.9s | 1.25x | **+19.7%** | All 3 strategies applied |
+| **Ray** | 218.4s | 214.4s | 1.02x | **+1.9%** | Only op_reorder (fusion auto-skipped) |
+
+### Why Default Executor Benefits More
+
+On the default executor, all three strategies contribute:
+1. **mapper_fusion**: 6 mappers combined into single pass
+2. **op_reorder**: cheap filters moved before expensive filters
+3. **filter_fusion**: filters sharing INTER_WORDS tokenize once
+
+On Ray, only `op_reorder` applies. The fusion strategies are auto-skipped because Ray's parallel execution model already optimizes data flow differently.
+
+### When to Use Ray vs Default Executor
+
+| Scenario | Recommended | Why |
+|----------|-------------|-----|
+| Single machine, small-medium data (<10GB) | **Default** | Lower overhead, all optimizations apply |
+| Single machine, more CPUs available | **Default** | Scale with `np` parameter |
+| Multi-node cluster | **Ray** | Distributed processing across nodes |
+| Dataset exceeds RAM | **Ray** | Out-of-core processing via object store |
+| GPU cluster for model inference | **Ray** | GPU distribution and scheduling |
+
+**Key insight:** On a single machine, Ray adds ~36% overhead (serialization, task scheduling) without distributed benefits. Use Ray when you have multiple physical nodes or datasets that don't fit in memory.
+
+### Configuration for Combined Strategies
+
+```yaml
+enable_optimizer: true
+optimizer_strategies:
+  - op_reorder       # Reorder filters by cost
+  - filter_fusion    # Share intermediate variables
+  - mapper_fusion    # Combine consecutive mappers
+
+process:
+  # Mappers (will be fused on default executor)
+  - clean_html_mapper: {}
+  - clean_links_mapper: {}
+  - clean_email_mapper: {}
+  - punctuation_normalization_mapper: {}
+  - whitespace_normalization_mapper: {}
+
+  # Filters in any order (will be reordered)
+  - stopwords_filter:       # Expensive - will be moved last
+      lang: en
+  - text_length_filter:     # Cheap - will be moved first
+      min_len: 500
+  - words_num_filter:       # Cheap - will be moved first
+      min_num: 50
+```
+
+### Benchmark Commands
+
+```bash
+# Test combined strategies on default executor
+python tools/optimizer_benchmark/run_benchmark.py \
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_combined.yaml \
+  --dataset-path your_data.jsonl \
+  --strategies op_reorder,filter_fusion,mapper_fusion \
+  --executor default
+
+# Test combined strategies on Ray executor
+python tools/optimizer_benchmark/run_benchmark.py \
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_combined.yaml \
+  --dataset-path your_data.jsonl \
+  --strategies op_reorder,filter_fusion,mapper_fusion \
+  --executor ray
+```
 
 ---
 

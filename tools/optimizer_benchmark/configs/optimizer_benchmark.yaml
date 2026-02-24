@@ -6,7 +6,7 @@
 # before the more expensive filters (character_repetition_filter, special_characters_filter)
 
 project_name: 'optimizer-benchmark'
-np: 4
+np: 12
 use_cache: false
 
 process:
