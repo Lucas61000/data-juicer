@@ -89,7 +89,6 @@ class OptimizationManager:
 
             # Get original operation order for comparison
             original_order = [getattr(op, "_name", getattr(op, "name", str(op))) for op in ops]
-            logger.debug(f"Original ops: {original_order}")
 
             # Apply core optimizer with properly initialized strategies
             strategy_objects = self._initialize_strategies()
@@ -99,14 +98,9 @@ class OptimizationManager:
             # Extract optimized operations from the AST
             optimized_ops = self._extract_ops_from_ast(optimized_ast, ops)
 
-            # Log summary
+            # Log before/after comparison
             optimized_order = [getattr(op, "_name", getattr(op, "name", str(op))) for op in optimized_ops]
-
-            if original_order != optimized_order:
-                logger.info(f"Optimized: {len(original_order)} ops -> {len(optimized_order)} ops")
-                logger.debug(f"New order: {optimized_order}")
-            else:
-                logger.debug("No changes to operation order")
+            self._log_optimization_result(original_order, optimized_order)
 
             return optimized_ops
 
@@ -320,6 +314,37 @@ class OptimizationManager:
         if node.children:
             for child in node.children:
                 self._traverse_ast_dfs(child, order)
+
+    def _log_optimization_result(self, original_order: List[str], optimized_order: List[str]):
+        """Log the before/after optimization comparison."""
+        if original_order == optimized_order:
+            logger.info("Pipeline optimization: no changes applied")
+            return
+
+        # Log summary
+        logger.info(f"Pipeline optimization: {len(original_order)} ops -> {len(optimized_order)} ops")
+
+        # Log before/after
+        logger.info("  BEFORE: " + " -> ".join(original_order))
+        logger.info("  AFTER:  " + " -> ".join(optimized_order))
+
+        # Identify specific changes
+        if len(original_order) != len(optimized_order):
+            # Fusion occurred
+            fused_count = len(original_order) - len(optimized_order)
+            logger.info(f"  FUSION: {fused_count} operations fused")
+        else:
+            # Reordering occurred - show what moved
+            changes = []
+            for i, (orig, opt) in enumerate(zip(original_order, optimized_order)):
+                if orig != opt:
+                    changes.append(f"pos {i+1}: {orig} -> {opt}")
+            if changes:
+                logger.info(f"  REORDER: {len(changes)} positions changed")
+                for change in changes[:5]:  # Show first 5 changes
+                    logger.info(f"    {change}")
+                if len(changes) > 5:
+                    logger.info(f"    ... and {len(changes) - 5} more")
 
     def is_optimization_enabled(self) -> bool:
         """Check if optimization is enabled."""

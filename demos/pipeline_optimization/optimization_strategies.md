@@ -285,7 +285,7 @@ For maximum performance, enable all three strategies. The optimizer automaticall
 | Executor | Baseline | Optimized | Speedup | Improvement | Notes |
 |----------|----------|-----------|---------|-------------|-------|
 | **Default** | 75.0s | 65.2s | 1.15x | **+13.0%** | All 3 strategies applied |
-| **Ray** | 102.8s | 97.0s | 1.06x | **+5.6%** | Only op_reorder (fusion auto-skipped) |
+| **Ray** | ~102s | ~98s | ~1.04x | **+3-6%** | Only op_reorder (fusion auto-skipped, high variance) |
 
 #### With 4 CPUs
 
