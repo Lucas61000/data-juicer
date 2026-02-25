@@ -12,6 +12,7 @@ from .core.result_analyzer import ResultAnalyzer
 from .strategies.ab_test import ABTestConfig, StrategyABTest
 from .strategies.strategy_library import STRATEGY_LIBRARY, OptimizationStrategy
 from .utils.config_manager import ConfigManager
+from .workloads.synthetic_data import SYNTHETIC_DATA_GENERATOR, SyntheticDataGenerator
 from .workloads.workload_suite import WORKLOAD_SUITE, WorkloadDefinition, WorkloadSuite
 
 __version__ = "1.0.0"
@@ -29,4 +30,6 @@ __all__ = [
     "WorkloadDefinition",
     "WORKLOAD_SUITE",
     "ConfigManager",
+    "SyntheticDataGenerator",
+    "SYNTHETIC_DATA_GENERATOR",
 ]

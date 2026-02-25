@@ -128,35 +128,14 @@ class StrategyABTest:
 
     def _strategy_to_config_dict(self, strategy: StrategyConfig) -> Dict[str, Any]:
         """Convert strategy to configuration dictionary."""
-        config_dict = {}
+        # Get the actual strategy from the library and use its apply_to_config method
+        actual_strategy = STRATEGY_LIBRARY.get_strategy(strategy.name)
+        if actual_strategy:
+            config_dict = actual_strategy.apply_to_config({})
+        else:
+            config_dict = {}
 
-        if strategy.name == "op_fusion_greedy":
-            config_dict["op_fusion"] = True
-            config_dict["fusion_strategy"] = "greedy"
-        elif strategy.name == "op_fusion_probe":
-            config_dict["op_fusion"] = True
-            config_dict["fusion_strategy"] = "probe"
-        elif strategy.name == "adaptive_batch_size":
-            config_dict["adaptive_batch_size"] = True
-        elif strategy.name == "large_batch_size":
-            config_dict["batch_size"] = 1000  # Large batch size
-        elif strategy.name == "memory_efficient":
-            config_dict["memory_efficient"] = True
-        elif strategy.name == "streaming_processing":
-            config_dict["streaming"] = True
-        elif strategy.name == "max_parallelism":
-            config_dict["num_processes"] = -1  # Use all available cores
-        elif strategy.name == "ray_optimized":
-            config_dict["executor"] = "ray"
-            config_dict["ray_config"] = {"num_cpus": -1}
-        elif strategy.name == "aggressive_caching":
-            config_dict["cache_intermediate"] = True
-        elif strategy.name == "fast_algorithms":
-            config_dict["use_fast_algorithms"] = True
-        elif strategy.name == "vectorized_ops":
-            config_dict["vectorized_operations"] = True
-
-        # Add strategy-specific parameters
+        # Add strategy-specific parameters from the StrategyConfig
         config_dict.update(strategy.parameters)
 
         return config_dict

@@ -140,6 +140,18 @@ class StrategyLibrary:
             "op_reorder", "Enable operation reordering for optimal execution order", ["op_reorder"]
         )
 
+        # Operation Pruning Strategy (from core optimizer)
+        self.strategies["op_pruning"] = CoreOptimizerStrategy(
+            "op_pruning", "Remove no-op and duplicate operations", ["op_pruning"]
+        )
+
+        # Combined optimization strategies
+        self.strategies["all_optimizations"] = CoreOptimizerStrategy(
+            "all_optimizations",
+            "Enable all core optimizations (pruning, reorder, fusion)",
+            ["op_pruning", "op_reorder", "mapper_fusion", "filter_fusion"],
+        )
+
     def get_strategy(self, name: str) -> Optional[OptimizationStrategy]:
         """Get a strategy by name."""
         return self.strategies.get(name)

@@ -1,481 +1,367 @@
 #!/usr/bin/env python3
 """
-Performance Test: Baseline vs Optimized Pipeline Comparison
+Optimizer Benchmark Tool
 
-This script runs performance benchmarks comparing baseline pipeline execution
-(without optimizer) vs optimized pipeline execution (with optimizer enabled).
+A comprehensive benchmarking tool for testing Data-Juicer optimization strategies.
+Uses the data_juicer.benchmark framework for A/B testing, statistical analysis,
+and report generation.
 
 Features:
-- Separate process execution for isolation
-- Support for recipe path and dataset path
-- Comprehensive metrics collection
-- Result validation and comparison
-- Detailed reporting
+- A/B testing between baseline and optimized pipelines using StrategyABTest
+- Support for multiple optimization strategies (op_pruning, op_reorder, fusion)
+- Statistical significance testing
+- HTML and JSON report generation
+- Multiple iteration support for reliable results
+
+Usage:
+    # Test op_pruning strategy
+    python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies op_pruning
+
+    # Test multiple strategies
+    python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies op_pruning,op_reorder
+
+    # A/B test with multiple iterations
+    python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies op_pruning --iterations 3
 """
 
 import argparse
 import json
-import multiprocessing as mp
-import os
 import sys
 import time
-from argparse import Namespace
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-import yaml
 from loguru import logger
 
 # Add the project root to the path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from data_juicer.config import init_configs  # noqa: E402
-from data_juicer.core import DefaultExecutor  # noqa: E402
-from data_juicer.core.data.dataset_builder import DatasetBuilder  # noqa: E402
+from data_juicer.benchmark import (  # noqa: E402
+    STRATEGY_LIBRARY,
+    ABTestConfig,
+    StrategyABTest,
+)
+from data_juicer.benchmark.workloads.workload_suite import (  # noqa: E402
+    WorkloadDefinition,
+)
 
-# Default strategies to test when none specified
-DEFAULT_STRATEGIES = ["op_reorder", "filter_fusion"]
+# Available optimization strategies
+AVAILABLE_STRATEGIES = [
+    "op_pruning",  # Remove no-op and duplicate operations
+    "op_reorder",  # Reorder operations for optimal execution
+    "mapper_fusion",  # Fuse consecutive mappers
+    "filter_fusion",  # Fuse filters sharing intermediate variables
+    "all_optimizations",  # Enable all optimizations
+]
+
+# Default strategies if none specified
+DEFAULT_STRATEGIES = ["op_pruning", "op_reorder"]
 
 
-class PipelinePerformanceTester:
-    """Performance tester for comparing baseline vs optimized pipeline execution."""
+def create_workload_from_args(recipe_path: str, dataset_path: str, name: str = "custom_workload") -> WorkloadDefinition:
+    """Create a WorkloadDefinition from command line arguments."""
+    # Count samples in dataset
+    try:
+        import subprocess
 
-    def __init__(
-        self, output_dir: str = "./outputs/pipeline_perf_test", strategies: list = None, executor_type: str = "default"
-    ):
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.strategies = strategies or DEFAULT_STRATEGIES
-        self.executor_type = executor_type
+        result = subprocess.run(["wc", "-l", dataset_path], capture_output=True, text=True, timeout=30)
+        expected_samples = int(result.stdout.split()[0]) if result.returncode == 0 else 10000
+    except Exception:
+        expected_samples = 10000
 
-        # Setup logging
-        log_file = self.output_dir / "perf_test.log"
-        logger.add(log_file, rotation="10 MB", level="INFO")
+    return WorkloadDefinition(
+        name=name,
+        description=f"Custom workload from {Path(recipe_path).name}",
+        dataset_path=dataset_path,
+        config_path=recipe_path,
+        expected_samples=expected_samples,
+        modality="text",  # Default to text
+        complexity="medium",
+        estimated_duration_minutes=5,
+        resource_requirements={"cpu_cores": 4, "memory_gb": 8},
+    )
 
-        self.results = {"individual": {}, "optimized": {}, "comparison": {}, "metadata": {}}
 
-    def load_dataset(self, dataset_path: str) -> Any:
-        """Load dataset from path using DatasetBuilder."""
-        logger.info(f"Loading dataset from: {dataset_path}")
-        if not os.path.exists(dataset_path):
-            raise FileNotFoundError(f"Dataset not found: {dataset_path}")
-        # Build a minimal config Namespace for DatasetBuilder
-        cfg = Namespace(dataset_path=dataset_path)
-        builder = DatasetBuilder(cfg)
-        dataset = builder.load_dataset()
-        dataset_length = len(dataset.to_list()) if dataset is not None else 0
-        logger.info(f"Loaded dataset with {dataset_length} samples")
-        return dataset
+def run_ab_test_with_framework(
+    recipe_path: str,
+    dataset_path: str,
+    strategies: List[str],
+    output_dir: str,
+    iterations: int = 1,
+    warmup_runs: int = 0,
+) -> Dict[str, Any]:
+    """
+    Run A/B test using the StrategyABTest framework.
 
-    def create_temp_config(self, recipe_path: str, dataset_path: str, mode: str) -> str:
-        """Create a temporary config file for execution."""
-        # Load the original recipe
-        with open(recipe_path, "r") as f:
-            recipe_config = yaml.safe_load(f)
+    Args:
+        recipe_path: Path to the recipe YAML file
+        dataset_path: Path to the dataset file
+        strategies: List of optimization strategies to test
+        output_dir: Output directory for results
+        iterations: Number of benchmark iterations
+        warmup_runs: Number of warmup runs
 
-        # Create temp config
-        temp_config = {
-            "project_name": f"perf-test-{mode}",
-            "dataset_path": dataset_path,
-            "export_path": str(self.output_dir / f"result_{mode}.jsonl"),
-            "np": recipe_config.get("np", 4),  # Use recipe's np or default to 4
-            "use_cache": False,
-            # Use the new optimizer config instead of legacy op_fusion
-            "enable_optimizer": mode == "optimized",
-            "optimizer_strategies": self.strategies,
-            "executor_type": self.executor_type,
-            "process": recipe_config.get("process", []),
-        }
+    Returns:
+        Dictionary containing benchmark results
+    """
+    logger.info("=" * 60)
+    logger.info("OPTIMIZER BENCHMARK (A/B Test Framework)")
+    logger.info("=" * 60)
+    logger.info(f"Recipe: {recipe_path}")
+    logger.info(f"Dataset: {dataset_path}")
+    logger.info(f"Strategies: {strategies}")
+    logger.info(f"Iterations: {iterations}")
+    logger.info("=" * 60)
 
-        # Write temp config
-        temp_config_path = self.output_dir / f"temp_config_{mode}.yaml"
-        with open(temp_config_path, "w") as f:
-            yaml.dump(temp_config, f, default_flow_style=False)
+    # Validate strategies
+    for strategy in strategies:
+        if strategy not in AVAILABLE_STRATEGIES:
+            logger.warning(f"Unknown strategy: {strategy}. Available: {AVAILABLE_STRATEGIES}")
 
-        return str(temp_config_path)
+    # Create workload definition
+    workload = create_workload_from_args(recipe_path, dataset_path)
 
-    def run_individual_pipeline(self, recipe_path: str, dataset_path: str) -> Dict[str, Any]:
-        """Run baseline pipeline execution (optimizer disabled) in separate process."""
-        logger.info("Running baseline pipeline (optimizer disabled)...")
+    # Create baseline strategy
+    baseline_strategy = STRATEGY_LIBRARY.create_strategy_config("baseline")
 
-        temp_config_path = self.create_temp_config(recipe_path, dataset_path, "individual")
+    # Create test strategies
+    test_strategies = []
+    for strategy_name in strategies:
+        try:
+            strategy_config = STRATEGY_LIBRARY.create_strategy_config(strategy_name)
+            test_strategies.append(strategy_config)
+        except ValueError as e:
+            logger.error(f"Failed to create strategy config for {strategy_name}: {e}")
+            continue
 
-        # Run in separate process
-        start_time = time.time()
-        result = self._run_in_process(temp_config_path, "individual")
-        end_time = time.time()
+    if not test_strategies:
+        raise ValueError("No valid test strategies configured")
 
-        result["wall_time"] = end_time - start_time
-        result["config_path"] = temp_config_path
+    # Create A/B test configuration
+    ab_config = ABTestConfig(
+        name=f"optimizer_benchmark_{'_'.join(strategies)}",
+        baseline_strategy=baseline_strategy,
+        test_strategies=test_strategies,
+        workload=workload,
+        iterations=iterations,
+        warmup_runs=warmup_runs,
+        output_dir=output_dir,
+        timeout_seconds=3600,
+    )
 
-        return result
+    # Run A/B test
+    logger.info("\n>>> Running A/B test with StrategyABTest framework...")
+    ab_test = StrategyABTest(ab_config)
+    comparisons = ab_test.run_ab_test()
 
-    def run_optimized_pipeline(self, recipe_path: str, dataset_path: str) -> Dict[str, Any]:
-        """Run optimized pipeline execution (optimizer enabled) in separate process."""
-        logger.info("Running optimized pipeline (optimizer enabled)...")
-
-        temp_config_path = self.create_temp_config(recipe_path, dataset_path, "optimized")
-
-        # Run in separate process
-        start_time = time.time()
-        result = self._run_in_process(temp_config_path, "optimized")
-        end_time = time.time()
-
-        result["wall_time"] = end_time - start_time
-        result["config_path"] = temp_config_path
-
-        return result
-
-    def _run_in_process(self, config_path: str, mode: str) -> Dict[str, Any]:
-        """Run pipeline execution in a separate process."""
-        # Create process and run
-        result_queue = mp.Queue()
-        process = mp.Process(target=_worker_process, args=(config_path, mode, result_queue))
-
-        process.start()
-        process.join(timeout=3600)  # 1 hour timeout
-
-        if process.is_alive():
-            process.terminate()
-            process.join()
-            return {"execution_time": 0, "output_samples": 0, "success": False, "error": "Process timeout"}
-
-        if not result_queue.empty():
-            return result_queue.get()
-        else:
-            return {"execution_time": 0, "output_samples": 0, "success": False, "error": "No result from process"}
-
-    def validate_results(self, individual_result: Dict, optimized_result: Dict) -> Dict[str, Any]:
-        """Validate that both executions produced similar results."""
-        logger.info("Validating results...")
-
-        validation = {
-            "samples_match": False,
-            "individual_samples": individual_result.get("output_samples", 0),
-            "optimized_samples": optimized_result.get("output_samples", 0),
-            "sample_difference": 0,
-            "validation_passed": False,
-        }
-
-        if individual_result.get("success") and optimized_result.get("success"):
-            individual_samples = individual_result["output_samples"]
-            optimized_samples = optimized_result["output_samples"]
-
-            validation["samples_match"] = individual_samples == optimized_samples
-            validation["sample_difference"] = abs(individual_samples - optimized_samples)
-            validation["validation_passed"] = validation["samples_match"]
-
-            if validation["validation_passed"]:
-                logger.info("Validation passed: Both executions produced the same number of samples")
-            else:
-                logger.warning(
-                    f"Validation failed: Sample count mismatch "
-                    f"(baseline: {individual_samples}, optimized: {optimized_samples})"
-                )
-        else:
-            logger.error("Validation failed: One or both executions failed")
-
-        return validation
-
-    def compare_performance(self, individual_result: Dict, optimized_result: Dict) -> Dict[str, Any]:
-        """Compare performance metrics between baseline and optimized execution."""
-        logger.info("Comparing performance metrics...")
-
-        comparison = {
-            "individual_time": individual_result.get("wall_time", 0),
-            "optimized_time": optimized_result.get("wall_time", 0),
-            "speedup": 0,
-            "improvement_percent": 0,
-            "faster_mode": "none",
-        }
-
-        if individual_result.get("success") and optimized_result.get("success"):
-            individual_time = individual_result["wall_time"]
-            optimized_time = optimized_result["wall_time"]
-
-            if optimized_time > 0:
-                comparison["speedup"] = individual_time / optimized_time
-                comparison["improvement_percent"] = ((individual_time - optimized_time) / individual_time) * 100
-
-            if optimized_time < individual_time:
-                comparison["faster_mode"] = "optimized"
-            elif individual_time < optimized_time:
-                comparison["faster_mode"] = "baseline"
-            else:
-                comparison["faster_mode"] = "equal"
-
-        return comparison
-
-    def generate_report(self, results: Dict[str, Any]) -> str:
-        """Generate a comprehensive performance report."""
-        logger.info("Generating performance report...")
-
-        report_path = self.output_dir / "performance_report.md"
-
-        with open(report_path, "w") as f:
-            f.write("# Pipeline Optimizer Performance Report\n\n")
-
-            # Summary
-            f.write("## Summary\n\n")
-            comparison = results["comparison"]
-            validation = results["validation"]
-
-            f.write(f"- **Test Date**: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"- **Recipe**: {results['metadata']['recipe_path']}\n")
-            f.write(f"- **Dataset**: {results['metadata']['dataset_path']}\n")
-            f.write(f"- **Executor**: {results['metadata']['executor_type']}\n")
-            f.write(f"- **Strategies**: {', '.join(results['metadata']['strategies'])}\n")
-            f.write(f"- **Validation**: {'PASSED' if validation['validation_passed'] else 'FAILED'}\n")
-            f.write(f"- **Faster Mode**: {comparison['faster_mode'].title()}\n")
-            f.write(f"- **Speedup**: {comparison['speedup']:.2f}x\n")
-            f.write(f"- **Improvement**: {comparison['improvement_percent']:.1f}%\n\n")
-
-            # Detailed Results
-            f.write("## Detailed Results\n\n")
-
-            f.write("### Baseline (Optimizer Disabled)\n")
-            f.write(f"- Execution Time: {results['individual']['wall_time']:.2f}s\n")
-            f.write(f"- Output Samples: {results['individual']['output_samples']:,}\n")
-            f.write(f"- Success: {results['individual']['success']}\n")
-            if not results["individual"]["success"]:
-                f.write(f"- Error: {results['individual']['error']}\n")
-            f.write("\n")
-
-            f.write("### Optimized (Optimizer Enabled)\n")
-            f.write(f"- Execution Time: {results['optimized']['wall_time']:.2f}s\n")
-            f.write(f"- Output Samples: {results['optimized']['output_samples']:,}\n")
-            f.write(f"- Success: {results['optimized']['success']}\n")
-            if not results["optimized"]["success"]:
-                f.write(f"- Error: {results['optimized']['error']}\n")
-            f.write("\n")
-
-            # Performance Comparison
-            f.write("### Performance Comparison\n")
-            f.write(f"- Baseline Time: {comparison['individual_time']:.2f}s\n")
-            f.write(f"- Optimized Time: {comparison['optimized_time']:.2f}s\n")
-            f.write(f"- Speedup: {comparison['speedup']:.2f}x\n")
-            f.write(f"- Improvement: {comparison['improvement_percent']:.1f}%\n")
-            f.write(f"- Faster Mode: {comparison['faster_mode'].title()}\n\n")
-
-            # Validation Results
-            f.write("### Validation Results\n")
-            f.write(f"- Samples Match: {validation['samples_match']}\n")
-            f.write(f"- Baseline Samples: {validation['individual_samples']:,}\n")
-            f.write(f"- Optimized Samples: {validation['optimized_samples']:,}\n")
-            f.write(f"- Sample Difference: {validation['sample_difference']}\n")
-            f.write(f"- Validation Passed: {validation['validation_passed']}\n\n")
-
-            # Recommendations
-            f.write("## Recommendations\n\n")
-            if validation["validation_passed"]:
-                if comparison["faster_mode"] == "optimized":
-                    f.write(
-                        "**Use Optimized Pipeline**: The optimizer improves performance and produces correct results.\n"
-                    )
-                elif comparison["faster_mode"] == "baseline":
-                    f.write(
-                        "**Consider Baseline**: The baseline is faster for this workload. "
-                        "Optimizer may still help for larger datasets or different operation mixes.\n"
-                    )
-                else:
-                    f.write("**Both Modes Similar**: Performance is similar. Optimizer has minimal overhead.\n")
-            else:
-                f.write("**Investigation Required**: Results don't match between baseline and optimized modes.\n")
-
-        return str(report_path)
-
-    def save_results(self, results: Dict[str, Any]) -> str:
-        """Save results to JSON file."""
-        results_path = self.output_dir / "results.json"
-
-        with open(results_path, "w") as f:
-            json.dump(results, f, indent=2, default=str)
-
-        return str(results_path)
-
-    def run_test(self, recipe_path: str, dataset_path: str) -> Dict[str, Any]:
-        """Run the complete performance test."""
-        logger.info("Starting pipeline performance test...")
-        logger.info(f"Recipe: {recipe_path}")
-        logger.info(f"Dataset: {dataset_path}")
-        logger.info(f"Strategies: {self.strategies}")
-        logger.info(f"Executor: {self.executor_type}")
-
-        # Store metadata
-        self.results["metadata"] = {
+    # Build results dictionary
+    results = {
+        "metadata": {
             "recipe_path": recipe_path,
             "dataset_path": dataset_path,
-            "strategies": self.strategies,
-            "executor_type": self.executor_type,
+            "strategies": strategies,
+            "iterations": iterations,
             "test_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "framework": "StrategyABTest",
+        },
+        "comparisons": {},
+        "validation": {
+            "all_tests_passed": True,
+        },
+    }
+
+    # Process comparison results
+    for strategy_name, comparison in comparisons.items():
+        results["comparisons"][strategy_name] = {
+            "speedup": comparison.speedup,
+            "throughput_improvement": comparison.throughput_improvement,
+            "memory_efficiency": comparison.memory_efficiency,
+            "is_significant": comparison.is_significant,
+            "p_value": comparison.p_value,
+            "summary": comparison.summary,
+            "is_improvement": comparison.is_improvement(),
+            "is_regression": comparison.is_regression(),
         }
 
-        # Run baseline (no optimization)
-        individual_result = self.run_individual_pipeline(recipe_path, dataset_path)
-        self.results["individual"] = individual_result
+        # Check validation
+        if comparison.is_regression():
+            results["validation"]["all_tests_passed"] = False
+            results["validation"]["regression_detected"] = strategy_name
 
-        # Run optimized pipeline
-        optimized_result = self.run_optimized_pipeline(recipe_path, dataset_path)
-        self.results["optimized"] = optimized_result
+    # Save results JSON
+    results_path = Path(output_dir) / "results.json"
+    with open(results_path, "w") as f:
+        json.dump(results, f, indent=2, default=str)
+    logger.info(f"Results saved to: {results_path}")
 
-        # Validate results
-        validation = self.validate_results(individual_result, optimized_result)
-        self.results["validation"] = validation
+    # Print summary
+    _print_ab_test_summary(results, comparisons)
 
-        # Compare performance
-        comparison = self.compare_performance(individual_result, optimized_result)
-        self.results["comparison"] = comparison
-
-        # Save results
-        results_path = self.save_results(self.results)
-        logger.info(f"Results saved to: {results_path}")
-
-        # Generate report
-        report_path = self.generate_report(self.results)
-        logger.info(f"Report generated: {report_path}")
-
-        # Print summary
-        self._print_summary()
-
-        return self.results
-
-    def _print_summary(self):
-        """Print a summary of the test results."""
-        logger.info("\n" + "=" * 60)
-        logger.info("PERFORMANCE TEST SUMMARY")
-        logger.info("=" * 60)
-
-        comparison = self.results.get("comparison", {})
-        validation = self.results.get("validation", {})
-
-        logger.info(f"Baseline Time:  {comparison.get('individual_time', 0):.2f}s")
-        logger.info(f"Optimized Time: {comparison.get('optimized_time', 0):.2f}s")
-        logger.info(f"Speedup:        {comparison.get('speedup', 0):.2f}x")
-        logger.info(f"Improvement:    {comparison.get('improvement_percent', 0):.1f}%")
-        logger.info(f"Validation:     {'PASSED' if validation.get('validation_passed') else 'FAILED'}")
-        logger.info(f"Faster Mode:    {comparison.get('faster_mode', 'none').title()}")
-        logger.info("=" * 60)
+    return results
 
 
-def _worker_process(config_path: str, mode: str, result_queue: mp.Queue):
-    """Worker function for running pipeline execution in separate process."""
-    try:
-        # Add the project root to the path
-        project_root = Path(__file__).parent.parent.parent
-        sys.path.insert(0, str(project_root))
+def _print_ab_test_summary(results: Dict[str, Any], comparisons: Dict[str, Any]):
+    """Print a summary of the A/B test results."""
+    logger.info("\n" + "=" * 60)
+    logger.info("A/B TEST SUMMARY")
+    logger.info("=" * 60)
 
-        # Initialize config
-        args = ["--config", config_path]
-        cfg = init_configs(args=args)
+    for strategy_name, comparison in comparisons.items():
+        logger.info(f"\n{strategy_name}:")
+        logger.info(f"  Speedup:     {comparison.speedup:.2f}x")
+        improvement = (comparison.speedup - 1) * 100
+        logger.info(f"  Improvement: {improvement:.1f}%")
+        logger.info(f"  Significant: {comparison.is_significant}")
+        logger.info(f"  Summary:     {comparison.summary}")
 
-        # Create executor based on executor_type
-        executor_type = getattr(cfg, "executor_type", "default")
-        if executor_type == "ray":
-            from data_juicer.core import RayExecutor
+    validation = results.get("validation", {})
+    logger.info(f"\nValidation: {'PASSED' if validation.get('all_tests_passed') else 'FAILED'}")
+    logger.info("=" * 60)
 
-            executor = RayExecutor(cfg)
-        else:
-            executor = DefaultExecutor(cfg)
 
-        # Run and collect metrics
-        start_time = time.time()
-        dataset = executor.run()
-        end_time = time.time()
+def list_strategies():
+    """List all available optimization strategies."""
+    print("\nAvailable Optimization Strategies:")
+    print("=" * 50)
 
-        # Collect results - handle both Dataset and RayDataset
-        if dataset is not None:
-            if hasattr(dataset, "data") and hasattr(dataset.data, "count"):
-                # RayDataset
-                dataset_length = dataset.data.count()
-            elif hasattr(dataset, "__len__"):
-                dataset_length = len(dataset)
-            else:
-                dataset_length = 0
-        else:
-            dataset_length = 0
-        result = {
-            "execution_time": end_time - start_time,
-            "output_samples": dataset_length,
-            "success": True,
-            "error": None,
-        }
+    strategies = STRATEGY_LIBRARY.get_all_strategies()
+    for strategy in strategies:
+        print(f"\n  {strategy.name}")
+        print(f"    {strategy.description}")
+        if hasattr(strategy, "enabled_strategies"):
+            print(f"    Enables: {', '.join(strategy.enabled_strategies)}")
 
-        result_queue.put(result)
-
-    except Exception as e:
-        import traceback
-
-        result = {
-            "execution_time": 0,
-            "output_samples": 0,
-            "success": False,
-            "error": f"{str(e)}\n{traceback.format_exc()}",
-        }
-        result_queue.put(result)
+    print("\n" + "=" * 50)
+    print(f"\nDefault strategies: {', '.join(DEFAULT_STRATEGIES)}")
+    print("\nUsage examples:")
+    print("  # Test single strategy")
+    print("  python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies op_pruning")
+    print("\n  # Test multiple strategies")
+    print(
+        "  python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies op_pruning,op_reorder"
+    )
+    print("\n  # Test all optimizations")
+    print(
+        "  python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies all_optimizations"
+    )
 
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="Pipeline Performance Test: Compare baseline vs optimized execution")
-    parser.add_argument("--recipe-path", type=str, required=True, help="Path to the recipe YAML file")
-    parser.add_argument("--dataset-path", type=str, required=True, help="Path to the dataset file")
+    parser = argparse.ArgumentParser(
+        description="Optimizer Benchmark: Compare baseline vs optimized pipeline execution using A/B testing",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Test op_pruning strategy
+  python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies op_pruning
+
+  # Test multiple strategies
+  python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies op_pruning,op_reorder
+
+  # Run with multiple iterations for statistical significance
+  python run_benchmark.py --recipe-path config.yaml --dataset-path data.jsonl --strategies op_pruning --iterations 3
+
+  # List available strategies
+  python run_benchmark.py --list-strategies
+        """,
+    )
+
+    parser.add_argument(
+        "--recipe-path",
+        type=str,
+        help="Path to the recipe YAML file",
+    )
+    parser.add_argument(
+        "--dataset-path",
+        type=str,
+        help="Path to the dataset file",
+    )
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./outputs/pipeline_perf_test",
-        help="Output directory for results and reports",
+        default="./outputs/optimizer_benchmark",
+        help="Output directory for results and reports (default: ./outputs/optimizer_benchmark)",
     )
     parser.add_argument(
         "--strategies",
         type=str,
         default=None,
-        help="Comma-separated list of optimization strategies to test. "
-        "Available: op_reorder, filter_fusion, mapper_fusion. "
-        "Default: op_reorder,filter_fusion. "
-        "Example: --strategies filter_fusion (test only filter fusion)",
+        help=f"Comma-separated list of optimization strategies. "
+        f"Available: {', '.join(AVAILABLE_STRATEGIES)}. "
+        f"Default: {', '.join(DEFAULT_STRATEGIES)}",
     )
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     parser.add_argument(
-        "--executor",
-        type=str,
-        default="default",
-        choices=["default", "ray"],
-        help="Executor type: 'default' (local) or 'ray' (distributed). Default: default",
+        "--iterations",
+        type=int,
+        default=1,
+        help="Number of benchmark iterations for statistical significance (default: 1)",
+    )
+    parser.add_argument(
+        "--warmup-runs",
+        type=int,
+        default=0,
+        help="Number of warmup runs before actual benchmarking (default: 0)",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose logging",
+    )
+    parser.add_argument(
+        "--list-strategies",
+        action="store_true",
+        help="List all available optimization strategies and exit",
     )
 
     args = parser.parse_args()
 
+    # Handle list-strategies command
+    if args.list_strategies:
+        list_strategies()
+        sys.exit(0)
+
+    # Validate required arguments
+    if not args.recipe_path or not args.dataset_path:
+        parser.error("--recipe-path and --dataset-path are required (unless using --list-strategies)")
+
     # Setup logging
     log_level = "DEBUG" if args.verbose else "INFO"
     logger.remove()
-    logger.add(sys.stderr, level=log_level)
+    logger.add(sys.stderr, level=log_level, format="<level>{message}</level>")
+
+    # Add file logging
+    log_dir = Path(args.output_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    logger.add(log_dir / "benchmark.log", rotation="10 MB", level="INFO")
 
     # Parse strategies
-    strategies = None
+    strategies = DEFAULT_STRATEGIES
     if args.strategies:
         strategies = [s.strip() for s in args.strategies.split(",")]
-        logger.info(f"Testing strategies: {strategies}")
-
-    logger.info(f"Using executor: {args.executor}")
-
-    # Create tester and run test
-    tester = PipelinePerformanceTester(args.output_dir, strategies=strategies, executor_type=args.executor)
 
     try:
-        results = tester.run_test(args.recipe_path, args.dataset_path)
+        results = run_ab_test_with_framework(
+            recipe_path=args.recipe_path,
+            dataset_path=args.dataset_path,
+            strategies=strategies,
+            output_dir=args.output_dir,
+            iterations=args.iterations,
+            warmup_runs=args.warmup_runs,
+        )
 
         # Exit with appropriate code
         validation = results.get("validation", {})
-        if validation.get("validation_passed"):
-            logger.info("Test completed successfully")
+        if validation.get("all_tests_passed"):
+            logger.info("Benchmark completed successfully")
             sys.exit(0)
         else:
-            logger.error("Test failed validation")
+            logger.warning("Benchmark completed but validation failed")
             sys.exit(1)
 
     except Exception as e:
-        logger.error(f"Test failed with error: {e}")
+        logger.error(f"Benchmark failed with error: {e}")
         import traceback
 
         traceback.print_exc()

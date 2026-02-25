@@ -121,9 +121,11 @@ class BenchmarkRunner:
         if self.config.strategy_config:
             # Check if this is a core optimizer strategy
             if self.config.strategy_config.get("_benchmark_optimizer_enabled"):
-                # For core optimizer strategies, we use environment variables instead of config keys
-                # This avoids config validation issues
-                logger.info("🔧 Core optimizer strategy detected - will use environment variables")
+                # For core optimizer strategies, set enable_optimizer and optimizer_strategies in config
+                enabled_strategies = self.config.strategy_config.get("_benchmark_optimizer_strategies", [])
+                base_config["enable_optimizer"] = True
+                base_config["optimizer_strategies"] = enabled_strategies
+                logger.info(f"🔧 Core optimizer enabled with strategies: {enabled_strategies}")
             else:
                 # For regular config strategies, apply them directly
                 base_config = self.config_manager.apply_strategy_config(base_config, self.config.strategy_config)
@@ -239,58 +241,13 @@ class BenchmarkRunner:
         return self._parse_benchmark_output(result.stdout)
 
     def _execute_with_core_optimizer(self, config_file: str) -> Optional[Dict[str, Any]]:
-        """Execute benchmark with core optimizer applied."""
-        try:
-            # Get the enabled optimizer strategies
-            enabled_strategies = self.config.strategy_config.get("_benchmark_optimizer_strategies", [])
-            logger.info(f"🔧 Applying core optimizer with strategies: {enabled_strategies}")
+        """Execute benchmark with core optimizer applied.
 
-            # Use environment variables to pass optimizer information
-            env = os.environ.copy()
-            env["DJ_ENABLE_CORE_OPTIMIZER"] = "true"
-            env["DJ_OPTIMIZER_STRATEGIES"] = ",".join(enabled_strategies)
-
-            # Build command with the original config
-            cmd = [
-                "python",
-                "-m",
-                "data_juicer.tools.process_data",
-                "--config",
-                config_file,
-                "--export_path",
-                os.path.join(self.config.output_dir, "output.jsonl"),
-            ]
-
-            # Only add dataset_path if it's provided (config might have it instead)
-            if self.config.dataset_path:
-                cmd.extend(["--dataset_path", self.config.dataset_path])
-
-            logger.debug(f"Executing command with core optimizer: {' '.join(cmd)}")
-
-            # Run the benchmark with environment variables
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=self.config.timeout_seconds, cwd=os.getcwd(), env=env
-            )
-
-            # No cleanup needed since we're using environment variables
-
-            if result.returncode != 0:
-                logger.error(f"Benchmark execution failed: {result.stderr}")
-                return None
-
-            # Log the subprocess output for debugging
-            logger.info("=== Subprocess STDOUT ===")
-            logger.info(result.stdout)
-            logger.info("=== Subprocess STDERR ===")
-            logger.info(result.stderr)
-            logger.info("=== End Subprocess Output ===")
-
-            # Parse output for metrics (data-juicer logs to stderr, not stdout)
-            return self._parse_benchmark_output(result.stdout)
-
-        except Exception as e:
-            logger.error(f"Error executing benchmark with core optimizer: {e}")
-            return None
+        Note: The optimizer settings are already written to the config file
+        in _prepare_config(), so we just need to run the standard benchmark.
+        """
+        # Core optimizer settings are now in the config file, use standard execution
+        return self._execute_standard_benchmark(config_file)
 
     def _cleanup_output_directory(self):
         """Clean up the output directory before running benchmark to prevent multiple outputs."""
@@ -399,38 +356,67 @@ class BenchmarkRunner:
             import os
             import subprocess
 
-            output_dir = os.path.join(self.config.output_dir, "output.jsonl")
-            if not os.path.exists(output_dir):
-                logger.warning(f"Output directory not found: {output_dir}")
+            output_path = os.path.join(self.config.output_dir, "output.jsonl")
+            if not os.path.exists(output_path):
+                logger.warning(f"Output path not found: {output_path}")
                 return None
 
-            # Count all JSON files in the output directory
-            result = subprocess.run(
-                ["find", output_dir, "-name", "*.json", "-exec", "wc", "-l", "{}", "+"],
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
+            # Check if it's a file or directory
+            if os.path.isfile(output_path):
+                # Single JSONL file - count lines
+                result = subprocess.run(
+                    ["wc", "-l", output_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    return int(result.stdout.split()[0])
+            else:
+                # Directory with partitioned output - count all JSON/JSONL files
+                result = subprocess.run(
+                    [
+                        "find",
+                        output_path,
+                        "-type",
+                        "f",
+                        "(",
+                        "-name",
+                        "*.json",
+                        "-o",
+                        "-name",
+                        "*.jsonl",
+                        ")",
+                        "-exec",
+                        "wc",
+                        "-l",
+                        "{}",
+                        "+",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
 
-            if result.returncode == 0:
-                # Parse the output to get total count
-                lines = result.stdout.strip().split("\n")
+                if result.returncode == 0:
+                    # Parse the output to get total count
+                    lines = result.stdout.strip().split("\n")
 
-                # Check if we have a "total" line (from using + syntax)
-                for line in lines:
-                    if "total" in line.lower():
-                        parts = line.split()
-                        if parts and parts[0].isdigit():
-                            return int(parts[0])
+                    # Check if we have a "total" line (from using + syntax)
+                    for line in lines:
+                        if "total" in line.lower():
+                            parts = line.split()
+                            if parts and parts[0].isdigit():
+                                return int(parts[0])
 
-                # Fallback: sum individual counts (for \; syntax)
-                total = 0
-                for line in lines:
-                    if line.strip() and "total" not in line.lower():
-                        parts = line.split()
-                        if parts and parts[0].isdigit():
-                            total += int(parts[0])
-                return total
+                    # Fallback: sum individual counts
+                    total = 0
+                    for line in lines:
+                        if line.strip() and "total" not in line.lower():
+                            parts = line.split()
+                            if parts and parts[0].isdigit():
+                                total += int(parts[0])
+                    return total
 
         except Exception as e:
             logger.error(f"Error counting output records: {e}")

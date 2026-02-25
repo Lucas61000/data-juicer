@@ -3,6 +3,8 @@
 Comprehensive workload suite for benchmarking different scenarios.
 """
 
+import os
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -23,13 +25,32 @@ class WorkloadDefinition:
     complexity: str  # simple, medium, complex
     estimated_duration_minutes: int
     resource_requirements: Dict[str, Any]
+    synthetic: bool = False  # Whether this uses synthetic data
 
     def __post_init__(self):
         """Validate workload definition."""
+        # Skip validation for synthetic workloads - data will be generated on demand
+        if self.synthetic:
+            return
         if not Path(self.dataset_path).exists():
             logger.warning(f"Dataset path does not exist: {self.dataset_path}")
         if not Path(self.config_path).exists():
             logger.warning(f"Config path does not exist: {self.config_path}")
+
+    def ensure_data_exists(self) -> str:
+        """Ensure dataset exists, generating synthetic data if needed.
+
+        Returns:
+            Path to the dataset file
+        """
+        if self.synthetic and not Path(self.dataset_path).exists():
+            from .synthetic_data import SYNTHETIC_DATA_GENERATOR
+
+            return SYNTHETIC_DATA_GENERATOR.generate_text_data(
+                self.dataset_path,
+                num_samples=self.expected_samples,
+            )
+        return self.dataset_path
 
 
 class WorkloadSuite:
@@ -47,7 +68,7 @@ class WorkloadSuite:
             name="text_simple",
             description="Simple text processing with basic filters",
             dataset_path="perf_bench_data/text/wiki-10k.jsonl",
-            config_path="configs/demo/process.yaml",
+            config_path="demos/pipeline_optimization/configs/basic.yaml",
             expected_samples=10000,
             modality="text",
             complexity="simple",
@@ -72,7 +93,7 @@ class WorkloadSuite:
             name="image_simple",
             description="Simple image processing",
             dataset_path="perf_bench_data/image/10k.jsonl",
-            config_path="configs/demo/process.yaml",
+            config_path="demos/pipeline_optimization/configs/basic.yaml",
             expected_samples=10000,
             modality="image",
             complexity="simple",
@@ -97,7 +118,7 @@ class WorkloadSuite:
             name="video_simple",
             description="Simple video processing",
             dataset_path="perf_bench_data/video/msr_vtt_train.jsonl",
-            config_path="configs/demo/process.yaml",
+            config_path="demos/pipeline_optimization/configs/basic.yaml",
             expected_samples=1000,
             modality="video",
             complexity="simple",
@@ -122,7 +143,7 @@ class WorkloadSuite:
             name="audio_simple",
             description="Simple audio processing",
             dataset_path="perf_bench_data/audio/audio-10k.jsonl",
-            config_path="configs/demo/process.yaml",
+            config_path="demos/pipeline_optimization/configs/basic.yaml",
             expected_samples=10000,
             modality="audio",
             complexity="simple",
@@ -172,12 +193,54 @@ class WorkloadSuite:
             name="op_reorder_showcase",
             description="Showcase workload designed to demonstrate operation reordering benefits",
             dataset_path="perf_bench_data/text/c4-train.00000-of-01024.jsonl",
-            config_path="configs/optimization/op_reorder_showcase.yaml",
+            config_path="demos/pipeline_optimization/configs/op_reorder_showcase.yaml",
             expected_samples=10000,
             modality="text",
             complexity="complex",
             estimated_duration_minutes=15,  # Moderate complexity
             resource_requirements={"memory_gb": 8, "cpu_cores": 8, "gpu": False},
+        )
+
+        # Synthetic workloads - auto-generate data for quick testing
+        synthetic_data_dir = os.path.join(tempfile.gettempdir(), "dj_benchmark_synthetic")
+
+        self.workloads["synthetic_text_1k"] = WorkloadDefinition(
+            name="synthetic_text_1k",
+            description="Synthetic text data (1K samples) for quick testing",
+            dataset_path=os.path.join(synthetic_data_dir, "text_1k.jsonl"),
+            config_path="demos/pipeline_optimization/configs/basic.yaml",
+            expected_samples=1000,
+            modality="text",
+            complexity="simple",
+            estimated_duration_minutes=1,
+            resource_requirements={"memory_gb": 1, "cpu_cores": 2},
+            synthetic=True,
+        )
+
+        self.workloads["synthetic_text_10k"] = WorkloadDefinition(
+            name="synthetic_text_10k",
+            description="Synthetic text data (10K samples) for testing",
+            dataset_path=os.path.join(synthetic_data_dir, "text_10k.jsonl"),
+            config_path="demos/pipeline_optimization/configs/basic.yaml",
+            expected_samples=10000,
+            modality="text",
+            complexity="medium",
+            estimated_duration_minutes=5,
+            resource_requirements={"memory_gb": 2, "cpu_cores": 4},
+            synthetic=True,
+        )
+
+        self.workloads["synthetic_text_100k"] = WorkloadDefinition(
+            name="synthetic_text_100k",
+            description="Synthetic text data (100K samples) for stress testing",
+            dataset_path=os.path.join(synthetic_data_dir, "text_100k.jsonl"),
+            config_path="demos/pipeline_optimization/configs/basic.yaml",
+            expected_samples=100000,
+            modality="text",
+            complexity="complex",
+            estimated_duration_minutes=30,
+            resource_requirements={"memory_gb": 8, "cpu_cores": 8},
+            synthetic=True,
         )
 
     def get_workload(self, name: str) -> Optional[WorkloadDefinition]:

@@ -1,81 +1,135 @@
 # Optimizer Benchmark
 
-Benchmark tool for comparing pipeline execution with and without the optimizer.
+A/B testing tool for comparing Data-Juicer pipeline execution with and without optimizer strategies. Uses the `data_juicer.benchmark` framework for statistical analysis and report generation.
 
-## Usage
+## Quick Start
 
 ```bash
+# Test op_pruning strategy
 python tools/optimizer_benchmark/run_benchmark.py \
-  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark.yaml \
-  --dataset-path test_data/benchmark_10k.jsonl \
-  --output-dir outputs/optimizer_bench \
-  --verbose
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_pruning.yaml \
+  --dataset-path /path/to/data.jsonl \
+  --strategies op_pruning
+
+# List available strategies
+python tools/optimizer_benchmark/run_benchmark.py --list-strategies
 ```
 
 ## Options
 
-- `--recipe-path PATH`: Path to the recipe YAML file (required)
-- `--dataset-path PATH`: Path to the dataset file (required)
-- `--output-dir PATH`: Output directory (default: `./outputs/optimizer_benchmark`)
-- `--strategies LIST`: Comma-separated list of strategies to test (default: `op_reorder,filter_fusion`)
-- `--executor TYPE`: Executor type: `default` (local) or `ray` (distributed). Default: `default`
-- `--verbose`: Enable verbose logging
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--recipe-path` | Path to recipe YAML file | Required |
+| `--dataset-path` | Path to dataset file | Required |
+| `--output-dir` | Output directory for results | `./outputs/optimizer_benchmark` |
+| `--strategies` | Comma-separated list of strategies | `op_pruning,op_reorder` |
+| `--iterations` | Number of benchmark iterations | `1` |
+| `--warmup-runs` | Number of warmup runs | `0` |
+| `--verbose` | Enable verbose logging | `false` |
 
-## Testing Specific Strategies
+## Available Strategies
 
-Test only filter fusion:
+| Strategy | Description |
+|----------|-------------|
+| `op_pruning` | Remove no-op and duplicate operations |
+| `op_reorder` | Reorder operations for optimal execution |
+| `mapper_fusion` | Fuse consecutive mapper operations |
+| `filter_fusion` | Fuse filters sharing intermediate variables |
+| `all_optimizations` | Enable all core optimizations |
+
+## Examples
+
+### Test Single Strategy
+
 ```bash
 python tools/optimizer_benchmark/run_benchmark.py \
-  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark.yaml \
-  --dataset-path test_data/benchmark_10k.jsonl \
-  --strategies filter_fusion
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_pruning.yaml \
+  --dataset-path /tmp/c4_sample_10k.jsonl \
+  --strategies op_pruning
 ```
 
-Test only operation reordering:
+### Test Multiple Strategies
+
 ```bash
 python tools/optimizer_benchmark/run_benchmark.py \
-  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark.yaml \
-  --dataset-path test_data/benchmark_10k.jsonl \
-  --strategies op_reorder
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_pruning.yaml \
+  --dataset-path /tmp/c4_sample_10k.jsonl \
+  --strategies op_pruning,op_reorder
 ```
 
-Available strategies: `op_reorder`, `filter_fusion`, `mapper_fusion`
+### Multiple Iterations for Statistical Significance
 
-## Testing with Ray Executor
-
-Test with Ray distributed executor:
 ```bash
 python tools/optimizer_benchmark/run_benchmark.py \
-  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark.yaml \
-  --dataset-path test_data/benchmark_10k.jsonl \
-  --executor ray
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_pruning.yaml \
+  --dataset-path /tmp/c4_sample_10k.jsonl \
+  --strategies op_pruning \
+  --iterations 3 \
+  --warmup-runs 1
 ```
 
-## Generating Test Data
+### Test All Optimizations
 
 ```bash
-python tools/optimizer_benchmark/generate_test_data.py \
-  --output test_data/benchmark_10k.jsonl \
-  --samples 10000
+python tools/optimizer_benchmark/run_benchmark.py \
+  --recipe-path tools/optimizer_benchmark/configs/optimizer_benchmark_pruning.yaml \
+  --dataset-path /tmp/c4_sample_10k.jsonl \
+  --strategies all_optimizations
 ```
+
+## Synthetic Data for Testing
+
+The benchmark framework includes synthetic workloads for quick testing without production datasets:
+
+```python
+from data_juicer.benchmark import WORKLOAD_SUITE, SYNTHETIC_DATA_GENERATOR
+
+# Use pre-defined synthetic workloads
+workload = WORKLOAD_SUITE.get_workload("synthetic_text_10k")
+workload.ensure_data_exists()  # Auto-generates if needed
+
+# Or generate custom synthetic data
+SYNTHETIC_DATA_GENERATOR.generate_text_data(
+    output_path="/tmp/custom_data.jsonl",
+    num_samples=5000,
+)
+```
+
+Available synthetic workloads:
+- `synthetic_text_1k` - 1K samples, ~1 min
+- `synthetic_text_10k` - 10K samples, ~5 min
+- `synthetic_text_100k` - 100K samples, ~30 min
 
 ## Output
 
 The benchmark generates:
 
-- `results.json`: Raw performance metrics
-- `performance_report.md`: Human-readable report
-- `benchmark.log`: Detailed execution log
+| File | Description |
+|------|-------------|
+| `results.json` | Structured results with comparisons |
+| `ab_test_report_*.html` | Professional HTML report |
+| `ab_test_data_*.json` | Raw A/B test data |
+| `benchmark.log` | Detailed execution log |
+| `baseline/` | Baseline run outputs |
+| `<strategy>/` | Optimized run outputs for each strategy |
 
 ## Example Results
 
-With 356K samples (C4 dataset) and 4 INTER_WORDS filters:
+With 10K samples (C4 dataset) and op_pruning strategy:
 
-| Executor | Baseline | Optimized | Speedup | Improvement |
-|----------|----------|-----------|---------|-------------|
-| Default  | 88.98s   | 75.69s    | 1.18x   | **+14.9%**  |
-| Ray      | 110.00s  | -         | -       | Skipped     |
+| Configuration | Time | Throughput | Speedup |
+|--------------|------|------------|---------|
+| Baseline | 19.75s | 506 samples/sec | - |
+| Optimized (op_pruning) | 15.50s | 645 samples/sec | **1.27x** |
 
-The optimizer fuses filters sharing intermediate variables (like tokenized words) into a single `FusedFilter` operation, reducing overhead by computing expensive operations once.
+The `op_pruning` strategy removes redundant operations (no-op filters with default parameters, duplicate operations) from the pipeline, reducing execution overhead.
 
-**Note:** Filter and mapper fusion are automatically skipped in Ray mode since Ray already parallelizes operations efficiently.
+## Architecture
+
+This tool uses the `data_juicer.benchmark` framework:
+
+- **StrategyABTest**: Orchestrates A/B testing between baseline and optimized runs
+- **WorkloadDefinition**: Defines dataset and config for benchmarking
+- **STRATEGY_LIBRARY**: Registry of available optimization strategies
+- **ResultAnalyzer**: Statistical comparison with significance testing
+- **ReportGenerator**: HTML and JSON report generation
