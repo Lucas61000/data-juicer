@@ -203,7 +203,11 @@ class BenchmarkRunner:
             return None
 
     def _execute_standard_benchmark(self, config_file: str) -> Optional[Dict[str, Any]]:
-        """Execute benchmark using standard subprocess."""
+        """Execute benchmark using subprocess with proper resource monitoring.
+
+        Uses Popen instead of run to capture the subprocess PID for accurate
+        CPU and memory monitoring of the actual data-juicer workload.
+        """
         # Build command
         cmd = [
             "python",
@@ -221,24 +225,42 @@ class BenchmarkRunner:
 
         logger.debug(f"Executing command: {' '.join(cmd)}")
 
-        # Run the benchmark
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=self.config.timeout_seconds, cwd=os.getcwd()
+        # Use Popen to get the subprocess PID for monitoring
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=os.getcwd(),
         )
 
-        if result.returncode != 0:
-            logger.error(f"Benchmark execution failed: {result.stderr}")
+        # Set the target PID for metrics collection
+        self.metrics_collector.set_target_pid(process.pid)
+        logger.debug(f"Started subprocess with PID: {process.pid}")
+
+        try:
+            # Wait for process to complete with timeout
+            stdout, stderr = process.communicate(timeout=self.config.timeout_seconds)
+            returncode = process.returncode
+        except subprocess.TimeoutExpired:
+            process.kill()
+            stdout, stderr = process.communicate()
+            logger.error(f"Benchmark timed out after {self.config.timeout_seconds} seconds")
+            return None
+
+        if returncode != 0:
+            logger.error(f"Benchmark execution failed: {stderr}")
             return None
 
         # Log the subprocess output for debugging
         logger.info("=== Subprocess STDOUT ===")
-        logger.info(result.stdout)
+        logger.info(stdout)
         logger.info("=== Subprocess STDERR ===")
-        logger.info(result.stderr)
+        logger.info(stderr)
         logger.info("=== End Subprocess Output ===")
 
         # Parse output for metrics (data-juicer logs to stderr, not stdout)
-        return self._parse_benchmark_output(result.stdout)
+        return self._parse_benchmark_output(stdout)
 
     def _execute_with_core_optimizer(self, config_file: str) -> Optional[Dict[str, Any]]:
         """Execute benchmark with core optimizer applied.

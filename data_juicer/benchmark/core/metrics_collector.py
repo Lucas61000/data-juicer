@@ -73,12 +73,16 @@ class MetricsCollector:
         self.metrics_data = []
         self.start_time = None
         self.end_time = None
+        self.target_pid = None
+        self._target_process = None
 
     def start_monitoring(self):
         """Start monitoring system resources."""
         self.monitoring = True
         self.metrics_data = []
         self.start_time = time.time()
+        self.target_pid = None
+        self._target_process = None
 
         # Start monitoring thread
         self.monitor_thread = threading.Thread(target=self._monitor_resources)
@@ -86,6 +90,23 @@ class MetricsCollector:
         self.monitor_thread.start()
 
         logger.debug("Started metrics monitoring")
+
+    def set_target_pid(self, pid: int):
+        """Set the target subprocess PID to monitor.
+
+        This allows monitoring a subprocess instead of the parent process.
+        Should be called after starting the subprocess.
+
+        Args:
+            pid: The process ID of the subprocess to monitor
+        """
+        self.target_pid = pid
+        try:
+            self._target_process = psutil.Process(pid)
+            logger.debug(f"Now monitoring subprocess PID: {pid}")
+        except psutil.NoSuchProcess:
+            logger.warning(f"Process {pid} not found, falling back to parent process")
+            self._target_process = None
 
     def stop_monitoring(self):
         """Stop monitoring and return collected metrics."""
@@ -102,23 +123,82 @@ class MetricsCollector:
         return self._calculate_metrics()
 
     def _monitor_resources(self):
-        """Monitor system resources in background thread."""
-        process = psutil.Process()
+        """Monitor system resources in background thread.
+
+        If a target subprocess PID has been set via set_target_pid(),
+        monitors that process and all its children. Otherwise falls back
+        to monitoring the current process.
+        """
+        fallback_process = psutil.Process()
 
         while self.monitoring:
             try:
-                # Get current metrics
-                cpu_percent = process.cpu_percent()
-                memory_info = process.memory_info()
-                memory_mb = memory_info.rss / 1024 / 1024  # Convert to MB
+                # Determine which process(es) to monitor
+                if self._target_process is not None:
+                    try:
+                        # Check if target process is still running
+                        if not self._target_process.is_running():
+                            # Process finished, use last known metrics
+                            time.sleep(0.1)
+                            continue
 
-                self.metrics_data.append({"timestamp": time.time(), "cpu_percent": cpu_percent, "memory_mb": memory_mb})
+                        # Get metrics from target process and all children
+                        cpu_percent, memory_mb = self._get_process_tree_metrics(self._target_process)
+                    except psutil.NoSuchProcess:
+                        # Process ended, continue monitoring in case it restarts
+                        time.sleep(0.1)
+                        continue
+                else:
+                    # Fall back to monitoring parent process
+                    cpu_percent = fallback_process.cpu_percent()
+                    memory_info = fallback_process.memory_info()
+                    memory_mb = memory_info.rss / 1024 / 1024
+
+                self.metrics_data.append(
+                    {
+                        "timestamp": time.time(),
+                        "cpu_percent": cpu_percent,
+                        "memory_mb": memory_mb,
+                    }
+                )
 
                 time.sleep(0.1)  # Sample every 100ms
 
             except Exception as e:
                 logger.warning(f"Error monitoring resources: {e}")
-                break
+                time.sleep(0.1)  # Don't break, just continue
+
+    def _get_process_tree_metrics(self, process: psutil.Process) -> tuple:
+        """Get aggregated CPU and memory metrics for a process and all its children.
+
+        Args:
+            process: The root process to monitor
+
+        Returns:
+            Tuple of (total_cpu_percent, total_memory_mb)
+        """
+        total_cpu = 0.0
+        total_memory_mb = 0.0
+
+        try:
+            # Get metrics from the main process
+            total_cpu += process.cpu_percent()
+            total_memory_mb += process.memory_info().rss / 1024 / 1024
+
+            # Get metrics from all child processes (recursive)
+            children = process.children(recursive=True)
+            for child in children:
+                try:
+                    total_cpu += child.cpu_percent()
+                    total_memory_mb += child.memory_info().rss / 1024 / 1024
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    # Child process may have ended or be inaccessible
+                    pass
+
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+        return total_cpu, total_memory_mb
 
     def _calculate_metrics(self) -> BenchmarkMetrics:
         """Calculate final metrics from collected data."""
