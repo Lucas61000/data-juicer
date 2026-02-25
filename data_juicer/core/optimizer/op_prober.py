@@ -5,6 +5,42 @@ Operation Prober for sampling-based cost estimation.
 This module provides functionality to estimate operation costs by running
 them on a small sample of data. The measured costs are used by optimization
 strategies (like op_reorder) to make better decisions.
+
+Why Probing Matters
+-------------------
+Static heuristics categorize operations as "cheap" or "expensive" based on
+operation type, but this misses actual runtime differences. For example,
+all basic filters might be classified as "cheap", but their actual costs
+can vary significantly (e.g., text_length_filter: 3.6s vs
+character_repetition_filter: 21.6s on the same dataset).
+
+What Probing Measures
+---------------------
+For each operation, probing measures:
+    - Runtime: time_per_sample_ms (execution time per sample)
+    - Selectivity: ratio of samples that pass (for filters only)
+
+These are combined into an effective cost:
+    effective_cost = time_per_sample_ms * selectivity
+
+This formula favors placing highly selective filters (that remove more data)
+earlier in the pipeline, reducing the data volume for subsequent operations.
+
+Benchmark Results (C4 dataset, 356K samples, 5 filters):
+    - Baseline (no optimization):     73.5s
+    - Static reorder (heuristics):    73.3s  (no change - all "cheap")
+    - Probed reorder (measured):      53.1s  (28% faster)
+
+The probing overhead is minimal (~0.15s for 100 samples) compared to the
+potential savings (20+ seconds in this benchmark).
+
+Configuration
+-------------
+Enable probing via config options:
+    enable_optimizer: true
+    optimizer_strategies: ['op_reorder']
+    optimizer_probe_enabled: true      # Enable probing (default: true)
+    optimizer_probe_samples: 100       # Sample size (default: 100)
 """
 
 import time

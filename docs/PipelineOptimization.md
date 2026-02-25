@@ -411,6 +411,51 @@ process:
   - clean_email_mapper: {}
 ```
 
+#### Probing-Aided Reordering
+
+Static heuristics categorize operations as "cheap" or "expensive" based on operation type, but this can miss actual runtime differences. **Probing** measures actual costs by running each operation on a small sample.
+
+**What Probing Measures:**
+- **Runtime**: Execution time per sample (ms)
+- **Selectivity**: Ratio of samples that pass (for filters)
+
+These are combined into an effective cost: `effective_cost = runtime × selectivity`
+
+This formula favors placing highly selective filters (that remove more data) earlier in the pipeline.
+
+**Configuration:**
+
+```yaml
+enable_optimizer: true
+optimizer_strategies: ['op_reorder']
+optimizer_probe_enabled: true      # Enable probing (default: true)
+optimizer_probe_samples: 100       # Sample size (default: 100)
+```
+
+**Benchmark Results (C4 dataset, 356K samples, 5 filters):**
+
+| Configuration | Time | Speedup | Notes |
+|--------------|------|---------|-------|
+| Baseline (no optimization) | 73.5s | - | Original order |
+| Static reorder (heuristics) | 73.3s | ~0% | No change - all filters classified as "cheap" |
+| Probed reorder (measured) | 53.1s | **28%** | Reordered based on actual measured costs |
+
+**Why Static Heuristics Failed:**
+
+All 5 filters were in the `CHEAP_FILTERS` category (same static cost), so no reordering occurred. But actual runtimes varied significantly:
+
+| Filter | Static Cost | Actual Runtime |
+|--------|-------------|----------------|
+| text_length_filter | 1 (cheap) | 3.6s |
+| special_characters_filter | 1 (cheap) | 5.2s |
+| alphanumeric_filter | 1 (cheap) | 8.8s |
+| words_num_filter | 1 (cheap) | 12.4s |
+| character_repetition_filter | 1 (cheap) | 21.6s |
+
+Probing discovered these differences and reordered accordingly, moving the expensive `character_repetition_filter` to run last on fewer samples.
+
+**Probing Overhead:** ~0.15s for 100 samples (negligible compared to 20s savings)
+
 ### 4. Operator Fusion
 
 Combine operators that share intermediate variables to avoid redundant computation.
