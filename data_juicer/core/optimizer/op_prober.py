@@ -70,6 +70,25 @@ class ProbeResult:
 
 
 @dataclass
+class FusionProbeResult:
+    """Result of probing a fusion candidate group."""
+
+    filter_names: List[str]
+    unfused_time_ms: float  # Total time running filters separately
+    fused_time_ms: float  # Time running filters fused
+    speedup: float  # unfused_time / fused_time (>1 means fusion is faster)
+    should_fuse: bool  # Recommendation based on speedup threshold
+    error: Optional[str] = None
+
+    @property
+    def savings_percent(self) -> float:
+        """Percentage of time saved by fusion."""
+        if self.unfused_time_ms > 0:
+            return (1 - self.fused_time_ms / self.unfused_time_ms) * 100
+        return 0.0
+
+
+@dataclass
 class ProbeResults:
     """Collection of probe results for multiple operations."""
 
@@ -310,3 +329,135 @@ class OpProber:
         elif hasattr(dataset, "count"):
             return dataset.count()
         return 0
+
+    def probe_fusion_benefit(
+        self,
+        filters: List[Any],
+        dataset: Any,
+        fusion_speedup_threshold: float = 1.1,
+    ) -> FusionProbeResult:
+        """
+        Probe whether fusing a group of filters provides a benefit.
+
+        This method compares the time to run filters separately vs fused,
+        and recommends fusion only if it provides meaningful speedup.
+
+        Args:
+            filters: List of filter operations to potentially fuse
+            dataset: Dataset to sample from for probing
+            fusion_speedup_threshold: Minimum speedup ratio to recommend fusion
+                                      (default 1.1 = 10% faster)
+
+        Returns:
+            FusionProbeResult with timing comparison and recommendation
+        """
+        filter_names = [self._get_op_name(f) for f in filters]
+
+        if len(filters) < 2:
+            return FusionProbeResult(
+                filter_names=filter_names,
+                unfused_time_ms=0,
+                fused_time_ms=0,
+                speedup=1.0,
+                should_fuse=False,
+                error="Need at least 2 filters to fuse",
+            )
+
+        # Get a sample of the dataset
+        sample_dataset = self._get_sample(dataset)
+        if sample_dataset is None:
+            return FusionProbeResult(
+                filter_names=filter_names,
+                unfused_time_ms=0,
+                fused_time_ms=0,
+                speedup=1.0,
+                should_fuse=False,
+                error="Failed to get sample dataset",
+            )
+
+        try:
+            # 1. Probe unfused: run each filter separately on fresh sample
+            unfused_total_ms = 0.0
+            for f in filters:
+                # Get fresh sample for each filter to simulate unfused execution
+                fresh_sample = self._get_sample(dataset)
+                if fresh_sample is None:
+                    continue
+                result = self._probe_single_op(f, fresh_sample)
+                unfused_total_ms += result.time_per_sample_ms * len(fresh_sample)
+
+            # 2. Probe fused: create FusedFilter and run once
+            fused_time_ms = self._probe_fused_filters(filters, sample_dataset)
+
+            # 3. Calculate speedup
+            if fused_time_ms > 0:
+                speedup = unfused_total_ms / fused_time_ms
+            else:
+                speedup = 1.0
+
+            # 4. Decide whether to fuse
+            should_fuse = speedup >= fusion_speedup_threshold
+
+            result = FusionProbeResult(
+                filter_names=filter_names,
+                unfused_time_ms=unfused_total_ms,
+                fused_time_ms=fused_time_ms,
+                speedup=speedup,
+                should_fuse=should_fuse,
+            )
+
+            logger.info(
+                f"Fusion probe: {filter_names} - "
+                f"unfused={unfused_total_ms:.1f}ms, fused={fused_time_ms:.1f}ms, "
+                f"speedup={speedup:.2f}x, recommend={'FUSE' if should_fuse else 'NO FUSE'}"
+            )
+
+            return result
+
+        except Exception as e:
+            logger.warning(f"Failed to probe fusion for {filter_names}: {e}")
+            return FusionProbeResult(
+                filter_names=filter_names,
+                unfused_time_ms=0,
+                fused_time_ms=0,
+                speedup=1.0,
+                should_fuse=False,
+                error=str(e),
+            )
+
+    def _probe_fused_filters(self, filters: List[Any], sample_dataset: Any) -> float:
+        """
+        Create a FusedFilter and probe its execution time.
+
+        Args:
+            filters: List of filter operations to fuse
+            sample_dataset: Sample dataset to run on
+
+        Returns:
+            Total time in milliseconds
+        """
+        from data_juicer.core.optimizer.fused_op import FusedFilter
+
+        # Create fused filter
+        filter_names = [self._get_op_name(f) for f in filters]
+        fused_name = f"fused_filter({','.join(filter_names)})"
+
+        fused_filter = FusedFilter(
+            name=fused_name,
+            fused_filters=filters,
+        )
+
+        # Disable multiprocessing for probing
+        fused_filter.num_proc = 1
+
+        # Time the fused execution
+        start_time = time.time()
+        try:
+            fused_filter.run(sample_dataset)
+        except Exception as e:
+            logger.warning(f"Fused filter execution failed: {e}")
+            # Return a high time to discourage fusion
+            return float("inf")
+
+        elapsed_time = time.time() - start_time
+        return elapsed_time * 1000  # Convert to ms

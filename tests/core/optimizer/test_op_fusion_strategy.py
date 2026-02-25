@@ -1,120 +1,163 @@
 import unittest
-from unittest.mock import Mock, patch
 
 from data_juicer.core.optimizer.filter_fusion_strategy import FilterFusionStrategy
-from data_juicer.core.pipeline_ast import PipelineAST, OpNode, OpType
+from data_juicer.core.pipeline_ast import OpNode, OpType, PipelineAST
+
 
 class TestFilterFusionStrategy(unittest.TestCase):
     def setUp(self):
         self.strategy = FilterFusionStrategy()
-        self.ast = PipelineAST()
-        
-        # Sample probe results
-        self.probe_results = {
-            'language_id_score_filter': {'speed': 0.5},
-            'clean_copyright_mapper': {'speed': 0.3},
-            'alphanumeric_filter': {'speed': 0.4}
-        }
-        
-        # Create a sample pipeline configuration
-        self.config = {
-            'process': [
-                {
-                    'name': 'clean_copyright_mapper',
-                    'type': 'mapper',
-                    'config': {'key': 'value1'}
-                },
-                {
-                    'name': 'language_id_score_filter',
-                    'type': 'filter',
-                    'config': {'key': 'value2'}
-                },
-                {
-                    'name': 'alphanumeric_filter',
-                    'type': 'filter',
-                    'config': {'key': 'value3'}
-                }
-            ]
-        }
-    
+
+    def _create_ast_with_ops(self, op_specs):
+        """Helper to create an AST with operations.
+
+        Args:
+            op_specs: List of (name, op_type, config) tuples
+
+        Returns:
+            PipelineAST with the specified operations
+        """
+        ast = PipelineAST()
+        ast.root = OpNode(name="root", op_type=OpType.ROOT, config={})
+
+        current = ast.root
+        for name, op_type, config in op_specs:
+            node = OpNode(name=name, op_type=op_type, config=config or {})
+            current.add_child(node)
+            current = node
+
+        return ast
+
+    def _get_op_chain(self, ast):
+        """Get the chain of operations from an AST."""
+        chain = []
+        current = ast.root
+        while current:
+            if current.name != "root":
+                chain.append(current)
+            if current.children:
+                current = current.children[0]
+            else:
+                break
+        return chain
+
     def test_optimize_single_filter(self):
-        """Test optimization with a single filter."""
-        # Build AST with single filter
-        config = {
-            'process': [
-                {
-                    'name': 'language_id_score_filter',
-                    'type': 'filter',
-                    'config': {'key': 'value'}
-                }
-            ]
-        }
-        self.ast.build_from_config(config)
-        
-        # Apply optimization
-        optimized_ast = self.strategy.optimize(self.ast)
-        
-        # Verify the filter remains unchanged
-        chain = self.strategy._get_operation_chain(optimized_ast.root)
+        """Test optimization with a single filter - should remain unchanged."""
+        ast = self._create_ast_with_ops(
+            [("text_length_filter", OpType.FILTER, {"min_len": 10})]
+        )
+
+        optimized_ast = self.strategy.optimize(ast)
+        chain = self._get_op_chain(optimized_ast)
+
         self.assertEqual(len(chain), 1)
-        self.assertEqual(chain[0].name, 'language_id_score_filter')
-    
-    def test_optimize_multiple_filters(self):
-        """Test optimization with multiple filters."""
-        # Build AST with multiple filters
-        self.ast.build_from_config(self.config)
-        
-        # Apply optimization
-        optimized_ast = self.strategy.optimize(self.ast)
-        
-        # Verify filters are fused
-        chain = self.strategy._get_operation_chain(optimized_ast.root)
-        self.assertEqual(len(chain), 2)  # mapper + fused filters
-        
-        # Check that the fused node contains both filters
-        fused_node = chain[1]
-        self.assertTrue(fused_node.name.startswith('fused_'))
-        self.assertEqual(len(fused_node.original_ops), 2)
-    
-    def test_optimize_with_probe_results(self):
-        """Test optimization with probe results for speed-based sorting."""
-        strategy = FilterFusionStrategy(probe_results=self.probe_results)
-        self.ast.build_from_config(self.config)
-        
-        # Apply optimization
-        optimized_ast = strategy.optimize(self.ast)
-        
-        # Verify filters are fused and sorted by speed
-        chain = strategy._get_operation_chain(optimized_ast.root)
-        fused_node = chain[1]
-        
-        # Check that filters are sorted by speed
-        original_ops = fused_node.original_ops
-        self.assertEqual(original_ops[0].name, 'language_id_score_filter')  # speed: 0.5
-        self.assertEqual(original_ops[1].name, 'alphanumeric_filter')  # speed: 0.4
-    
+        self.assertEqual(chain[0].name, "text_length_filter")
+
+    def test_optimize_multiple_filters_no_shared_vars(self):
+        """Test that filters not sharing intermediate vars are not fused."""
+        # These filters don't share intermediate variables
+        ast = self._create_ast_with_ops(
+            [
+                ("text_length_filter", OpType.FILTER, {}),
+                ("character_repetition_filter", OpType.FILTER, {}),
+            ]
+        )
+
+        optimized_ast = self.strategy.optimize(ast)
+        chain = self._get_op_chain(optimized_ast)
+
+        # Should remain separate (no fusion)
+        self.assertEqual(len(chain), 2)
+        self.assertEqual(chain[0].name, "text_length_filter")
+        self.assertEqual(chain[1].name, "character_repetition_filter")
+
+    def test_optimize_filters_sharing_intermediate_vars(self):
+        """Test that filters sharing intermediate vars (INTER_WORDS) are fused."""
+        # These filters share __dj__words intermediate variable
+        ast = self._create_ast_with_ops(
+            [
+                ("words_num_filter", OpType.FILTER, {}),
+                ("word_repetition_filter", OpType.FILTER, {}),
+            ]
+        )
+
+        optimized_ast = self.strategy.optimize(ast)
+        chain = self._get_op_chain(optimized_ast)
+
+        # Should be fused into 1 operation
+        self.assertEqual(len(chain), 1)
+        self.assertEqual(chain[0].name, "fused_filter")
+
+        # Check fused config
+        fused_config = chain[0].config.get("general_fused_op", {})
+        self.assertIn("fused_op_list", fused_config)
+        self.assertIn("detailed_ops", fused_config)
+        self.assertEqual(len(fused_config["detailed_ops"]), 2)
+
+    def test_optimize_mixed_ops(self):
+        """Test that mappers break filter fusion groups."""
+        ast = self._create_ast_with_ops(
+            [
+                ("words_num_filter", OpType.FILTER, {}),
+                ("clean_copyright_mapper", OpType.MAPPER, {}),
+                ("word_repetition_filter", OpType.FILTER, {}),
+            ]
+        )
+
+        optimized_ast = self.strategy.optimize(ast)
+        chain = self._get_op_chain(optimized_ast)
+
+        # Should have 3 ops (mapper breaks fusion)
+        self.assertEqual(len(chain), 3)
+        self.assertEqual(chain[0].name, "words_num_filter")
+        self.assertEqual(chain[1].name, "clean_copyright_mapper")
+        self.assertEqual(chain[2].name, "word_repetition_filter")
+
     def test_optimize_empty_pipeline(self):
         """Test optimization with an empty pipeline."""
-        optimized_ast = self.strategy.optimize(self.ast)
+        ast = PipelineAST()  # No root
+        optimized_ast = self.strategy.optimize(ast)
         self.assertIsNone(optimized_ast.root)
-    
-    def test_create_fused_filter_node(self):
-        """Test creation of a fused filter node."""
-        # Create sample filter nodes
-        filter1 = OpNode('filter1', OpType.FILTER, {'key1': 'value1'})
-        filter2 = OpNode('filter2', OpType.FILTER, {'key2': 'value2'})
-        
-        # Create fused node
-        fused_node = self.strategy._create_fused_filter_node(
-            'fused_filters',
-            [filter1, filter2]
-        )
-        
-        # Verify fused node properties
-        self.assertEqual(fused_node.name, 'fused_filters')
-        self.assertEqual(fused_node.op_type, OpType.FILTER)
-        self.assertEqual(fused_node.config, {'key1': 'value1', 'key2': 'value2'})
-        self.assertEqual(fused_node.original_ops, [filter1, filter2])
 
-if __name__ == '__main__':
-    unittest.main() 
+    def test_optimize_with_probe_results(self):
+        """Test optimization with probe results (for future integration)."""
+        probe_results = {
+            "words_num_filter": {"speed": 0.5},
+            "word_repetition_filter": {"speed": 0.3},
+        }
+        strategy = FilterFusionStrategy(probe_results=probe_results)
+
+        ast = self._create_ast_with_ops(
+            [
+                ("words_num_filter", OpType.FILTER, {}),
+                ("word_repetition_filter", OpType.FILTER, {}),
+            ]
+        )
+
+        optimized_ast = strategy.optimize(ast)
+        chain = self._get_op_chain(optimized_ast)
+
+        # Should still fuse (probe_results used for other purposes)
+        self.assertEqual(len(chain), 1)
+        self.assertEqual(chain[0].name, "fused_filter")
+
+    def test_filters_with_line_vars(self):
+        """Test that filters sharing INTER_LINES are fused."""
+        # These filters share __dj__lines intermediate variable
+        ast = self._create_ast_with_ops(
+            [
+                ("average_line_length_filter", OpType.FILTER, {}),
+                ("maximum_line_length_filter", OpType.FILTER, {}),
+            ]
+        )
+
+        optimized_ast = self.strategy.optimize(ast)
+        chain = self._get_op_chain(optimized_ast)
+
+        # Should be fused
+        self.assertEqual(len(chain), 1)
+        self.assertEqual(chain[0].name, "fused_filter")
+
+
+if __name__ == "__main__":
+    unittest.main()

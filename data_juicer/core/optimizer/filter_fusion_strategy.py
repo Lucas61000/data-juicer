@@ -14,20 +14,38 @@ from data_juicer.utils.ray_utils import is_ray_mode
 
 @register_strategy("filter_fusion")
 class FilterFusionStrategy(OptimizationStrategy):
-    """Strategy for fusing filter operations in the pipeline."""
+    """Strategy for fusing filter operations in the pipeline.
+
+    Supports probe-based fusion validation to ensure fusion actually provides
+    a performance benefit before applying it.
+    """
 
     def __init__(
-        self, probe_results: Optional[Dict[str, Any]] = None, analyzer_insights: Optional[Dict[str, Any]] = None
+        self,
+        probe_results: Optional[Dict[str, Any]] = None,
+        analyzer_insights: Optional[Dict[str, Any]] = None,
+        prober: Optional[Any] = None,
+        dataset: Optional[Any] = None,
+        probe_fusion: bool = False,
+        fusion_speedup_threshold: float = 1.1,
     ):
         """Initialize the filter fusion strategy.
 
         Args:
             probe_results: Optional dictionary containing operation speeds
             analyzer_insights: Optional dictionary containing dataset analysis insights
+            prober: Optional OpProber instance for probe-based fusion validation
+            dataset: Optional dataset for probing (required if prober is set)
+            probe_fusion: Whether to use probing to validate fusion benefit
+            fusion_speedup_threshold: Minimum speedup to recommend fusion (default 1.1)
         """
         super().__init__(name="filter_fusion")
         self.probe_results = probe_results or {}
         self.analyzer_insights = analyzer_insights or {}
+        self.prober = prober
+        self.dataset = dataset
+        self.probe_fusion = probe_fusion
+        self.fusion_speedup_threshold = fusion_speedup_threshold
 
     def optimize(self, ast: PipelineAST) -> PipelineAST:
         """Apply filter fusion to the pipeline AST.
@@ -41,10 +59,12 @@ class FilterFusionStrategy(OptimizationStrategy):
         if not ast.root:
             return ast
 
-        # Skip filter fusion in Ray mode - Ray already parallelizes filters efficiently
-        # and fusion adds overhead without benefit
+        # Skip filter fusion in Ray mode - Ray's streaming executor pipelines
+        # many lightweight operations more efficiently than fewer heavy operations.
+        # The fusion benefit (shared intermediate variables) is offset by reduced
+        # pipelining opportunities. Empirically tested: baseline 70s vs fusion 78s.
         if is_ray_mode():
-            logger.info("Skipping filter fusion in Ray mode - Ray already parallelizes filters efficiently")
+            logger.info("Skipping filter fusion in Ray mode - Ray's streaming pipeline is more efficient")
             return ast
 
         # Create a new AST
@@ -62,35 +82,56 @@ class FilterFusionStrategy(OptimizationStrategy):
 
             for group in filter_groups:
                 if len(group) > 1:
-                    # Create fused operation with clean naming
-                    fused_name = "fused_filter"
                     detailed_ops = [n.name for n in group]
-                    # Get the shared registry for logging
                     registry = self._get_filter_inter_var_registry(group[0].name)
-                    logger.info(f"Fusing {len(group)} filters sharing '{registry}': {detailed_ops}")
 
-                    # Create operation configs
-                    op_configs = []
-                    for op in group:
-                        op_config = {op.name: op.config or {}}
-                        op_configs.append(op_config)
+                    # Probe-based fusion validation if enabled
+                    should_fuse = True
+                    if self.probe_fusion and self.prober and self.dataset:
+                        should_fuse = self._validate_fusion_with_probe(group)
 
-                    # Create fused node
-                    fused_node = OpNode(
-                        name=fused_name,
-                        op_type=OpType.FILTER,
-                        config={
-                            "general_fused_op": {
-                                "fused_op_list": op_configs,
-                                "detailed_ops": detailed_ops,  # For display purposes
-                            }
-                        },
-                    )
-                    current.add_child(fused_node)
-                    current = fused_node
+                    if should_fuse:
+                        # Create fused operation
+                        fused_name = "fused_filter"
+                        logger.info(f"Fusing {len(group)} filters sharing '{registry}': {detailed_ops}")
+
+                        # Create operation configs
+                        op_configs = []
+                        for op in group:
+                            op_config = {op.name: op.config or {}}
+                            op_configs.append(op_config)
+
+                        # Create fused node
+                        fused_node = OpNode(
+                            name=fused_name,
+                            op_type=OpType.FILTER,
+                            config={
+                                "general_fused_op": {
+                                    "fused_op_list": op_configs,
+                                    "detailed_ops": detailed_ops,
+                                }
+                            },
+                        )
+                        current.add_child(fused_node)
+                        current = fused_node
+                    else:
+                        # Probing showed fusion not beneficial - keep separate
+                        logger.info(f"Skipping fusion for {detailed_ops} - " f"probing showed no benefit")
+                        for node in group:
+                            new_node = OpNode(
+                                name=node.name,
+                                op_type=node.op_type,
+                                config=node.config or {},
+                            )
+                            current.add_child(new_node)
+                            current = new_node
                 else:
                     # Keep single operations as is
-                    new_node = OpNode(name=group[0].name, op_type=group[0].op_type, config=group[0].config or {})
+                    new_node = OpNode(
+                        name=group[0].name,
+                        op_type=group[0].op_type,
+                        config=group[0].config or {},
+                    )
                     current.add_child(new_node)
                     current = new_node
 
@@ -696,3 +737,50 @@ class FilterFusionStrategy(OptimizationStrategy):
                 return True
 
         return False
+
+    def _validate_fusion_with_probe(self, group: List[OpNode]) -> bool:
+        """Validate fusion benefit using probing.
+
+        Probes the filters both separately and fused, and only recommends
+        fusion if it provides meaningful speedup.
+
+        Args:
+            group: List of OpNode representing filters to potentially fuse
+
+        Returns:
+            True if probing shows fusion is beneficial, False otherwise
+        """
+        if not self.prober or not self.dataset:
+            # No prober available - fall back to static decision
+            return True
+
+        try:
+            from data_juicer.ops import load_ops
+
+            # Load actual filter objects from the AST nodes
+            filters = []
+            for node in group:
+                op_config = [{node.name: node.config or {}}]
+                loaded_ops = load_ops(op_config)
+                if loaded_ops:
+                    filters.append(loaded_ops[0])
+
+            if len(filters) < 2:
+                return True  # Not enough filters to fuse
+
+            # Probe fusion benefit
+            result = self.prober.probe_fusion_benefit(
+                filters=filters,
+                dataset=self.dataset,
+                fusion_speedup_threshold=self.fusion_speedup_threshold,
+            )
+
+            if result.error:
+                logger.warning(f"Fusion probe failed for {[n.name for n in group]}: {result.error}")
+                return True  # Fall back to fusing on error
+
+            return result.should_fuse
+
+        except Exception as e:
+            logger.warning(f"Failed to validate fusion with probe: {e}")
+            return True  # Fall back to fusing on error

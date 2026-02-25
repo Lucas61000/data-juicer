@@ -50,9 +50,12 @@ class BaselineStrategy(OptimizationStrategy):
         self.strategy_type = StrategyType.ALGORITHM
 
     def apply_to_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Apply baseline configuration (no changes)."""
-        # Return config unchanged for baseline
-        return config.copy()
+        """Apply baseline configuration - explicitly disable optimizer."""
+        config = config.copy()
+        # Explicitly disable optimizer for fair baseline comparison
+        config["enable_optimizer"] = False
+        config["optimizer_strategies"] = []
+        return config
 
     def get_expected_impact(self) -> Dict[str, str]:
         """Get expected impact description."""

@@ -135,6 +135,9 @@ class OptimizationManager:
             return ops
 
         try:
+            # Store dataset for use by strategies (e.g., filter_fusion with probing)
+            self._current_dataset = dataset
+
             # Probe operations if enabled and dataset is provided
             if self.probing_enabled and dataset is not None:
                 self.probe_results = self.probe_operations(ops, dataset)
@@ -499,10 +502,12 @@ class OptimizationManager:
         Returns:
             Strategy instance or None if creation fails
         """
-        # Strategies that support probe results
-        probe_aware_strategies = {"op_reorder"}
+        # Strategies that support probe results for reordering
+        reorder_probe_strategies = {"op_reorder"}
+        # Strategies that support probe-based fusion validation
+        fusion_probe_strategies = {"filter_fusion"}
 
-        if strategy_name in probe_aware_strategies and self.probe_results:
+        if strategy_name in reorder_probe_strategies and self.probe_results:
             # Import and create strategy directly with probe results
             try:
                 from data_juicer.core.optimizer.op_reorder_strategy import (
@@ -513,6 +518,24 @@ class OptimizationManager:
                     return OpReorderStrategy(probe_results=self.probe_results)
             except Exception as e:
                 logger.warning(f"Failed to create {strategy_name} with probe results: {e}")
+
+        if strategy_name in fusion_probe_strategies and self.probing_enabled:
+            # Create filter fusion with probe-based validation
+            try:
+                from data_juicer.core.optimizer.filter_fusion_strategy import (
+                    FilterFusionStrategy,
+                )
+                from data_juicer.core.optimizer.op_prober import OpProber
+
+                prober = OpProber(sample_size=self.probe_samples)
+                return FilterFusionStrategy(
+                    prober=prober,
+                    dataset=self._current_dataset,
+                    probe_fusion=True,
+                    fusion_speedup_threshold=1.1,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create {strategy_name} with probing: {e}")
 
         # Fall back to registry creation
         return StrategyRegistry.create_strategy(strategy_name)

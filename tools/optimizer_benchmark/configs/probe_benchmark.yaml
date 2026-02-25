@@ -1,7 +1,6 @@
 # Probe Benchmark Config
-# This config demonstrates the effectiveness of probing-aided reordering.
 #
-# Why Probing Matters:
+# Demonstrates the effectiveness of probing-aided reordering.
 # Static heuristics classify all these filters as "cheap" (same cost),
 # so static reorder makes NO changes. But actual runtimes vary significantly:
 #   - text_length_filter:           ~3.6s  (very fast)
@@ -17,15 +16,21 @@
 #
 # Probing overhead: ~0.15s for 100 samples
 # Net savings: ~20 seconds on this workload
+#
+# Usage:
+#   python tools/optimizer_benchmark/run_benchmark.py \
+#       --recipe-path tools/optimizer_benchmark/configs/probe_benchmark.yaml \
+#       --dataset-path <your_dataset.jsonl> \
+#       --strategies op_reorder
+#
+#   Note: Enable probing in the recipe by adding:
+#     optimizer_probe_enabled: true
+#     optimizer_probe_samples: 100
 
 project_name: 'probe-benchmark'
-dataset_path: null  # Will be set by benchmark tool
 export_path: 'outputs/probe_benchmark/result.jsonl'
-np: 12  # Parallel processes
+np: 12
 use_cache: false
-
-# Optimizer settings will be injected by benchmark
-enable_optimizer: false
 
 process:
   # ============================================================
