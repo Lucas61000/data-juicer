@@ -26,6 +26,7 @@ class WorkloadDefinition:
     estimated_duration_minutes: int
     resource_requirements: Dict[str, Any]
     synthetic: bool = False  # Whether this uses synthetic data
+    executor_type: Optional[str] = None  # 'default' or 'ray', None uses config value
 
     def __post_init__(self):
         """Validate workload definition."""

@@ -120,6 +120,7 @@ class StrategyABTest:
             timeout_seconds=self.config.timeout_seconds,
             strategy_name=strategy.name,
             strategy_config=self._strategy_to_config_dict(strategy),
+            executor_type=self.config.workload.executor_type,
         )
 
         # Run benchmark

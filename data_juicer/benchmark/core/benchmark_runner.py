@@ -32,6 +32,7 @@ class BenchmarkConfig:
     strategy_config: Dict[str, Any] = None
     sample_ratio: float = 1.0
     sample_method: str = "random"
+    executor_type: str = None  # 'default' or 'ray', None uses config value
 
 
 class BenchmarkRunner:
@@ -134,6 +135,11 @@ class BenchmarkRunner:
         # Apply sampling if needed
         if self.config.sample_ratio < 1.0:
             base_config = self._apply_sampling_config(base_config)
+
+        # Apply executor type override if specified
+        if self.config.executor_type:
+            base_config["executor_type"] = self.config.executor_type
+            logger.info(f"🔧 Executor type set to: {self.config.executor_type}")
 
         # Save modified configuration
         config_output_path = os.path.join(self.config.output_dir, f"config_{self.config.strategy_name}.yaml")

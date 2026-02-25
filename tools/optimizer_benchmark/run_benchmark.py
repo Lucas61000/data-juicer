@@ -60,7 +60,9 @@ AVAILABLE_STRATEGIES = [
 DEFAULT_STRATEGIES = ["op_pruning", "op_reorder"]
 
 
-def create_workload_from_args(recipe_path: str, dataset_path: str, name: str = "custom_workload") -> WorkloadDefinition:
+def create_workload_from_args(
+    recipe_path: str, dataset_path: str, name: str = "custom_workload", executor: str = None
+) -> WorkloadDefinition:
     """Create a WorkloadDefinition from command line arguments."""
     # Count samples in dataset
     try:
@@ -81,6 +83,7 @@ def create_workload_from_args(recipe_path: str, dataset_path: str, name: str = "
         complexity="medium",
         estimated_duration_minutes=5,
         resource_requirements={"cpu_cores": 4, "memory_gb": 8},
+        executor_type=executor,
     )
 
 
@@ -91,6 +94,7 @@ def run_ab_test_with_framework(
     output_dir: str,
     iterations: int = 1,
     warmup_runs: int = 0,
+    executor: str = None,
 ) -> Dict[str, Any]:
     """
     Run A/B test using the StrategyABTest framework.
@@ -102,6 +106,7 @@ def run_ab_test_with_framework(
         output_dir: Output directory for results
         iterations: Number of benchmark iterations
         warmup_runs: Number of warmup runs
+        executor: Executor type ('default' or 'ray'), or None to use recipe config
 
     Returns:
         Dictionary containing benchmark results
@@ -112,6 +117,7 @@ def run_ab_test_with_framework(
     logger.info(f"Recipe: {recipe_path}")
     logger.info(f"Dataset: {dataset_path}")
     logger.info(f"Strategies: {strategies}")
+    logger.info(f"Executor: {executor or 'from config'}")
     logger.info(f"Iterations: {iterations}")
     logger.info("=" * 60)
 
@@ -121,7 +127,7 @@ def run_ab_test_with_framework(
             logger.warning(f"Unknown strategy: {strategy}. Available: {AVAILABLE_STRATEGIES}")
 
     # Create workload definition
-    workload = create_workload_from_args(recipe_path, dataset_path)
+    workload = create_workload_from_args(recipe_path, dataset_path, executor=executor)
 
     # Create baseline strategy
     baseline_strategy = STRATEGY_LIBRARY.create_strategy_config("baseline")
@@ -306,6 +312,14 @@ Examples:
         help="Number of warmup runs before actual benchmarking (default: 0)",
     )
     parser.add_argument(
+        "--executor",
+        type=str,
+        choices=["default", "ray"],
+        default=None,
+        help="Executor type: 'default' (local) or 'ray' (distributed). "
+        "If not specified, uses the value from the recipe config.",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose logging",
@@ -350,6 +364,7 @@ Examples:
             output_dir=args.output_dir,
             iterations=args.iterations,
             warmup_runs=args.warmup_runs,
+            executor=args.executor,
         )
 
         # Exit with appropriate code
