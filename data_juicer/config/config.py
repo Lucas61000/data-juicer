@@ -635,6 +635,21 @@ def init_configs(args: Optional[List[str]] = None, which_entry: object = None, l
                 "'op_reorder' (reorder ops for efficiency), 'filter_fusion' (fuse consecutive filters), "
                 "'mapper_fusion' (fuse consecutive mappers). Example: ['op_reorder', 'filter_fusion']",
             )
+            parser.add_argument(
+                "--optimizer_probe_enabled",
+                type=bool,
+                default=True,
+                help="Enable operation probing to measure actual costs for smarter reordering. "
+                "When enabled, each operation is run on a small sample to measure execution time "
+                "and selectivity. This provides more accurate cost estimates than static heuristics.",
+            )
+            parser.add_argument(
+                "--optimizer_probe_samples",
+                type=int,
+                default=100,
+                help="Number of samples to use for probing operation costs (default: 100). "
+                "Larger values give more accurate estimates but take longer to probe.",
+            )
             parser.add_argument("--ray_address", type=str, default="auto", help="The address of the Ray cluster.")
 
             # Partitioning configuration for PartitionedRayExecutor

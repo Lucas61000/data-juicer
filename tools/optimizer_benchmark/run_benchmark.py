@@ -47,9 +47,10 @@ from data_juicer.benchmark.workloads.workload_suite import (  # noqa: E402
 )
 
 # Available optimization strategies
+# Note: Probing is controlled separately via optimizer_probe_enabled config option
 AVAILABLE_STRATEGIES = [
     "op_pruning",  # Remove no-op and duplicate operations
-    "op_reorder",  # Reorder operations for optimal execution
+    "op_reorder",  # Reorder operations for optimal execution order
     "mapper_fusion",  # Fuse consecutive mappers
     "filter_fusion",  # Fuse filters sharing intermediate variables
     "all_optimizations",  # Enable all optimizations

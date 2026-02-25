@@ -121,7 +121,8 @@ class BenchmarkRunner:
         if self.config.strategy_config:
             # Check if this is a core optimizer strategy
             if self.config.strategy_config.get("_benchmark_optimizer_enabled"):
-                # For core optimizer strategies, set enable_optimizer and optimizer_strategies in config
+                # For core optimizer strategies, set enable_optimizer and optimizer_strategies
+                # Note: Probing is controlled via optimizer_probe_enabled in the recipe config
                 enabled_strategies = self.config.strategy_config.get("_benchmark_optimizer_strategies", [])
                 base_config["enable_optimizer"] = True
                 base_config["optimizer_strategies"] = enabled_strategies

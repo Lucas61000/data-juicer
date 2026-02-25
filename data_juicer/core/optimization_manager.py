@@ -4,12 +4,18 @@ Optimization Manager for Data-Juicer Pipeline Optimization.
 
 This module provides a centralized way to apply optimization strategies
 to data processing pipelines across different executors.
+
+Features:
+- Strategy-based optimization (op_reorder, filter_fusion, etc.)
+- Optional operation probing for empirical cost estimation
+- Configurable via enable_optimizer and related options
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from data_juicer.core.optimizer.op_prober import OpProber, ProbeResults
 from data_juicer.core.optimizer.optimizer import PipelineOptimizer
 from data_juicer.core.optimizer.strategy import StrategyRegistry
 from data_juicer.core.pipeline_ast import OpNode, OpType, PipelineAST
@@ -26,7 +32,9 @@ class OptimizationManager:
     def __init__(self, cfg=None):
         """Initialize the optimization manager."""
         self.cfg = cfg
+        self.probe_results: Optional[ProbeResults] = None
         self._check_optimization_enabled()
+        self._check_probing_config()
 
     def _check_optimization_enabled(self):
         """Check if optimization is enabled via config.
@@ -70,12 +78,55 @@ class OptimizationManager:
             self.optimization_enabled = False
             self.optimization_strategies = []
 
-    def apply_optimizations(self, ops: List[Any]) -> List[Any]:
+    def _check_probing_config(self):
+        """Check probing configuration options.
+
+        Probing runs each operation on a small sample to measure actual costs.
+        This enables more accurate reordering decisions.
+
+        Config options:
+        - optimizer_probe_enabled: Whether to enable probing (default: True)
+        - optimizer_probe_samples: Number of samples to probe (default: 100)
+        """
+        if not self.optimization_enabled:
+            self.probing_enabled = False
+            self.probe_samples = 0
+            return
+
+        # Check if probing is enabled (default: True when optimizer is enabled)
+        self.probing_enabled = getattr(self.cfg, "optimizer_probe_enabled", True)
+        self.probe_samples = getattr(self.cfg, "optimizer_probe_samples", 100)
+
+        if self.probing_enabled:
+            logger.info(f"Operation probing enabled with {self.probe_samples} samples")
+
+    def probe_operations(self, ops: List[Any], dataset: Any) -> ProbeResults:
+        """
+        Probe operations to estimate their costs.
+
+        This runs each operation on a small sample of the dataset and
+        measures execution time and selectivity.
+
+        Args:
+            ops: List of operations to probe
+            dataset: Dataset to sample from
+
+        Returns:
+            ProbeResults containing cost estimates
+        """
+        if not self.probing_enabled:
+            return ProbeResults()
+
+        prober = OpProber(sample_size=self.probe_samples)
+        return prober.probe_operations(ops, dataset)
+
+    def apply_optimizations(self, ops: List[Any], dataset: Any = None) -> List[Any]:
         """
         Apply optimization strategies to a list of operations.
 
         Args:
             ops: List of operations to optimize
+            dataset: Optional dataset for probing operation costs
 
         Returns:
             Optimized list of operations
@@ -84,6 +135,12 @@ class OptimizationManager:
             return ops
 
         try:
+            # Probe operations if enabled and dataset is provided
+            if self.probing_enabled and dataset is not None:
+                self.probe_results = self.probe_operations(ops, dataset)
+            else:
+                self.probe_results = None
+
             # Create AST from operations
             ast = self._create_ast_from_ops(ops)
 
@@ -102,11 +159,60 @@ class OptimizationManager:
             optimized_order = [getattr(op, "_name", getattr(op, "name", str(op))) for op in optimized_ops]
             self._log_optimization_result(original_order, optimized_order)
 
+            # If probing was enabled, reload fresh operations to avoid state issues
+            # The probed operations may have modified internal state that causes issues
+            if self.probing_enabled and dataset is not None:
+                optimized_ops = self._reload_fresh_ops(optimized_ops)
+
             return optimized_ops
 
         except Exception as e:
             logger.error(f"Optimizer failed: {e}")
             logger.warning("Continuing with original operation order")
+            return ops
+
+    def _reload_fresh_ops(self, ops: List[Any]) -> List[Any]:
+        """Reload fresh operation instances to avoid state issues from probing.
+
+        After probing, operations may have internal state that conflicts with
+        running on the full dataset. This method creates fresh instances.
+        """
+        try:
+            from data_juicer.ops import load_ops
+
+            # Build op configs from the existing ops in their optimized order
+            op_configs = []
+            for op in ops:
+                op_name = getattr(op, "_name", getattr(op, "name", str(op)))
+
+                # Get the original config from the op
+                if hasattr(op, "_init_configs"):
+                    # Use the initialization configs if available
+                    op_config = {op_name: op._init_configs}
+                else:
+                    # Build config from op attributes
+                    op_config = {op_name: {}}
+                    if hasattr(op, "__dict__"):
+                        for k, v in op.__dict__.items():
+                            if not k.startswith("_") and not callable(v):
+                                try:
+                                    # Only include serializable values
+                                    import json
+
+                                    json.dumps(v)
+                                    op_config[op_name][k] = v
+                                except (TypeError, ValueError):
+                                    pass
+
+                op_configs.append(op_config)
+
+            # Reload fresh operations
+            fresh_ops = load_ops(op_configs)
+            logger.debug(f"Reloaded {len(fresh_ops)} fresh operations after probing")
+            return fresh_ops
+
+        except Exception as e:
+            logger.warning(f"Failed to reload fresh ops: {e}. Using probed ops.")
             return ops
 
     def _create_ast_from_ops(self, ops: List[Any]) -> PipelineAST:
@@ -355,14 +461,17 @@ class OptimizationManager:
         return self.optimization_strategies
 
     def _initialize_strategies(self) -> List[Any]:
-        """Initialize strategy objects from strategy names using the registry."""
+        """Initialize strategy objects from strategy names using the registry.
+
+        Passes probe results to strategies that support them (e.g., op_reorder).
+        """
         strategy_objects = []
 
         for strategy_name in self.optimization_strategies:
             strategy_name = strategy_name.strip()  # Remove any whitespace
 
-            # Use the registry to create strategy instances
-            strategy_obj = StrategyRegistry.create_strategy(strategy_name)
+            # Create strategy with probe results if supported
+            strategy_obj = self._create_strategy_with_probe_results(strategy_name)
 
             if strategy_obj is not None:
                 strategy_objects.append(strategy_obj)
@@ -372,7 +481,7 @@ class OptimizationManager:
 
         if not strategy_objects:
             logger.warning("No valid strategies initialized, using default op_reorder strategy")
-            default_strategy = StrategyRegistry.create_strategy("op_reorder")
+            default_strategy = self._create_strategy_with_probe_results("op_reorder")
             if default_strategy is not None:
                 strategy_objects = [default_strategy]
             else:
@@ -380,6 +489,33 @@ class OptimizationManager:
                 strategy_objects = []
 
         return strategy_objects
+
+    def _create_strategy_with_probe_results(self, strategy_name: str) -> Any:
+        """Create a strategy instance, passing probe results if supported.
+
+        Args:
+            strategy_name: Name of the strategy to create
+
+        Returns:
+            Strategy instance or None if creation fails
+        """
+        # Strategies that support probe results
+        probe_aware_strategies = {"op_reorder"}
+
+        if strategy_name in probe_aware_strategies and self.probe_results:
+            # Import and create strategy directly with probe results
+            try:
+                from data_juicer.core.optimizer.op_reorder_strategy import (
+                    OpReorderStrategy,
+                )
+
+                if strategy_name == "op_reorder":
+                    return OpReorderStrategy(probe_results=self.probe_results)
+            except Exception as e:
+                logger.warning(f"Failed to create {strategy_name} with probe results: {e}")
+
+        # Fall back to registry creation
+        return StrategyRegistry.create_strategy(strategy_name)
 
 
 # Global optimization manager instance
@@ -402,13 +538,16 @@ def get_optimization_manager(cfg=None) -> OptimizationManager:
     return _optimization_manager
 
 
-def apply_optimizations(ops: List[Any], cfg=None) -> List[Any]:
+def apply_optimizations(ops: List[Any], cfg=None, dataset: Any = None) -> List[Any]:
     """
     Convenience function to apply optimizations to operations.
 
     Args:
         ops: List of operations to optimize
         cfg: Configuration object (optional)
+        dataset: Dataset for probing operation costs (optional).
+                 If provided and probing is enabled, operations will be
+                 run on a small sample to measure actual costs.
 
     Returns:
         Optimized list of operations
@@ -416,4 +555,4 @@ def apply_optimizations(ops: List[Any], cfg=None) -> List[Any]:
     # Always create a new manager with the provided config
     # to ensure enable_optimizer setting is respected
     manager = OptimizationManager(cfg)
-    return manager.apply_optimizations(ops)
+    return manager.apply_optimizations(ops, dataset=dataset)

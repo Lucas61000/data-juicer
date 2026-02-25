@@ -166,9 +166,11 @@ class DefaultExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin):
         # - enable_optimizer: true -> uses optimizer_strategies
         # - op_fusion: true with fusion_strategy="greedy" -> filter_fusion
         # - op_fusion: true with fusion_strategy="probe" -> op_reorder + filter_fusion
+        # If probing is enabled, operations are run on a small sample to measure
+        # actual costs for more accurate reordering decisions.
         from data_juicer.core.optimization_manager import apply_optimizations
 
-        ops = apply_optimizations(ops, self.cfg)
+        ops = apply_optimizations(ops, self.cfg, dataset=dataset)
 
         # Initialize DAG execution planning with OPTIMIZED ops
         self._initialize_dag_execution(self.cfg, ops=ops)

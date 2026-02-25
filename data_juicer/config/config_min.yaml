@@ -16,3 +16,5 @@ add_suffix: false
 enable_optimizer: false                                     # enable/disable core optimizer
 optimizer_strategies: ['op_reorder']                        # list of optimization strategies to apply
                                                            # available strategies: op_reorder, filter_fusion, mapper_fusion
+optimizer_probe_enabled: true                              # enable probing to measure actual operation costs
+optimizer_probe_samples: 100                               # number of samples for probing (default: 100)

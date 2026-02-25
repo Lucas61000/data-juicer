@@ -1,0 +1,62 @@
+# Probe Benchmark Config
+# This config is designed to demonstrate the effectiveness of probing.
+# It has filters deliberately ordered suboptimally.
+# The probing will measure actual costs and reorder for efficiency.
+
+project_name: 'probe-benchmark'
+dataset_path: null  # Will be set by benchmark tool
+export_path: 'outputs/probe_benchmark/result.jsonl'
+np: 12  # Parallel processes
+use_cache: false
+
+# Optimizer settings will be injected by benchmark
+enable_optimizer: false
+
+process:
+  # ============================================================
+  # Suboptimal order: Filters that keep most data come first
+  # Optimal: Filters that reject more data should come first
+  # ============================================================
+
+  # This filter keeps ~95% of data (low rejection rate)
+  - words_num_filter:
+      min_num: 3
+      max_num: 10000
+      auto_op_parallelism: false
+
+  # This filter keeps ~90% of data
+  - alphanumeric_filter:
+      min_ratio: 0.1
+      max_ratio: 1.0
+      auto_op_parallelism: false
+
+  # This filter keeps ~80% of data
+  - character_repetition_filter:
+      rep_len: 5
+      max_ratio: 0.8
+      auto_op_parallelism: false
+
+  # This filter keeps ~70% of data
+  - average_line_length_filter:
+      min_len: 5
+      max_len: 500
+      auto_op_parallelism: false
+
+  # This filter rejects more data - should be FIRST!
+  # Static heuristics don't know this, but probing will discover it
+  - text_length_filter:
+      min_len: 100
+      max_len: 5000
+      auto_op_parallelism: false
+
+  # This filter may reject significant data
+  - special_characters_filter:
+      min_ratio: 0.0
+      max_ratio: 0.3
+      auto_op_parallelism: false
+
+  # This also rejects data - probing will find the optimal order
+  - word_repetition_filter:
+      rep_len: 3
+      max_ratio: 0.5
+      auto_op_parallelism: false

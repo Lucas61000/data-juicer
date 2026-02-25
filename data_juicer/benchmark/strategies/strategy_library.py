@@ -136,8 +136,11 @@ class StrategyLibrary:
         )
 
         # Operation Reordering Strategy (from core optimizer)
+        # Note: Probing is controlled via optimizer_probe_enabled config option
         self.strategies["op_reorder"] = CoreOptimizerStrategy(
-            "op_reorder", "Enable operation reordering for optimal execution order", ["op_reorder"]
+            "op_reorder",
+            "Enable operation reordering for optimal execution order",
+            ["op_reorder"],
         )
 
         # Operation Pruning Strategy (from core optimizer)
@@ -146,6 +149,7 @@ class StrategyLibrary:
         )
 
         # Combined optimization strategies
+        # Note: Probing is controlled via optimizer_probe_enabled config option
         self.strategies["all_optimizations"] = CoreOptimizerStrategy(
             "all_optimizations",
             "Enable all core optimizations (pruning, reorder, fusion)",

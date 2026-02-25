@@ -9,9 +9,18 @@ from .strategy_library import OptimizationStrategy, StrategyType
 
 
 class CoreOptimizerStrategy(OptimizationStrategy):
-    """Strategy that configures the core optimizer to enable/disable specific strategies."""
+    """Strategy that configures the core optimizer to enable/disable specific strategies.
 
-    def __init__(self, name: str, description: str, enabled_strategies: List[str]):
+    Note: Probing is controlled separately via optimizer_probe_enabled and
+    optimizer_probe_samples config options, not per-strategy.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        enabled_strategies: List[str],
+    ):
         super().__init__(name, description)
         self.strategy_type = StrategyType.FUSION  # Core optimizer is primarily fusion-based
         self.enabled_strategies = enabled_strategies
