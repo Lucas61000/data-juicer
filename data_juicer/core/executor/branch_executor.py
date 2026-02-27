@@ -35,7 +35,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from loguru import logger
 
-from data_juicer.core.data import DatasetBuilder, NestedDataset
+from data_juicer.core.data import DatasetBuilder
 from data_juicer.core.executor.base import ExecutorBase
 from data_juicer.core.executor.default_executor import DefaultExecutor
 from data_juicer.core.executor.event_logging_mixin import EventLoggingMixin, EventType
@@ -74,6 +74,7 @@ def _run_common_on_ray(common_cfg_dict: dict) -> dict:
         return {"ref": ref}
     except Exception:
         import os
+
         path = os.path.join(cfg.checkpoint_dir, "dataset")
         dataset.save_to_disk(path)
         return {"path": path}
@@ -184,7 +185,11 @@ class BranchExecutor(ExecutorBase, EventLoggingMixin):
         opts = _get_branch_opts(self.cfg)
 
         if hasattr(self, "_log_event"):
-            self._log_event(EventType.JOB_START, "Branch job started", metadata={"branches": [b.get("name", "") for b in self.branches]})
+            self._log_event(
+                EventType.JOB_START,
+                "Branch job started",
+                metadata={"branches": [b.get("name", "") for b in self.branches]},
+            )
 
         logger.info("Starting branch execution...")
         backend = opts.get("backend", "thread")
@@ -201,13 +206,9 @@ class BranchExecutor(ExecutorBase, EventLoggingMixin):
         if backend == "ray":
             branch_results, errors = self._run_branches_ray(common_ds_spec, load_data_np, skip_export, opts)
         elif opts["parallel"] and len(self.branches) > 1:
-            branch_results, errors = self._run_branches_parallel(
-                common_dataset, load_data_np, skip_export, opts
-            )
+            branch_results, errors = self._run_branches_parallel(common_dataset, load_data_np, skip_export, opts)
         else:
-            branch_results, errors = self._run_branches_sequential(
-                common_dataset, load_data_np, skip_export, opts
-            )
+            branch_results, errors = self._run_branches_sequential(common_dataset, load_data_np, skip_export, opts)
 
         if errors and opts["fail_fast"]:
             first_err = next(iter(errors.values()))
@@ -382,9 +383,7 @@ class BranchExecutor(ExecutorBase, EventLoggingMixin):
             ray.init()
 
         results, errors = {}, {}
-        branch_cfg_dicts = [
-            self._branch_cfg_minimal_dict(branch, skip_export) for branch in self.branches
-        ]
+        branch_cfg_dicts = [self._branch_cfg_minimal_dict(branch, skip_export) for branch in self.branches]
         fail_fast = opts.get("fail_fast", True)
         retries = opts.get("retries", 0)
 
@@ -446,8 +445,10 @@ class BranchExecutor(ExecutorBase, EventLoggingMixin):
         non-serializable / large payloads.
         """
         branch_name = branch.get("name", "unknown")
-        export_path = branch.get("export_path") if not skip_export else os.path.join(
-            self.work_dir, ".branch_ckpt", branch_name, "_skip_export.jsonl"
+        export_path = (
+            branch.get("export_path")
+            if not skip_export
+            else os.path.join(self.work_dir, ".branch_ckpt", branch_name, "_skip_export.jsonl")
         )
         minimal = {
             "name": branch_name,
