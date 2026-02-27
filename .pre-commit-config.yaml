@@ -56,5 +56,6 @@ exclude: |
     demos/(?!api_service/).*|
     tools/mm_eval/inception_metrics/.*|
     thirdparty/easy_animate/.*|
-    .*\.md
+    .*\.md｜
+    data_juicer/ops/deduplicator/tokenize\.c
   )$
