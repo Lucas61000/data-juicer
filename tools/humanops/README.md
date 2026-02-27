@@ -57,4 +57,4 @@ After startup, check the `label_studio_localhost_connection.json` file for conne
 - If you change the Label Studio version in `requirements/minimal.txt`, rerun the script to update your environment.
 
 ---
-For more details, see the script's inline documentation or run `python label_studio_service.py --help`. 
+For more details, see the script's inline documentation or run `python label_studio_service.py --help`.

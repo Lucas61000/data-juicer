@@ -2466,15 +2466,15 @@ return 0;
 /* #### Code section: module_code ### */
 
 /* "data_juicer/ops/deduplicator/tokenize.pyx":9
- * 
- * 
+ *
+ *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def n_grams(list tokens, int n):
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_1n_grams(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_1n_grams(PyObject *__pyx_self,
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -2483,7 +2483,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
 ); /*proto*/
 PyDoc_STRVAR(__pyx_doc_11data_juicer_3ops_12deduplicator_8tokenize_n_grams, "n_grams(list tokens, int n)");
 static PyMethodDef __pyx_mdef_11data_juicer_3ops_12deduplicator_8tokenize_1n_grams = {"n_grams", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_1n_grams, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_11data_juicer_3ops_12deduplicator_8tokenize_n_grams};
-static PyObject *__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_1n_grams(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_1n_grams(PyObject *__pyx_self,
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -2624,7 +2624,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_n_grams(CY
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":18
  *     cdef list window_tokens
- * 
+ *
  *     for i in range(n_tokens - n):             # <<<<<<<<<<<<<<
  *         window_tokens = tokens[i:i + n]
  *         window = b''.join(window_tokens)
@@ -2635,7 +2635,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_n_grams(CY
     __pyx_v_i = __pyx_t_5;
 
     /* "data_juicer/ops/deduplicator/tokenize.pyx":19
- * 
+ *
  *     for i in range(n_tokens - n):
  *         window_tokens = tokens[i:i + n]             # <<<<<<<<<<<<<<
  *         window = b''.join(window_tokens)
@@ -2667,7 +2667,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_n_grams(CY
  *         window = b''.join(window_tokens)
  *         result.add(window)             # <<<<<<<<<<<<<<
  *     return list(result)
- * 
+ *
 */
     __pyx_t_6 = PySet_Add(__pyx_v_result, __pyx_v_window); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 21, __pyx_L1_error)
   }
@@ -2676,7 +2676,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_n_grams(CY
  *         window = b''.join(window_tokens)
  *         result.add(window)
  *     return list(result)             # <<<<<<<<<<<<<<
- * 
+ *
  * @cython.boundscheck(False)
 */
   __Pyx_XDECREF(__pyx_r);
@@ -2687,8 +2687,8 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_n_grams(CY
   goto __pyx_L0;
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":9
- * 
- * 
+ *
+ *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def n_grams(list tokens, int n):
@@ -2710,14 +2710,14 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_n_grams(CY
 
 /* "data_juicer/ops/deduplicator/tokenize.pyx":24
  *     return list(result)
- * 
+ *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def split_on_whitespace(str document, bint new_line=False, bint tab=False):
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_3split_on_whitespace(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_3split_on_whitespace(PyObject *__pyx_self,
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -2726,7 +2726,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
 ); /*proto*/
 PyDoc_STRVAR(__pyx_doc_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_whitespace, "split_on_whitespace(str document, bool new_line=False, bool tab=False)");
 static PyMethodDef __pyx_mdef_11data_juicer_3ops_12deduplicator_8tokenize_3split_on_whitespace = {"split_on_whitespace", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_3split_on_whitespace, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_whitespace};
-static PyObject *__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_3split_on_whitespace(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_11data_juicer_3ops_12deduplicator_8tokenize_3split_on_whitespace(PyObject *__pyx_self,
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -2836,7 +2836,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":24
  *     return list(result)
- * 
+ *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def split_on_whitespace(str document, bint new_line=False, bint tab=False):
@@ -2893,7 +2893,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":35
  *     cdef int word_len
- * 
+ *
  *     c_document = PyUnicode_AsUTF8AndSize(document, &doc_len)             # <<<<<<<<<<<<<<
  *     start = c_document
  *     end = c_document + doc_len
@@ -2901,11 +2901,11 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
   __pyx_v_c_document = PyUnicode_AsUTF8AndSize(__pyx_v_document, (&__pyx_v_doc_len));
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":36
- * 
+ *
  *     c_document = PyUnicode_AsUTF8AndSize(document, &doc_len)
  *     start = c_document             # <<<<<<<<<<<<<<
  *     end = c_document + doc_len
- * 
+ *
 */
   __pyx_v_start = __pyx_v_c_document;
 
@@ -2913,14 +2913,14 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
  *     c_document = PyUnicode_AsUTF8AndSize(document, &doc_len)
  *     start = c_document
  *     end = c_document + doc_len             # <<<<<<<<<<<<<<
- * 
+ *
  *     while start < end:
 */
   __pyx_v_end = (__pyx_v_c_document + __pyx_v_doc_len);
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":39
  *     end = c_document + doc_len
- * 
+ *
  *     while start < end:             # <<<<<<<<<<<<<<
  *         # Skip leading whitespace
  *         while start < end and (start[0] == b' ' or (new_line and start[0] == b'\n') or (tab and start[0] == b'\t')):
@@ -2934,7 +2934,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
  *         # Skip leading whitespace
  *         while start < end and (start[0] == b' ' or (new_line and start[0] == b'\n') or (tab and start[0] == b'\t')):             # <<<<<<<<<<<<<<
  *             start += 1
- * 
+ *
 */
     while (1) {
       __pyx_t_3 = (__pyx_v_start < __pyx_v_end);
@@ -2974,7 +2974,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
  *         # Skip leading whitespace
  *         while start < end and (start[0] == b' ' or (new_line and start[0] == b'\n') or (tab and start[0] == b'\t')):
  *             start += 1             # <<<<<<<<<<<<<<
- * 
+ *
  *         if start >= end:
 */
       __pyx_v_start = (__pyx_v_start + 1);
@@ -2982,34 +2982,34 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
 
     /* "data_juicer/ops/deduplicator/tokenize.pyx":44
  *             start += 1
- * 
+ *
  *         if start >= end:             # <<<<<<<<<<<<<<
  *             break
- * 
+ *
 */
     __pyx_t_2 = (__pyx_v_start >= __pyx_v_end);
     if (__pyx_t_2) {
 
       /* "data_juicer/ops/deduplicator/tokenize.pyx":45
- * 
+ *
  *         if start >= end:
  *             break             # <<<<<<<<<<<<<<
- * 
+ *
  *         # Find end of word
 */
       goto __pyx_L4_break;
 
       /* "data_juicer/ops/deduplicator/tokenize.pyx":44
  *             start += 1
- * 
+ *
  *         if start >= end:             # <<<<<<<<<<<<<<
  *             break
- * 
+ *
 */
     }
 
     /* "data_juicer/ops/deduplicator/tokenize.pyx":48
- * 
+ *
  *         # Find end of word
  *         next_char = start             # <<<<<<<<<<<<<<
  *         while next_char < end and not (next_char[0] == b' ' or (new_line and next_char[0] == b'\n') or (tab and next_char[0] == b'\t')):
@@ -3022,7 +3022,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
  *         next_char = start
  *         while next_char < end and not (next_char[0] == b' ' or (new_line and next_char[0] == b'\n') or (tab and next_char[0] == b'\t')):             # <<<<<<<<<<<<<<
  *             next_char += 1
- * 
+ *
 */
     while (1) {
       __pyx_t_3 = (__pyx_v_next_char < __pyx_v_end);
@@ -3065,7 +3065,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
  *         next_char = start
  *         while next_char < end and not (next_char[0] == b' ' or (new_line and next_char[0] == b'\n') or (tab and next_char[0] == b'\t')):
  *             next_char += 1             # <<<<<<<<<<<<<<
- * 
+ *
  *         word_len = next_char - start
 */
       __pyx_v_next_char = (__pyx_v_next_char + 1);
@@ -3073,7 +3073,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
 
     /* "data_juicer/ops/deduplicator/tokenize.pyx":52
  *             next_char += 1
- * 
+ *
  *         word_len = next_char - start             # <<<<<<<<<<<<<<
  *         if word_len > 0:
  *             result.append(PyBytes_FromStringAndSize(start, word_len))
@@ -3081,11 +3081,11 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
     __pyx_v_word_len = (__pyx_v_next_char - __pyx_v_start);
 
     /* "data_juicer/ops/deduplicator/tokenize.pyx":53
- * 
+ *
  *         word_len = next_char - start
  *         if word_len > 0:             # <<<<<<<<<<<<<<
  *             result.append(PyBytes_FromStringAndSize(start, word_len))
- * 
+ *
 */
     __pyx_t_2 = (__pyx_v_word_len > 0);
     if (__pyx_t_2) {
@@ -3094,7 +3094,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
  *         word_len = next_char - start
  *         if word_len > 0:
  *             result.append(PyBytes_FromStringAndSize(start, word_len))             # <<<<<<<<<<<<<<
- * 
+ *
  *         start = next_char
 */
       __pyx_t_1 = PyBytes_FromStringAndSize(__pyx_v_start, __pyx_v_word_len); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 54, __pyx_L1_error)
@@ -3103,19 +3103,19 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
       /* "data_juicer/ops/deduplicator/tokenize.pyx":53
- * 
+ *
  *         word_len = next_char - start
  *         if word_len > 0:             # <<<<<<<<<<<<<<
  *             result.append(PyBytes_FromStringAndSize(start, word_len))
- * 
+ *
 */
     }
 
     /* "data_juicer/ops/deduplicator/tokenize.pyx":56
  *             result.append(PyBytes_FromStringAndSize(start, word_len))
- * 
+ *
  *         start = next_char             # <<<<<<<<<<<<<<
- * 
+ *
  *     return result
 */
     __pyx_v_start = __pyx_v_next_char;
@@ -3124,7 +3124,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":58
  *         start = next_char
- * 
+ *
  *     return result             # <<<<<<<<<<<<<<
 */
   __Pyx_XDECREF(__pyx_r);
@@ -3134,7 +3134,7 @@ static PyObject *__pyx_pf_11data_juicer_3ops_12deduplicator_8tokenize_2split_on_
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":24
  *     return list(result)
- * 
+ *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def split_on_whitespace(str document, bint new_line=False, bint tab=False):
@@ -3486,7 +3486,7 @@ static CYTHON_SMALL_CODE int __pyx_pymod_exec_tokenize(PyObject *__pyx_pyinit_mo
         Py_FatalError("failed to import 'refnanny' module");
   }
   #endif
-  
+
 __Pyx_RefNannySetupContext("PyInit_tokenize", 0);
   __Pyx_init_runtime_version();
   if (__Pyx_check_binary_version(__PYX_LIMITED_VERSION_HEX, __Pyx_get_runtime_version(), CYTHON_COMPILING_IN_LIMITED_API) < (0)) __PYX_ERR(0, 1, __pyx_L1_error)
@@ -3523,8 +3523,8 @@ __Pyx_RefNannySetupContext("PyInit_tokenize", 0);
   /*--- Execution code ---*/
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":9
- * 
- * 
+ *
+ *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def n_grams(list tokens, int n):
@@ -3551,7 +3551,7 @@ __Pyx_RefNannySetupContext("PyInit_tokenize", 0);
 
   /* "data_juicer/ops/deduplicator/tokenize.pyx":24
  *     return list(result)
- * 
+ *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def split_on_whitespace(str document, bint new_line=False, bint tab=False):
@@ -3573,7 +3573,7 @@ __Pyx_RefNannySetupContext("PyInit_tokenize", 0);
   /* "data_juicer/ops/deduplicator/tokenize.pyx":1
  * cimport cython             # <<<<<<<<<<<<<<
  * from cpython.bytes cimport PyBytes_FromStringAndSize
- * 
+ *
 */
   __pyx_t_3 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
@@ -3761,12 +3761,12 @@ static int __Pyx_CreateCodeObjects(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_InitGlobals(void) {
   /* PythonCompatibility.init */
   if (likely(__Pyx_init_co_variables() == 0)); else
-  
+
   if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1, __pyx_L1_error)
 
   /* CommonTypesMetaclass.init */
   if (likely(__pyx_CommonTypesMetaclass_init(__pyx_m) == 0)); else
-  
+
   if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1, __pyx_L1_error)
 
   /* CachedMethodType.init */
@@ -3780,12 +3780,12 @@ static int __Pyx_InitGlobals(void) {
       }
   } // error handling follows
   #endif
-  
+
   if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1, __pyx_L1_error)
 
   /* CythonFunctionShared.init */
   if (likely(__pyx_CyFunction_init(__pyx_m) == 0)); else
-  
+
   if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1, __pyx_L1_error)
 
   return 0;
