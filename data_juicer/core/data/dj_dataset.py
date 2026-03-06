@@ -36,6 +36,10 @@ class DJDataset(ABC):
         """process a list of operators on the dataset."""
 
     @abstractmethod
+    def process_parallel(self, operators, *, exporter=None, checkpointer=None, tracer=None) -> DJDataset:
+        """Implementing op parallel data processing based on Ray Actor"""
+
+    @abstractmethod
     def schema(self) -> Schema:
         """Get dataset schema.
 
@@ -348,6 +352,8 @@ class NestedDataset(Dataset, DJDataset):
                     logger.error("Error occurred when making log summarization")
         return dataset
 
+    def process_parallel(self, *args, **kwargs):
+        raise NotImplementedError("The process_parallel method needs to be implemented for the NestedDataset class.")
     def count(self) -> int:
         return self.num_rows
 
