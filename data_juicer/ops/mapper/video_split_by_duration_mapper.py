@@ -2,6 +2,7 @@ import copy
 import re
 
 import numpy as np
+from loguru import logger
 
 from data_juicer.utils.constant import Fields
 from data_juicer.utils.file_utils import add_suffix_to_filename, transfer_filename
@@ -51,6 +52,8 @@ class VideoSplitByDurationMapper(Mapper):
         save_dir: str = None,
         video_backend: str = "ffmpeg",
         ffmpeg_extra_args: str = "",
+        save_field: str = None,
+        legacy_split_by_text_token: bool = True,
         *args,
         **kwargs,
     ):
@@ -70,6 +73,10 @@ class VideoSplitByDurationMapper(Mapper):
             This path can alternatively be defined by setting the `DJ_PRODUCED_DATA_DIR` environment variable.
         :param video_backend: video backend, can be `ffmpeg`, `av`.
         :param ffmpeg_extra_args: Extra ffmpeg args for splitting video, only valid when `video_backend` is `ffmpeg`.
+        :param save_field: The new field name to save generated video files path.
+            If not specified, will overwrite the original video field.
+        :param legacy_split_by_text_token: Whether to split by special tokens (e.g. <__dj__video>)
+            in the text field and read videos in order, or use the 'videos' or 'frames' field directly.
         :param args: extra args
         :param kwargs: extra args
         """
@@ -85,6 +92,17 @@ class VideoSplitByDurationMapper(Mapper):
         self.video_backend = video_backend
         assert self.video_backend in ["ffmpeg", "av"]
         self.ffmpeg_extra_args = ffmpeg_extra_args
+        self.save_field = save_field
+        self.legacy_split_by_text_token = legacy_split_by_text_token
+        if self.legacy_split_by_text_token:
+            logger.warning(
+                "`legacy_split_by_text_token` is set to true, "
+                "spliting the text field by special tokens "
+                "(e.g. <__dj__video>) to read videos in order. "
+                "This behavior will be deprecated in future versions. "
+                "Please set `legacy_split_by_text_token` to False, "
+                'and use the "videos" or "frames" field directly.'
+            )
 
     def split_videos_by_duration(self, video_key, container):
         video_duration = container.metadata.duration
@@ -133,30 +151,42 @@ class VideoSplitByDurationMapper(Mapper):
                 videos[loaded_video_key] = video
 
         split_video_keys = []
-        offset = 0
-        # split each video chunk by chunk
-        for chunk in sample[self.text_key].split(SpecialTokens.eoc):
-            # skip empty chunks or contents after the last eoc token
-            if not chunk.strip():
-                continue
-            else:
-                video_count = chunk.count(SpecialTokens.video)
-                place_holders = []
-                for video_key in loaded_video_keys[offset : offset + video_count]:
-                    video = videos[video_key]
-                    new_video_keys = self.split_videos_by_duration(video_key, video)
-                    video.close()
-                    split_video_keys.extend(new_video_keys)
-                    place_holders.append(SpecialTokens.video * len(new_video_keys))
-                    split_sample[Fields.source_file].extend([video_key] * len(new_video_keys))
 
-                # insert the generated text according to given mode
-                replacer_function = create_replacer(place_holders)
-                new_split_text_per_chunk = re.sub(SpecialTokens.video, replacer_function, chunk)
-                split_sample[self.text_key] += f"{new_split_text_per_chunk}{SpecialTokens.eoc}"  # noqa: E501
-                offset += video_count
+        if self.legacy_split_by_text_token:
+            offset = 0
+            # split each video chunk by chunk
+            for chunk in sample[self.text_key].split(SpecialTokens.eoc):
+                # skip empty chunks or contents after the last eoc token
+                if not chunk.strip():
+                    continue
+                else:
+                    video_count = chunk.count(SpecialTokens.video)
+                    place_holders = []
+                    for video_key in loaded_video_keys[offset : offset + video_count]:
+                        video = videos[video_key]
+                        new_video_keys = self.split_videos_by_duration(video_key, video)
+                        video.close()
+                        split_video_keys.extend(new_video_keys)
+                        place_holders.append(SpecialTokens.video * len(new_video_keys))
+                        split_sample[Fields.source_file].extend([video_key] * len(new_video_keys))
 
-        split_sample[self.video_key] = split_video_keys
+                    # insert the generated text according to given mode
+                    replacer_function = create_replacer(place_holders)
+                    new_split_text_per_chunk = re.sub(SpecialTokens.video, replacer_function, chunk)
+                    split_sample[self.text_key] += f"{new_split_text_per_chunk}{SpecialTokens.eoc}"  # noqa: E501
+                    offset += video_count
+        else:
+            # TODO: handle the text field update
+            for video_key in loaded_video_keys:
+                video = videos[video_key]
+                new_video_keys = self.split_videos_by_duration(video_key, video)
+                video.close()
+                split_video_keys.extend(new_video_keys)
+
+        if self.save_field:
+            split_sample[self.save_field] = split_video_keys
+        else:
+            split_sample[self.video_key] = split_video_keys
         return [split_sample]
 
     def process_batched(self, samples):

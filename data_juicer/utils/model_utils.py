@@ -425,8 +425,9 @@ def prepare_api_model(
 def prepare_deepcalib_model(model_path, **model_params):
 
     device = model_params.pop("device", None)
-    if device is None:
-        raise ValueError("video_camera_calibration_static_deepcalib_mapper currently supports GPU usage only.")
+    if device is None or device == "cpu":
+        raise ValueError("CUDA device must be specified for deepcalib model.")
+
     device = device.replace("cuda", "/gpu")
 
     if not os.path.exists(model_path):
@@ -652,13 +653,13 @@ def prepare_hawor_model(hawor_model_path, hawor_config_path, mano_right_path, **
         hawor_model_dir = os.path.join(DJMC, "HaWor")
         os.makedirs(hawor_model_dir, exist_ok=True)
         hawor_model_path = os.path.join(hawor_model_dir, "hawor.ckpt")
-        subprocess.run(["wget", BACKUP_MODEL_LINKS["hawor_model_path"], hawor_model_path], check=True)
+        subprocess.run(["wget", BACKUP_MODEL_LINKS["hawor_model_path"], "-O", hawor_model_path], check=True)
 
     if not os.path.exists(hawor_config_path):
         hawor_model_dir = os.path.join(DJMC, "HaWor")
         os.makedirs(hawor_model_dir, exist_ok=True)
         hawor_config_path = os.path.join(hawor_model_dir, "model_config.yaml")
-        subprocess.run(["wget", BACKUP_MODEL_LINKS["hawor_config_path"], hawor_config_path], check=True)
+        subprocess.run(["wget", BACKUP_MODEL_LINKS["hawor_config_path"], "-O", hawor_config_path], check=True)
 
     model_cfg = get_config(hawor_config_path, update_cachedir=True)
 

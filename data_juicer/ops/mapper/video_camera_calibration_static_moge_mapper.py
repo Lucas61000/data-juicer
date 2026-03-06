@@ -1,15 +1,7 @@
-import json
-import os
-
 import numpy as np
-from pydantic import PositiveInt
 
-import data_juicer
-from data_juicer.ops.load import load_ops
-from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
-from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.constant import CameraCalibrationKeys, Fields, MetaKeys
 from data_juicer.utils.lazy_loader import LazyLoader
-from data_juicer.utils.mm_utils import SpecialTokens
 from data_juicer.utils.model_utils import get_model, prepare_model
 
 from ..base_op import OPERATORS, Mapper
@@ -33,15 +25,14 @@ class VideoCameraCalibrationStaticMogeMapper(Mapper):
     def __init__(
         self,
         model_path: str = "Ruicheng/moge-2-vitl",
-        frame_num: PositiveInt = 3,
-        duration: float = 0,
         tag_field_name: str = MetaKeys.static_camera_calibration_moge_tags,
-        frame_dir: str = DATA_JUICER_ASSETS_CACHE,
-        if_output_info: bool = True,
-        output_info_dir: str = DATA_JUICER_ASSETS_CACHE,
-        if_output_points_info: bool = True,
-        if_output_depth_info: bool = True,
-        if_output_mask_info: bool = True,
+        frame_field: str = MetaKeys.video_frames,
+        output_intrinsics: bool = True,
+        output_hfov: bool = True,
+        output_vfov: bool = True,
+        output_points: bool = True,
+        output_depth: bool = True,
+        output_mask: bool = True,
         *args,
         **kwargs,
     ):
@@ -49,143 +40,172 @@ class VideoCameraCalibrationStaticMogeMapper(Mapper):
         Initialization method.
 
         :param model_path: The path to the Moge-2 model.
-        :param frame_num: The number of frames to be extracted uniformly from
-            the video. If it's 1, only the middle frame will be extracted. If
-            it's 2, only the first and the last frames will be extracted. If
-            it's larger than 2, in addition to the first and the last frames,
-            other frames will be extracted uniformly within the video duration.
-            If "duration" > 0, frame_num is the number of frames per segment.
-        :param duration: The duration of each segment in seconds.
-            If 0, frames are extracted from the entire video.
-            If duration > 0, the video is segmented into multiple segments
-            based on duration, and frames are extracted from each segment.
         :param tag_field_name: The field name to store the tags. It's
             "static_camera_calibration_moge_tags" in default.
-        :param frame_dir: Output directory to save extracted frames.
-        :param if_output_info: Whether to save the camera parameters results
-            to an JSON file.
-        :param output_info_dir: Output directory for saving camera parameters.
-        :param if_output_points_info: Determines whether to output point map
+        :param frame_field: The field name where the video frames are stored.
+        :param output_intrinsics: Determines whether to output camera intrinsics.
+        :param output_hfov: Determines whether to output horizontal field of view.
+        :param output_vfov: Determines whether to output vertical field of view.
+        :param output_points: Determines whether to output point map
             in OpenCV camera coordinate system (x right, y down, z forward).
             For MoGe-2, the point map is in metric scale.
-        :param if_output_depth_info: Determines whether to output
-            depth maps.
-        :param if_output_mask_info: Determines whether to output a
-            binary mask for valid pixels.
+        :param output_depth: Determines whether to output depth maps.
+        :param output_mask: Determines whether to output a binary mask for valid pixels.
         :param args: extra args
         :param kwargs: extra args
-
         """
-
         super().__init__(*args, **kwargs)
 
-        self.video_extract_frames_mapper_args = {
-            "frame_sampling_method": "uniform",
-            "frame_num": frame_num,
-            "duration": duration,
-            "frame_dir": frame_dir,
-            "frame_key": MetaKeys.video_frames,
-        }
-        self.fused_ops = load_ops([{"video_extract_frames_mapper": self.video_extract_frames_mapper_args}])
         self.model_key = prepare_model(model_type="moge", model_path=model_path)
-
-        self.frame_num = frame_num
-        self.duration = duration
         self.tag_field_name = tag_field_name
-        self.frame_dir = frame_dir
-        self.output_info_dir = output_info_dir
-        self.if_output_points_info = if_output_points_info
-        self.if_output_depth_info = if_output_depth_info
-        self.if_output_mask_info = if_output_mask_info
-        self.if_output_info = if_output_info
+        self.frame_field = frame_field
+        self.output_points = output_points
+        self.output_depth = output_depth
+        self.output_mask = output_mask
+        self.output_intrinsics = output_intrinsics
+        self.output_hfov = output_hfov
+        self.output_vfov = output_vfov
+        assert (
+            self.output_points
+            or self.output_depth
+            or self.output_mask
+            or self.output_intrinsics
+            or self.output_hfov
+            or self.output_vfov
+        ), "At least one type of output info must be True."
+
+    def _need_anything(self, sample) -> bool:
+        """Whether this video still needs any requested outputs."""
+
+        existing_tags = sample[Fields.meta].get(self.tag_field_name)
+        if not existing_tags:
+            return True
+
+        if not isinstance(existing_tags[0], dict):
+            raise ValueError(
+                f"The existing field {self.tag_field_name} in sample[Fields.meta] should be a sequence of dict, but get {existing_tags}."
+            )
+
+        # Map: instance flag -> corresponding tag key
+        requirements = {
+            "output_intrinsics": CameraCalibrationKeys.intrinsics,
+            "output_hfov": CameraCalibrationKeys.hfov,
+            "output_vfov": CameraCalibrationKeys.vfov,
+            "output_points": CameraCalibrationKeys.points,
+            "output_depth": CameraCalibrationKeys.depth,
+            "output_mask": CameraCalibrationKeys.mask,
+        }
+
+        for tag_dict in existing_tags:
+            missing_any = any(getattr(self, flag, False) and key not in tag_dict for flag, key in requirements.items())
+            if missing_any:
+                return True
+
+        return False
 
     def process_single(self, sample=None, rank=None):
-
-        # check if it's generated already
-        if self.tag_field_name in sample[Fields.meta]:
-            return sample
-
         # there is no video in this sample
         if self.video_key not in sample or not sample[self.video_key]:
-            return []
+            return sample
 
-        # load videos
-        ds_list = [{"text": SpecialTokens.video, "videos": sample[self.video_key]}]
+        if sample.get(self.frame_field) is None:
+            return sample
 
-        dataset = data_juicer.core.data.NestedDataset.from_list(ds_list)
-        dataset = self.fused_ops[0].run(dataset)
+        if not self._need_anything(sample):
+            return sample
 
-        frames_root = os.path.join(self.frame_dir, os.path.splitext(os.path.basename(sample[self.video_key][0]))[0])
-        frame_names = os.listdir(frames_root)
-        frames_path = sorted([os.path.join(frames_root, frame_name) for frame_name in frame_names])
         model = get_model(self.model_key, rank, self.use_cuda())
 
-        final_k_list = []
-        final_hfov_list = []
-        final_vfov_list = []
-        final_points_list = []
-        final_depth_list = []
-        final_mask_list = []
+        videos_frames = sample[self.frame_field]
+        num_videos = len(videos_frames)
+
+        if self.tag_field_name not in sample[Fields.meta]:
+            sample[Fields.meta][self.tag_field_name] = [{} for _ in range(num_videos)]
+
+        tags_list = sample[Fields.meta][self.tag_field_name]
+
+        if len(tags_list) != num_videos:
+            raise ValueError(
+                f"The field {self.tag_field_name} in sample[Fields.meta] "
+                "should be a list of dict with the same length as the number of videos."
+            )
 
         if rank is not None:
             device = f"cuda:{rank}" if self.use_cuda() else "cpu"
         else:
             device = "cuda" if self.use_cuda() else "cpu"
 
-        for i, path in enumerate(frames_path):
+        for video_idx in range(num_videos):
+            (final_k_list, final_hfov_list, final_vfov_list, final_points_list, final_depth_list, final_mask_list) = (
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+            )
 
-            input_image = cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
-            height, width, channels = input_image.shape
-            input_image = torch.tensor(input_image / 255, dtype=torch.float32, device=device).permute(2, 0, 1)
+            tag_dict = tags_list[video_idx]
 
-            output = model.infer(input_image)
+            need_K = self.output_intrinsics and CameraCalibrationKeys.intrinsics not in tag_dict
+            need_hfov = self.output_hfov and CameraCalibrationKeys.hfov not in tag_dict
+            need_vfov = self.output_vfov and CameraCalibrationKeys.vfov not in tag_dict
+            need_points = self.output_points and CameraCalibrationKeys.points not in tag_dict
+            need_depth = self.output_depth and CameraCalibrationKeys.depth not in tag_dict
+            need_mask = self.output_mask and CameraCalibrationKeys.mask not in tag_dict
+            need_intrinsics_related = need_K or need_hfov or need_vfov
 
-            points = output["points"].cpu().tolist()
-            depth = output["depth"].cpu().tolist()
-            mask = output["mask"].cpu().tolist()
-            intrinsics = output["intrinsics"].cpu().tolist()
+            for i, frame in enumerate(videos_frames[video_idx]):
+                if isinstance(frame, bytes):  # rgb bytes from data-juicer video decoder
+                    image_array = np.frombuffer(frame, dtype=np.uint8)
+                    input_image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+                else:
+                    input_image = cv2.cvtColor(cv2.imread(frame), cv2.COLOR_BGR2RGB)
 
-            temp_k = [
-                [intrinsics[0][0] * width, 0, intrinsics[0][2] * width],
-                [0, intrinsics[1][1] * height, intrinsics[1][2] * height],
-                [0, 0, 1],
-            ]
+                height, width, channels = input_image.shape
+                input_image = torch.tensor(input_image / 255, dtype=torch.float32, device=device).permute(2, 0, 1)
 
-            temp_hfov = 2 * np.arctan(1 / 2 / intrinsics[0][0])  # rad
-            temp_vfov = 2 * np.arctan(1 / 2 / intrinsics[1][1])
+                output = model.infer(input_image)
 
-            final_k_list.append(temp_k)
-            final_hfov_list.append(temp_hfov)
-            final_vfov_list.append(temp_vfov)
+                if need_intrinsics_related:
+                    intrinsics = output["intrinsics"].cpu().tolist()
+                    temp_k = [
+                        [intrinsics[0][0] * width, 0, intrinsics[0][2] * width],
+                        [0, intrinsics[1][1] * height, intrinsics[1][2] * height],
+                        [0, 0, 1],
+                    ]
+                    if need_K:
+                        final_k_list.append(temp_k)
+                    if need_hfov:
+                        temp_hfov = 2 * np.arctan(1 / 2 / intrinsics[0][0])  # rad
+                        final_hfov_list.append(temp_hfov)
+                    if need_vfov:
+                        temp_vfov = 2 * np.arctan(1 / 2 / intrinsics[1][1])
+                        final_vfov_list.append(temp_vfov)
 
-            if self.if_output_points_info:
-                final_points_list.append(points)
+                if need_points:
+                    points = output["points"].cpu().tolist()
+                    final_points_list.append(points)
 
-            if self.if_output_depth_info:
-                final_depth_list.append(depth)
+                if need_depth:
+                    depth = output["depth"].cpu().tolist()
+                    final_depth_list.append(depth)
 
-            if self.if_output_mask_info:
-                final_mask_list.append(mask)
+                if need_mask:
+                    mask = output["mask"].cpu().tolist()
+                    final_mask_list.append(mask)
 
-        sample[Fields.meta][self.tag_field_name] = {
-            "frames_folder": frames_root,
-            "frame_names": frame_names,
-            "intrinsics_list": final_k_list,
-            "hfov_list": final_hfov_list,
-            "vfov_list": final_vfov_list,
-            "points_list": final_points_list,
-            "depth_list": final_depth_list,
-            "mask_list": final_mask_list,
-        }
-
-        if self.if_output_info:
-            os.makedirs(self.output_info_dir, exist_ok=True)
-            with open(
-                os.path.join(
-                    self.output_info_dir, os.path.splitext(os.path.basename(sample[self.video_key][0]))[0] + ".json"
-                ),
-                "w",
-            ) as f:
-                json.dump(sample[Fields.meta][self.tag_field_name], f)
+            if need_K:
+                tag_dict[CameraCalibrationKeys.intrinsics] = final_k_list
+            if need_hfov:
+                tag_dict[CameraCalibrationKeys.hfov] = final_hfov_list
+            if need_vfov:
+                tag_dict[CameraCalibrationKeys.vfov] = final_vfov_list
+            if need_points:
+                tag_dict[CameraCalibrationKeys.points] = final_points_list
+            if need_depth:
+                tag_dict[CameraCalibrationKeys.depth] = final_depth_list
+            if need_mask:
+                tag_dict[CameraCalibrationKeys.mask] = final_mask_list
 
         return sample

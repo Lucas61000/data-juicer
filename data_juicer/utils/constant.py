@@ -94,6 +94,8 @@ class MetaKeys(object):
     video_undistortion_tags = "video_undistortion_tags"
     # # Camera Pose Info
     video_camera_pose_tags = "video_camera_pose_tags"
+    # # Camera Calibration Info (for DroidCalib)
+    camera_calibration_droidcalib_tags = "camera_calibration_droidcalib_tags"
 
     # === info extraction related tags ===
     # # for event extraction
@@ -365,3 +367,17 @@ class JobRequiredKeys(Enum):
     local = "local"
     dj_configs = "dj_configs"
     extra_configs = "extra_configs"
+
+
+class CameraCalibrationKeys(object):
+    intrinsics = "intrinsics"
+    xi = "xi"
+    hfov = "hfov"
+    vfov = "vfov"
+    points = "points"
+    mask = "mask"
+    depth = "depth"
+    cam_c2w = "cam_c2w"
+    dist_coeffs = "dist_coeffs"
+    rectify_R = "rectify_R"  # or "rotation_matrix"
+    new_intrinsics = "new_intrinsics"

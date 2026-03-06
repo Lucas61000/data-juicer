@@ -5,7 +5,7 @@ import numpy as np
 from data_juicer.core.data import NestedDataset as Dataset
 from data_juicer.ops.mapper.video_camera_pose_mapper import VideoCameraPoseMapper
 from data_juicer.utils.mm_utils import SpecialTokens
-from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.constant import Fields, MetaKeys, CameraCalibrationKeys
 from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
 
@@ -60,10 +60,9 @@ class VideoCameraPoseMapperTest(DataJuicerTestCaseBase):
         res_list = dataset.to_list()
 
         for sample, target in zip(res_list, tgt_list):
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.video_camera_pose_tags]["images"]).shape), target["images_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.video_camera_pose_tags]["depths"]).shape), target["depths_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.video_camera_pose_tags]["intrinsic"]).shape), target["intrinsic_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.video_camera_pose_tags]["cam_c2w"]).shape), target["cam_c2w_shape"])
+            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.video_camera_pose_tags][CameraCalibrationKeys.depths]).shape), target["depths_shape"])
+            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.video_camera_pose_tags][CameraCalibrationKeys.intrinsic]).shape), target["intrinsic_shape"])
+            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.video_camera_pose_tags][CameraCalibrationKeys.cam_c2w]).shape), target["cam_c2w_shape"])
 
 
     def test(self):
