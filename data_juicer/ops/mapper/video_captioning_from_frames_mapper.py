@@ -216,9 +216,6 @@ class VideoCaptioningFromFramesMapper(Mapper):
             trust_remote_code=trust_remote_code
         )
 
-<<<<<<< HEAD
-    def _process_single_sample_actor(self, ori_sample, model, processor, rank=None, context=False):
-=======
     def _gen_caption_from_frames(self, load_video_data, inp, model, processor, prompt):
         video_frames_chunk = []
         if load_video_data:
@@ -232,7 +229,6 @@ class VideoCaptioningFromFramesMapper(Mapper):
             else:
                 frames = []
             video_frames = [frame.to_image() for frame in frames]
->>>>>>> upstream/main
 
         else:
             video_frames = inp
