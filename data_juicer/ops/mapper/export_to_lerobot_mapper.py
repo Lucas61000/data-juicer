@@ -1,0 +1,512 @@
+import json
+import os
+import shutil
+import uuid
+
+import numpy as np
+from loguru import logger
+
+from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.lazy_loader import LazyLoader
+
+from ..base_op import OPERATORS, Mapper
+
+OP_NAME = "export_to_lerobot_mapper"
+
+pa = LazyLoader("pyarrow", "pyarrow")
+pd = LazyLoader("pandas", "pandas")
+
+DEFAULT_CHUNKS_SIZE = 1000
+
+
+@OPERATORS.register_module(OP_NAME)
+class ExportToLeRobotMapper(Mapper):
+    """Export processed video data to LeRobot v2.0 dataset format (LIBERO-style).
+
+    Designed for Ray distributed execution: each actor writes files
+    independently using UUID-based names (no cross-process coordination).
+    After all actors finish, call `finalize_dataset()` once to assign
+    sequential episode indices, rename files, and generate metadata.
+
+    Processing phase (parallel, per actor):
+      staging/
+      ├── data/{uuid}.parquet
+      ├── videos/{uuid}.mp4
+      └── meta/episodes_{uuid}.jsonl
+
+    After finalize_dataset() (single-threaded):
+      dataset_dir/
+      ├── data/chunk-{NNN}/episode_XXXXXX.parquet
+      ├── videos/chunk-{NNN}/observation.images.image/episode_XXXXXX.mp4
+      └── meta/
+          ├── info.json
+          ├── tasks.jsonl
+          ├── episodes.jsonl
+          └── modality.json
+    """
+
+    def __init__(
+        self,
+        output_dir: str = "./lerobot_output",
+        hand_action_field: str = "hand_action_tags",
+        frame_field: str = MetaKeys.video_frames,
+        fps: int = 10,
+        robot_type: str = "egodex_hand",
+        chunks_size: int = DEFAULT_CHUNKS_SIZE,
+        *args,
+        **kwargs,
+    ):
+        """
+        Initialization method.
+
+        :param output_dir: Root directory for the LeRobot dataset output.
+        :param hand_action_field: Meta field with action/state data.
+        :param frame_field: Meta field with extracted frame paths.
+        :param video_key: Sample key for video clip paths.
+        :param fps: Frames per second for the dataset.
+        :param robot_type: Robot type identifier for info.json.
+        :param chunks_size: Max episodes per chunk directory (default 1000).
+        """
+        super().__init__(*args, **kwargs)
+        self.output_dir = output_dir
+        self.hand_action_field = hand_action_field
+        self.frame_field = frame_field
+        self.fps = fps
+        self.robot_type = robot_type
+        self.chunks_size = chunks_size
+
+        # Staging directories for parallel-safe writes
+        self.staging_data_dir = os.path.join(output_dir, "staging", "data")
+        self.staging_video_dir = os.path.join(output_dir, "staging", "videos")
+        self.staging_meta_dir = os.path.join(output_dir, "staging", "meta")
+        self.meta_dir = os.path.join(output_dir, "meta")
+        os.makedirs(self.staging_data_dir, exist_ok=True)
+        os.makedirs(self.staging_video_dir, exist_ok=True)
+        os.makedirs(self.staging_meta_dir, exist_ok=True)
+        os.makedirs(self.meta_dir, exist_ok=True)
+
+        self._write_modality_json()
+
+    def _write_modality_json(self):
+        """Write modality.json following StarVLA LIBERO convention."""
+        modality = {
+            "state": {
+                "x": {"start": 0, "end": 1},
+                "y": {"start": 1, "end": 2},
+                "z": {"start": 2, "end": 3},
+                "roll": {"start": 3, "end": 4},
+                "pitch": {"start": 4, "end": 5},
+                "yaw": {"start": 5, "end": 6},
+                "pad": {"start": 6, "end": 7},
+                "gripper": {"start": 7, "end": 8},
+            },
+            "action": {
+                "x": {"start": 0, "end": 1},
+                "y": {"start": 1, "end": 2},
+                "z": {"start": 2, "end": 3},
+                "roll": {"start": 3, "end": 4},
+                "pitch": {"start": 4, "end": 5},
+                "yaw": {"start": 5, "end": 6},
+                "gripper": {"start": 6, "end": 7},
+            },
+            "video": {
+                "primary_image": {
+                    "original_key": "observation.images.image",
+                },
+            },
+            "annotation": {
+                "human.action.task_description": {
+                    "original_key": "task_index",
+                },
+            },
+        }
+        path = os.path.join(self.meta_dir, "modality.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(modality, f, indent=4)
+
+    def _stage_video(self, video_path, ep_uuid):
+        """Copy video to staging with UUID name."""
+        ext = os.path.splitext(video_path)[1] or ".mp4"
+        dst = os.path.join(self.staging_video_dir, f"{ep_uuid}{ext}")
+        if not os.path.exists(dst):
+            shutil.copy2(video_path, dst)
+        return dst
+
+    def _stage_parquet(self, states, actions, ep_uuid):
+        """Write parquet to staging with UUID name.
+
+        episode_index, index, task_index are placeholders — they will
+        be rewritten by finalize_dataset().
+        """
+        T = len(states)
+        states_arr = np.array(states, dtype=np.float32)
+        actions_arr = np.array(actions, dtype=np.float32)
+
+        rows = []
+        for t in range(T):
+            rows.append(
+                {
+                    "observation.state": states_arr[t].tolist(),
+                    "action": actions_arr[t].tolist(),
+                    "timestamp": float(t) / self.fps,
+                    "frame_index": t,
+                    "episode_index": 0,  # placeholder
+                    "index": t,  # placeholder
+                    "task_index": 0,  # placeholder
+                    "next.done": t == T - 1,
+                }
+            )
+
+        df = pd.DataFrame(rows)
+        path = os.path.join(self.staging_data_dir, f"{ep_uuid}.parquet")
+        table = pa.Table.from_pandas(df)
+        pa.parquet.write_table(table, path)
+
+        return path, T
+
+    def _stage_episode_meta(self, ep_uuid, num_frames, task_desc, video_path):
+        """Write per-episode metadata to a UUID-named jsonl fragment.
+
+        Each actor writes its own file — no cross-process contention.
+        """
+        meta_path = os.path.join(self.staging_meta_dir, f"{ep_uuid}.jsonl")
+        entry = {
+            "uuid": ep_uuid,
+            "length": num_frames,
+            "task": task_desc,
+            "video_ext": os.path.splitext(video_path)[1] if video_path else ".mp4",
+        }
+        with open(meta_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    def process_single(self, sample=None, rank=None):
+        if Fields.meta not in sample:
+            return sample
+
+        action_data_list = sample[Fields.meta].get(self.hand_action_field, [])
+        if not action_data_list:
+            logger.warning("No hand action data found, skipping export.")
+            return sample
+
+        # Get task description from text field
+        task_desc = sample.get(self.text_key, "")
+        if not task_desc:
+            task_desc = "manipulate object"
+
+        # Get video paths
+        video_paths = sample.get(self.video_key, [])
+
+        # Track export results
+        exported_episodes = []
+
+        for video_idx, video_action_data in enumerate(action_data_list):
+            # Support both old format (flat dict) and new format
+            # (dict keyed by hand_type).
+            if "states" in video_action_data:
+                action_data = video_action_data
+            else:
+                action_data = {}
+                for ht in ["right", "left"]:
+                    hand_entry = video_action_data.get(ht, {})
+                    if hand_entry.get("states", []):
+                        action_data = hand_entry
+                        break
+
+            states = action_data.get("states", [])
+            actions = action_data.get("actions", [])
+
+            if len(states) < 2:
+                continue
+
+            # Generate a unique ID for this episode — no coordination
+            ep_uuid = uuid.uuid4().hex
+
+            # Write parquet to staging
+            parquet_path, num_frames = self._stage_parquet(states, actions, ep_uuid)
+
+            # Copy video to staging
+            video_dst = None
+            if video_idx < len(video_paths):
+                video_dst = self._stage_video(video_paths[video_idx], ep_uuid)
+
+            # Write episode metadata fragment
+            self._stage_episode_meta(ep_uuid, num_frames, task_desc, video_dst)
+
+            exported_episodes.append(
+                {
+                    "uuid": ep_uuid,
+                    "parquet_path": parquet_path,
+                    "video_path": video_dst,
+                    "num_frames": num_frames,
+                }
+            )
+
+        sample[Fields.meta]["lerobot_export"] = exported_episodes
+        return sample
+
+    @staticmethod
+    def _probe_video_resolution(video_base_dir):
+        """Probe the first video file to get resolution and codec info."""
+        if not os.path.exists(video_base_dir):
+            raise ValueError(f"Video directory {video_base_dir} does not exist.")
+
+        # Find the first video file
+        video_path = None
+        for root, _dirs, files in os.walk(video_base_dir):
+            for f in sorted(files):
+                if f.endswith((".mp4", ".avi", ".mkv")):
+                    video_path = os.path.join(root, f)
+                    break
+            if video_path:
+                break
+
+        if not video_path:
+            raise ValueError("No video files found.")
+
+        defaults = {}
+
+        try:
+            import cv2
+
+            cap = cv2.VideoCapture(video_path)
+            if cap.isOpened():
+                defaults["width"] = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                defaults["height"] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                cap.release()
+        except Exception:
+            pass
+
+        try:
+            import subprocess
+
+            result = subprocess.run(
+                [
+                    "ffprobe",
+                    "-v",
+                    "quiet",
+                    "-print_format",
+                    "json",
+                    "-show_streams",
+                    "-select_streams",
+                    "v:0",
+                    video_path,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if result.returncode == 0:
+                import json as _json
+
+                probe = _json.loads(result.stdout)
+                if probe.get("streams"):
+                    stream = probe["streams"][0]
+                    defaults["codec"] = stream.get("codec_name", defaults["codec"])
+                    defaults["pix_fmt"] = stream.get("pix_fmt", defaults["pix_fmt"])
+        except Exception:
+            pass
+
+        return defaults
+
+    @staticmethod
+    def finalize_dataset(output_dir, fps=10, robot_type="egodex_hand", chunks_size=DEFAULT_CHUNKS_SIZE):
+        """Merge staged files into final LeRobot dataset structure.
+
+        Must be called ONCE after all Ray actors have finished.
+        This is single-threaded — no concurrency issues.
+
+        Steps:
+          1. Collect all episode metadata fragments from staging
+          2. Sort by UUID for deterministic ordering
+          3. Assign sequential episode_index (0, 1, 2, ...)
+          4. Rewrite parquet files with correct episode_index / index
+          5. Move video files to chunk directories
+          6. Write episodes.jsonl, tasks.jsonl, info.json
+          7. Clean up staging directory
+        """
+        staging_dir = os.path.join(output_dir, "staging")
+        staging_data = os.path.join(staging_dir, "data")
+        staging_video = os.path.join(staging_dir, "videos")
+        staging_meta = os.path.join(staging_dir, "meta")
+        meta_dir = os.path.join(output_dir, "meta")
+
+        # 1. Collect all episode metadata fragments
+        episodes = []
+        if os.path.exists(staging_meta):
+            for fname in sorted(os.listdir(staging_meta)):
+                if not fname.endswith(".jsonl"):
+                    continue
+                fpath = os.path.join(staging_meta, fname)
+                with open(fpath, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            episodes.append(json.loads(line))
+
+        if not episodes:
+            logger.warning("No staged episodes found. Nothing to finalize.")
+            return
+
+        # 2. Sort for deterministic ordering
+        episodes.sort(key=lambda e: e["uuid"])
+
+        # 3. Assign sequential episode_index, build task index
+        task_to_index = {}
+        global_frame_offset = 0
+
+        for ep_idx, ep in enumerate(episodes):
+            ep["episode_index"] = ep_idx
+            ep["global_frame_offset"] = global_frame_offset
+            global_frame_offset += ep["length"]
+
+            task = ep["task"]
+            if task not in task_to_index:
+                task_to_index[task] = len(task_to_index)
+            ep["task_index"] = task_to_index[task]
+
+        total_episodes = len(episodes)
+        total_frames = global_frame_offset
+        total_chunks = max(1, (total_episodes + chunks_size - 1) // chunks_size)
+
+        # 4. Create chunk directories
+        for chunk_idx in range(total_chunks):
+            chunk_name = f"chunk-{chunk_idx:03d}"
+            os.makedirs(os.path.join(output_dir, "data", chunk_name), exist_ok=True)
+            os.makedirs(os.path.join(output_dir, "videos", chunk_name, "observation.images.image"), exist_ok=True)
+
+        # 5. Process each episode: rewrite parquet, move video
+        total_videos = 0
+        for ep in episodes:
+            ep_uuid = ep["uuid"]
+            ep_idx = ep["episode_index"]
+            chunk_name = f"chunk-{ep_idx // chunks_size:03d}"
+
+            # Rewrite parquet with correct indices
+            src_parquet = os.path.join(staging_data, f"{ep_uuid}.parquet")
+            if os.path.exists(src_parquet):
+                table = pa.parquet.read_table(src_parquet)
+                df = table.to_pandas()
+
+                df["episode_index"] = ep_idx
+                df["task_index"] = ep["task_index"]
+                df["index"] = ep["global_frame_offset"] + df["frame_index"].values
+
+                dst_parquet = os.path.join(output_dir, "data", chunk_name, f"episode_{ep_idx:06d}.parquet")
+                out_table = pa.Table.from_pandas(df)
+                pa.parquet.write_table(out_table, dst_parquet)
+
+            # Move video file
+            video_ext = ep.get("video_ext", ".mp4")
+            src_video = os.path.join(staging_video, f"{ep_uuid}{video_ext}")
+            if os.path.exists(src_video):
+                dst_video = os.path.join(
+                    output_dir, "videos", chunk_name, "observation.images.image", f"episode_{ep_idx:06d}{video_ext}"
+                )
+                shutil.move(src_video, dst_video)
+                total_videos += 1
+
+        # 6. Write episodes.jsonl
+        episodes_path = os.path.join(meta_dir, "episodes.jsonl")
+        with open(episodes_path, "w", encoding="utf-8") as f:
+            for ep in episodes:
+                entry = {
+                    "episode_index": ep["episode_index"],
+                    "length": ep["length"],
+                    "task": ep["task"],
+                }
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        # 7. Write tasks.jsonl
+        tasks_path = os.path.join(meta_dir, "tasks.jsonl")
+        with open(tasks_path, "w", encoding="utf-8") as f:
+            for task, idx in sorted(task_to_index.items(), key=lambda x: x[1]):
+                f.write(json.dumps({"task_index": idx, "task": task}, ensure_ascii=False) + "\n")
+
+        # 8. Probe video resolution
+        video_base_dir = os.path.join(output_dir, "videos")
+        video_info = ExportToLeRobotMapper._probe_video_resolution(video_base_dir)
+
+        # 9. Write info.json with features
+        features = {
+            "observation.state": {
+                "dtype": "float32",
+                "shape": [8],
+            },
+            "action": {
+                "dtype": "float32",
+                "shape": [7],
+            },
+            "observation.images.image": {
+                "dtype": "video",
+                "shape": [
+                    video_info["height"],
+                    video_info["width"],
+                    video_info["channels"],
+                ],
+                "names": ["height", "width", "channels"],
+                "info": {
+                    "video.height": video_info["height"],
+                    "video.width": video_info["width"],
+                    "video.channels": video_info["channels"],
+                    "video.codec": video_info["codec"],
+                    "video.pix_fmt": video_info["pix_fmt"],
+                    "video.is_depth_map": False,
+                    "video.fps": fps,
+                    "has_audio": False,
+                },
+            },
+            "timestamp": {
+                "dtype": "float32",
+                "shape": [1],
+                "names": None,
+            },
+            "frame_index": {
+                "dtype": "int64",
+                "shape": [1],
+                "names": None,
+            },
+            "episode_index": {
+                "dtype": "int64",
+                "shape": [1],
+                "names": None,
+            },
+            "index": {
+                "dtype": "int64",
+                "shape": [1],
+                "names": None,
+            },
+            "task_index": {
+                "dtype": "int64",
+                "shape": [1],
+                "names": None,
+            },
+        }
+
+        info = {
+            "codebase_version": "v2.0",
+            "robot_type": robot_type,
+            "total_episodes": total_episodes,
+            "total_frames": total_frames,
+            "total_tasks": len(task_to_index),
+            "total_videos": total_videos,
+            "total_chunks": total_chunks,
+            "chunks_size": chunks_size,
+            "fps": fps,
+            "splits": {"train": f"0:{total_episodes}"},
+            "data_path": "data/chunk-{episode_chunk:03d}/" "episode_{episode_index:06d}.parquet",
+            "video_path": "videos/chunk-{episode_chunk:03d}/" "{video_key}/episode_{episode_index:06d}.mp4",
+            "features": features,
+        }
+
+        info_path = os.path.join(meta_dir, "info.json")
+        with open(info_path, "w", encoding="utf-8") as f:
+            json.dump(info, f, indent=2, ensure_ascii=False)
+
+        # 10. Clean up staging directory
+        shutil.rmtree(staging_dir, ignore_errors=True)
+
+        logger.info(
+            f"LeRobot dataset finalized: {total_episodes} episodes, "
+            f"{total_frames} frames, {len(task_to_index)} tasks, "
+            f"{total_chunks} chunks"
+        )

@@ -1,11 +1,13 @@
-import os
-import sys
-import subprocess
 import importlib
+import os
+import subprocess
+import sys
+
 import numpy as np
+from loguru import logger
 
 from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
-from data_juicer.utils.constant import Fields, MetaKeys, CameraCalibrationKeys
+from data_juicer.utils.constant import CameraCalibrationKeys, Fields, MetaKeys
 from data_juicer.utils.lazy_loader import LazyLoader
 
 from ..base_op import OPERATORS, Mapper
@@ -22,7 +24,6 @@ def to_standard_list(obj):
         return to_standard_list(obj.tolist())
     elif isinstance(obj, list):
         return [to_standard_list(item) for item in obj]
-    
     elif isinstance(obj, tuple):
         return tuple(to_standard_list(item) for item in obj)
     else:
@@ -81,7 +82,8 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
 
     def _prepare_env(self, megasam_repo_path, droid_slam_home):
         for i in range(len(sys.path)):
-            if 'DroidCalib/droid_slam' in sys.path[i]:
+            if "DroidCalib/droid_slam" in sys.path[i]:
+                logger.warning("Removing DroidCalib/droid_slam from sys.path, it maybe conflicting with mega-sam.")
                 sys.path.pop(i)
                 break
 
@@ -89,7 +91,10 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             sys.path.insert(1, droid_slam_home)
 
         if not os.path.exists(megasam_repo_path):
-            subprocess.run(["git", "clone", "--recursive", "https://github.com/mega-sam/mega-sam.git", megasam_repo_path], check=True)
+            subprocess.run(
+                ["git", "clone", "--recursive", "https://github.com/mega-sam/mega-sam.git", megasam_repo_path],
+                check=True,
+            )
 
             with open(os.path.join(megasam_repo_path, "base", "src", "altcorr_kernel.cu"), "r") as f:
                 temp_file_content = f.read()
@@ -143,7 +148,7 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
                 f.write(temp_file_content)
 
         try:
-            import torch_scatter
+            import torch_scatter  # noqa F401
         except ImportError:
             """ "Please refer to https://github.com/rusty1s/pytorch_scatter to locate the
             installation link that is compatible with your PyTorch and CUDA versions."""
@@ -161,8 +166,8 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             )
 
         try:
-            import droid_backends
-            import lietorch
+            import droid_backends  # noqa F401
+            import lietorch  # noqa F401
         except ImportError:
             subprocess.run(["pip", "uninstall", "droid_backends", "-y"])
             subprocess.run(["pip", "install", "."], cwd=os.path.join(megasam_repo_path, "base"))
@@ -212,7 +217,7 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             intrinsics = cur_video_calibration[CameraCalibrationKeys.intrinsics]
 
             intrinsics = np.array(to_standard_list(intrinsics), dtype=np.float32)
- 
+
             # (3, 3) -> (N, 3, 3)
             if intrinsics.ndim == 2:
                 assert intrinsics.shape == (3, 3)
@@ -269,15 +274,17 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
 
             max_frames = min(self.max_frames, images.shape[0])
 
-            return_images = np.uint8(images[:max_frames, ::-1, ...].transpose(0, 2, 3, 1))
+            # return_images = np.uint8(images[:max_frames, ::-1, ...].transpose(0, 2, 3, 1))
             return_depths = np.float32(1.0 / disps[:max_frames, ...])
             return_cam_c2w = cam_c2w[:max_frames]
 
-            sample[Fields.meta][self.tag_field_name].append({
-                CameraCalibrationKeys.depth: return_depths,
-                CameraCalibrationKeys.intrinsics: K,
-                CameraCalibrationKeys.cam_c2w: return_cam_c2w,
-            })
+            sample[Fields.meta][self.tag_field_name].append(
+                {
+                    CameraCalibrationKeys.depth: return_depths,
+                    CameraCalibrationKeys.intrinsics: K,
+                    CameraCalibrationKeys.cam_c2w: return_cam_c2w,
+                }
+            )
 
         return sample
 

@@ -21,6 +21,7 @@ from .dialog_sentiment_intensity_mapper import DialogSentimentIntensityMapper
 from .dialog_topic_detection_mapper import DialogTopicDetectionMapper
 from .download_file_mapper import DownloadFileMapper
 from .expand_macro_mapper import ExpandMacroMapper
+from .export_to_lerobot_mapper import ExportToLeRobotMapper
 from .extract_entity_attribute_mapper import ExtractEntityAttributeMapper
 from .extract_entity_relation_mapper import ExtractEntityRelationMapper
 from .extract_event_mapper import ExtractEventMapper
@@ -101,6 +102,7 @@ from .video_depth_estimation_mapper import VideoDepthEstimationMapper
 from .video_extract_frames_mapper import VideoExtractFramesMapper
 from .video_face_blur_mapper import VideoFaceBlurMapper
 from .video_ffmpeg_wrapped_mapper import VideoFFmpegWrappedMapper
+from .video_hand_action_compute_mapper import VideoHandActionComputeMapper
 from .video_hand_reconstruction_hawor_mapper import VideoHandReconstructionHaworMapper
 from .video_hand_reconstruction_mapper import VideoHandReconstructionMapper
 from .video_object_segmenting_mapper import VideoObjectSegmentingMapper
@@ -143,6 +145,7 @@ __all__ = [
     "ExpandMacroMapper",
     "ExtractEntityAttributeMapper",
     "ExtractEntityRelationMapper",
+    "ExportToLeRobotMapper",
     "ExtractEventMapper",
     "ExtractKeywordMapper",
     "ExtractNicknameMapper",
@@ -209,6 +212,7 @@ __all__ = [
     "VideoFFmpegWrappedMapper",
     "VideoHandReconstructionHaworMapper",
     "VideoHandReconstructionMapper",
+    "VideoHandActionComputeMapper",
     "VideoFaceBlurMapper",
     "VideoObjectSegmentingMapper",
     "VideoRemoveWatermarkMapper",

@@ -96,6 +96,8 @@ class MetaKeys(object):
     video_camera_pose_tags = "video_camera_pose_tags"
     # # Camera Calibration Info (for DroidCalib)
     camera_calibration_droidcalib_tags = "camera_calibration_droidcalib_tags"
+    # # Hand action (state + action) computed from hand recon + camera pose
+    hand_action_tags = "hand_action_tags"
 
     # === info extraction related tags ===
     # # for event extraction

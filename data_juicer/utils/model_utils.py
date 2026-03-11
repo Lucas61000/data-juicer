@@ -630,7 +630,7 @@ def prepare_huggingface_model(
     return (model, processor) if return_model else processor
 
 
-def prepare_hawor_model(hawor_model_path, hawor_config_path, mano_right_path, **model_params):
+def prepare_hawor_model(hawor_model_path, hawor_config_path, mano_right_path, mano_left_path=None, **model_params):
 
     device = model_params.pop("device", "cpu")
 
@@ -684,9 +684,13 @@ def prepare_hawor_model(hawor_model_path, hawor_config_path, mano_right_path, **
 
     from data_juicer.ops.common.mano_func import MANO
 
-    mano_model = MANO(model_path=mano_right_path).to(device)
+    mano_right_model = MANO(model_path=mano_right_path).to(device)
 
-    return hawor_model, model_cfg, mano_model
+    mano_left_model = None
+    if mano_left_path and os.path.exists(mano_left_path):
+        mano_left_model = MANO.build_left(model_path=mano_left_path).to(device)
+
+    return hawor_model, model_cfg, mano_right_model, mano_left_model
 
 
 def prepare_kenlm_model(lang, name_pattern="{}.arpa.bin", **model_params):

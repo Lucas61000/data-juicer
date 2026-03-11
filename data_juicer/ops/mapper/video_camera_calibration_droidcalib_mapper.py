@@ -1,14 +1,15 @@
 import argparse
+import importlib
 import os
+import subprocess
 import sys
 from typing import Optional
-import subprocess
-from loguru import logger
+
 import numpy as np
-import importlib
+from loguru import logger
 
 from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
-from data_juicer.utils.constant import Fields, MetaKeys, CameraCalibrationKeys
+from data_juicer.utils.constant import CameraCalibrationKeys, Fields, MetaKeys
 from data_juicer.utils.lazy_loader import LazyLoader
 
 from ..base_op import OPERATORS, Mapper
@@ -131,14 +132,17 @@ class VideoCameraCalibrationDroidCalibMapper(Mapper):
         if not os.path.exists(self.droid_calib_home):
             logger.info("Clone DroidCalib...")
             try:
-                subprocess.run([
-                    "git",
-                    "clone",
-                    "--recursive",
-                    # "https://github.com/boschresearch/DroidCalib.git",
-                    "https://github.com/1van2ha0/DroidCalib.git",
-                    f"{self.droid_calib_home}"],
-                check=True)
+                subprocess.run(
+                    [
+                        "git",
+                        "clone",
+                        "--recursive",
+                        # "https://github.com/boschresearch/DroidCalib.git",
+                        "https://github.com/1van2ha0/DroidCalib.git",
+                        f"{self.droid_calib_home}",
+                    ],
+                    check=True,
+                )
             except Exception:
                 raise ValueError(
                     "Failed to clone DroidCalib repository. Please ensure you have git installed and an internet connection, or manually clone the repository to the path "
@@ -148,7 +152,7 @@ class VideoCameraCalibrationDroidCalibMapper(Mapper):
             return True
 
         try:
-            import torch_scatter
+            import torch_scatter  # noqa F401
         except ImportError:
             """ "Please refer to https://github.com/rusty1s/pytorch_scatter to locate the
             installation link that is compatible with your PyTorch and CUDA versions."""
@@ -168,15 +172,11 @@ class VideoCameraCalibrationDroidCalibMapper(Mapper):
             self._load_droid_module()
         except ImportError:
             subprocess.run(["pip", "uninstall", "droid_backends", "-y"])
-            subprocess.run(
-                ["python", "setup.py", "install"],
-                cwd=self.droid_calib_home,
-                check=True
-            )
-        
+            subprocess.run(["python", "setup.py", "install"], cwd=self.droid_calib_home, check=True)
+
         self._deps_ready = True
         return True
-    
+
     def _load_droid_module(self):
         if self.droid_slam_path not in sys.path:
             sys.path.insert(1, self.droid_slam_path)
@@ -318,7 +318,7 @@ class VideoCameraCalibrationDroidCalibMapper(Mapper):
             res = self._process_video_file(video_path)
             if res is not None:
                 fx, fy, cx, cy = res
-                res = [[fx, 0,  cx], [0,  fy, cy], [0,  0,  1 ]]
+                res = [[fx, 0, cx], [0, fy, cy], [0, 0, 1]]
             sample[Fields.meta][self.tag_field_name].append({CameraCalibrationKeys.intrinsics: res})
 
         return sample

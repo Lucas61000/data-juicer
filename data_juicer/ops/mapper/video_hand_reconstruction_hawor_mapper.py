@@ -1,4 +1,3 @@
-import copy
 import os
 import subprocess
 import sys
@@ -36,6 +35,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
         hawor_config_path: str = "model_config.yaml",
         hawor_detector_path: str = "detector.pt",
         mano_right_path: str = "path_to_mano_right_pkl",
+        mano_left_path: str = "path_to_mano_left_pkl",
         frame_field: str = MetaKeys.video_frames,
         camera_calibration_field: str = "camera_calibration",
         tag_field_name: str = MetaKeys.hand_reconstruction_hawor_tags,
@@ -55,6 +55,10 @@ class VideoHandReconstructionHaworMapper(Mapper):
         :param mano_right_path: The path to 'MANO_RIGHT.pkl'. Users need to
             download this file from https://mano.is.tue.mpg.de/ and comply
             with the MANO license.
+        :param mano_left_path: The path to 'MANO_LEFT.pkl'. Users need to
+            download this file from https://mano.is.tue.mpg.de/ and comply
+            with the MANO license. Used for accurate left-hand wrist
+            offset computation (with shapedirs bug-fix).
         :param frame_field: The field name where the video frames are stored.
         :param camera_calibration_field: The field name where the camera calibration info is stored.
         :param tag_field_name: The field name to store the tags. It's
@@ -77,16 +81,12 @@ class VideoHandReconstructionHaworMapper(Mapper):
             subprocess.run(["git", "clone", "https://github.com/ThunderVVV/HaWoR.git", hawor_repo_path], check=True)
 
         sys.path.append(hawor_repo_path)
-        from hawor.utils.rotation import (
-            angle_axis_to_rotation_matrix,
-            rotation_matrix_to_angle_axis,
-        )
+        from hawor.utils.rotation import rotation_matrix_to_angle_axis
         from lib.eval_utils.custom_utils import interpolate_bboxes
         from lib.pipeline.tools import parse_chunks
 
         self.interpolate_bboxes = interpolate_bboxes
         self.parse_chunks = parse_chunks
-        self.angle_axis_to_rotation_matrix = angle_axis_to_rotation_matrix
         self.rotation_matrix_to_angle_axis = rotation_matrix_to_angle_axis
         self.frame_field = frame_field
 
@@ -95,6 +95,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
             hawor_model_path=hawor_model_path,
             hawor_config_path=hawor_config_path,
             mano_right_path=mano_right_path,
+            mano_left_path=mano_left_path,
         )
 
         if not os.path.exists(hawor_detector_path):
@@ -277,24 +278,28 @@ class VideoHandReconstructionHaworMapper(Mapper):
                     "init_betas": results["pred_shape"][None, :],  # (B, T, 10)
                 }
 
-                # flip left hand
-                init_root = self.rotation_matrix_to_angle_axis(data_out["init_root_orient"])
-                init_hand_pose = self.rotation_matrix_to_angle_axis(data_out["init_hand_pose"])
+                # Convert to axis-angle (HaWoR native format)
+                init_root = self.rotation_matrix_to_angle_axis(data_out["init_root_orient"])  # (B, T, 3)
+                init_hand_pose = self.rotation_matrix_to_angle_axis(data_out["init_hand_pose"])  # (B, T, 15, 3)
+
+                # Flip Y/Z axis-angle components for left hand
+                # (this is HaWoR's convention for run_mano_left)
                 if do_flip:
                     init_root[..., 1] *= -1
                     init_root[..., 2] *= -1
-                data_out["init_root_orient"] = self.angle_axis_to_rotation_matrix(init_root)
-                data_out["init_hand_pose"] = self.angle_axis_to_rotation_matrix(init_hand_pose)
 
                 s_frame = frame_ck[0]
                 e_frame = frame_ck[-1]
 
                 for frame_id in range(s_frame, e_frame + 1):
+                    fi = frame_id - s_frame
                     result = {}
-                    result["beta"] = data_out["init_betas"][0, frame_id - s_frame].cpu().numpy()
-                    result["hand_pose"] = data_out["init_hand_pose"][0, frame_id - s_frame].cpu().numpy()
-                    result["global_orient"] = data_out["init_root_orient"][0, frame_id - s_frame].cpu().numpy()
-                    result["transl"] = data_out["init_trans"][0, frame_id - s_frame].cpu().numpy()
+                    result["betas"] = data_out["init_betas"][0, fi].cpu().numpy()  # (10,)
+                    # Store axis-angle: (3,) for global_orient, (45,) for hand_pose
+                    result["global_orient"] = init_root[0, fi].cpu().numpy()  # (3,)
+                    result["hand_pose"] = init_hand_pose[0, fi].reshape(-1).cpu().numpy()  # (45,)
+                    # Store original HaWoR translation (directly usable with run_mano/run_mano_left)
+                    result["transl"] = data_out["init_trans"][0, fi].cpu().numpy()  # (3,)
 
                     if idx == 0:
                         left_results[frame_id] = result
@@ -321,7 +326,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
         else:
             device = "cuda" if self.use_cuda() else "cpu"
 
-        hawor_model, model_cfg, mano_model = get_model(self.model_key, rank, self.use_cuda())
+        hawor_model, model_cfg, _, _ = get_model(self.model_key, rank, self.use_cuda())
         # TODO: optimize by sharing the loaded model across samples
         hand_det_model = ultralytics.YOLO(self.hawor_detector_path).to(device)
 
@@ -368,81 +373,41 @@ class VideoHandReconstructionHaworMapper(Mapper):
                 images, tracks, hawor_model, img_focal, single_image=(N == 1), img_paths=frames
             )
 
-            # --- Re-calculate Global Translation (MANO Alignment) ---
-            left_frame_id_list = []
-            left_beta_list = []
-            left_hand_pose_list = []
-            left_global_orient_list = []
-            left_transl_list = []
+            # Collect per-hand results in structured format
+            # Parameters are stored in HaWoR's native axis-angle format,
+            # directly usable with run_mano (right) / run_mano_left (left).
+            hand_output = {}
+            for hand_type in ["left", "right"]:
+                frame_ids = []
+                global_orient_list = []
+                hand_pose_list = []
+                betas_list = []
+                transl_list = []
 
-            right_frame_id_list = []
-            right_beta_list = []
-            right_hand_pose_list = []
-            right_global_orient_list = []
-            right_transl_list = []
+                for img_idx in range(N):
+                    if img_idx not in recon_results[hand_type]:
+                        continue
+                    result = recon_results[hand_type][img_idx]
+                    frame_ids.append(img_idx)
+                    global_orient_list.append(result["global_orient"].tolist())  # (3,)
+                    hand_pose_list.append(result["hand_pose"].tolist())  # (45,)
+                    betas_list.append(result["betas"].tolist())  # (10,)
+                    transl_list.append(result["transl"].tolist())  # (3,)
 
-            for img_idx in range(N):
-                for hand_type in ["left", "right"]:
-                    if hand_type == "left":
-                        if img_idx not in recon_results["left"]:
-                            continue
-                        result = recon_results["left"][img_idx]
-                    else:
-                        if img_idx not in recon_results["right"]:
-                            continue
-                        result = recon_results["right"][img_idx]
-
-                    # Convert results to tensors
-                    betas = torch.from_numpy(result["beta"]).unsqueeze(0).to(device)
-                    hand_pose = torch.from_numpy(result["hand_pose"]).unsqueeze(0).to(device)
-                    transl = torch.from_numpy(result["transl"]).unsqueeze(0).to(device)
-
-                    # Forward pass through MANO model
-                    model_output = mano_model(betas=betas, hand_pose=hand_pose)
-                    verts_m = model_output.vertices[0]
-                    joints_m = model_output.joints[0]
-
-                    # Flip x-axis for left hand consistency
-                    if hand_type == "left":
-                        verts_m[:, 0] = -1 * verts_m[:, 0]
-                        joints_m[:, 0] = -1 * joints_m[:, 0]
-
-                    wrist = joints_m[0]
-
-                    # Calculate new translation
-                    transl_new = wrist + transl
-
-                    # Store results with the new translation
-                    result_new_transl = copy.deepcopy(result)
-                    result_new_transl["transl"] = transl_new[0].cpu().numpy()
-
-                    if hand_type == "left":
-                        left_frame_id_list.append(img_idx)
-                        left_beta_list.append(result_new_transl["beta"])
-                        left_hand_pose_list.append(result_new_transl["hand_pose"])
-                        left_global_orient_list.append(result_new_transl["global_orient"])
-                        left_transl_list.append(result_new_transl["transl"])
-
-                    else:
-                        right_frame_id_list.append(img_idx)
-                        right_beta_list.append(result_new_transl["beta"])
-                        right_hand_pose_list.append(result_new_transl["hand_pose"])
-                        right_global_orient_list.append(result_new_transl["global_orient"])
-                        right_transl_list.append(result_new_transl["transl"])
+                hand_output[hand_type] = {
+                    "frame_ids": frame_ids,
+                    "global_orient": global_orient_list,
+                    "hand_pose": hand_pose_list,
+                    "betas": betas_list,
+                    "transl": transl_list,
+                }
 
             sample[Fields.meta][self.tag_field_name].append(
                 {
-                    "fov_x": fov_x,
-                    "left_frame_id_list": left_frame_id_list,
-                    "left_beta_list": left_beta_list,
-                    "left_hand_pose_list": left_hand_pose_list,
-                    "left_global_orient_list": left_global_orient_list,
-                    "left_transl_list": left_transl_list,
-                    "right_frame_id_list": right_frame_id_list,
-                    "right_beta_list": right_beta_list,
-                    "right_hand_pose_list": right_hand_pose_list,
-                    "right_global_orient_list": right_global_orient_list,
-                    "right_transl_list": right_transl_list,
+                    "fov_x": float(fov_x),
+                    "img_focal": float(img_focal),
+                    "left": hand_output["left"],
+                    "right": hand_output["right"],
                 }
             )
 
