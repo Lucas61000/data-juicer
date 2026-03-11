@@ -263,7 +263,13 @@ class ExportToLeRobotMapper(Mapper):
         if not video_path:
             raise ValueError("No video files found.")
 
-        defaults = {}
+        defaults = {
+            "width": 0,
+            "height": 0,
+            "channels": 3,
+            "codec": "av1",
+            "pix_fmt": "yuv420p",
+        }
 
         try:
             import cv2
@@ -272,6 +278,11 @@ class ExportToLeRobotMapper(Mapper):
             if cap.isOpened():
                 defaults["width"] = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                 defaults["height"] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                ret, frame = cap.read()
+                if ret and frame is not None:
+                    defaults["channels"] = (
+                        frame.shape[2] if frame.ndim == 3 else 1
+                    )
                 cap.release()
         except Exception:
             pass
@@ -302,7 +313,15 @@ class ExportToLeRobotMapper(Mapper):
                 if probe.get("streams"):
                     stream = probe["streams"][0]
                     defaults["codec"] = stream.get("codec_name", defaults["codec"])
-                    defaults["pix_fmt"] = stream.get("pix_fmt", defaults["pix_fmt"])
+                    pix_fmt = stream.get("pix_fmt", defaults["pix_fmt"])
+                    defaults["pix_fmt"] = pix_fmt
+                    # Infer channels from pix_fmt
+                    if "gray" in pix_fmt:
+                        defaults["channels"] = 1
+                    elif "a" in pix_fmt and pix_fmt not in ("yuv420p", "yuvj420p"):
+                        defaults["channels"] = 4
+                    else:
+                        defaults["channels"] = 3
         except Exception:
             pass
 

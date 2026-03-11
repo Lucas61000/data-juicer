@@ -287,6 +287,8 @@ class VideoHandReconstructionHaworMapper(Mapper):
                 if do_flip:
                     init_root[..., 1] *= -1
                     init_root[..., 2] *= -1
+                    init_hand_pose[..., 1] *= -1
+                    init_hand_pose[..., 2] *= -1
 
                 s_frame = frame_ck[0]
                 e_frame = frame_ck[-1]
