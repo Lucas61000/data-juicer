@@ -2,12 +2,12 @@
 """Demo: Verify action annotations with 3D hand mesh + trajectory overlay.
 
 Combines:
-  - 3D MANO hand mesh wireframe rendering (from vis_hand_mesh_demo.py)
-  - Action trajectory verification (reconstruct from actions vs GT hawor)
+  - 3D MANO hand mesh wireframe rendering
+  - Action trajectory verification
 
 Usage:
-    python vis_action_verify_demo.py \
-        --pkl /mnt/data_cpfs/output/v1_debug/stage_dump/stage3.pkl \
+    python vis_hand_action_demo.py \
+        --pkl data.pkl \
         --save_dir ./vis_action_verify
 """
 
@@ -21,12 +21,10 @@ import cv2
 import numpy as np
 import torch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from hawor_utils.common_utils import prepare_hawor_and_add_to_path
+prepare_hawor_and_add_to_path()
 
-HAWOR_ROOT = "/mnt/data/codes/HaWoR"
-sys.path.insert(0, HAWOR_ROOT)
-
-from hawor.utils.process import get_mano_faces, run_mano, run_mano_left
+from hawor_utils.patches.process import get_mano_faces, run_mano, run_mano_left
 
 from data_juicer.utils.constant import Fields, MetaKeys
 
@@ -210,7 +208,7 @@ def main():
         description="Verify action annotations with 3D hand mesh + trajectory (both hands)",
     )
     parser.add_argument("--pkl", type=str, required=True,
-                        help="Path to stage3.pkl (must have hand_action_tags)")
+                        help="Path to pickle data (must have hand_action_tags)")
     parser.add_argument("--save_dir", type=str, default="./vis_action_verify")
     parser.add_argument("--sample_idx", type=int, default=0)
     parser.add_argument("--video_idx", type=int, default=0)
@@ -229,7 +227,7 @@ def main():
     # TODO: adapt nesting videos structure
     frame_paths = samples[MetaKeys.video_frames][args.video_idx][0]
 
-    assert MetaKeys.hand_action_tags in meta, "Need hand_action_tags (stage3 data)"
+    assert MetaKeys.hand_action_tags in meta, "Need hand_action_tags"
     assert MetaKeys.hand_reconstruction_hawor_tags in meta, "Need hawor tags"
     assert MetaKeys.video_camera_pose_tags in meta, "Need camera pose tags"
 

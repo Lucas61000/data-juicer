@@ -280,9 +280,7 @@ class ExportToLeRobotMapper(Mapper):
                 defaults["height"] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                 ret, frame = cap.read()
                 if ret and frame is not None:
-                    defaults["channels"] = (
-                        frame.shape[2] if frame.ndim == 3 else 1
-                    )
+                    defaults["channels"] = frame.shape[2] if frame.ndim == 3 else 1
                 cap.release()
         except Exception:
             pass

@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 """Demo: Visualize MANO hand mesh with optional camera poses.
 
-Combines the functionality of vis_hand_mesh_demo.py (OpenCV overlay) and
-vis_hand_with_cam.py (aitviewer 3D visualization) into a single script.
-
-The --pkl parameter accepts any stage pkl (stage1/stage2/stage3).
-Camera poses are auto-detected from the pkl if present (stage2/stage3).
-
 Render modes:
   - opencv: Render hand mesh wireframe/solid overlay on video frames (OpenCV).
             When camera poses are available, also renders a world-space
@@ -15,21 +9,15 @@ Render modes:
                display or xvfb)
 
 Usage:
-    # OpenCV overlay (wireframe + solid) — stage1 pkl (no camera poses)
+    # OpenCV overlay — data pkl (auto-detects camera poses, adds trajectory)
     python vis_hand_demo.py \
-        --pkl /path/to/stage1.pkl \
-        --save_dir ./vis_hand \
-        --renderer opencv --render_mode both
-
-    # OpenCV overlay — stage3 pkl (auto-detects camera poses, adds trajectory)
-    python vis_hand_demo.py \
-        --pkl /path/to/stage3.pkl \
+        --pkl /path/to/data.pkl \
         --save_dir ./vis_hand \
         --renderer opencv --render_mode both
 
     # aitviewer 3D with VLA pipeline camera poses
     xvfb-run -a python vis_hand_demo.py \
-        --pkl /path/to/stage3.pkl \
+        --pkl /path/to/data.pkl \
         --save_dir ./vis_hand \
         --renderer aitviewer --vis_mode cam
 """
@@ -44,114 +32,21 @@ import numpy as np
 import torch
 
 # ---- HaWoR imports ----
-HAWOR_ROOT = '/mnt/data/codes/HaWoR'
-sys.path.insert(0, HAWOR_ROOT)
-from hawor.utils.process import get_mano_faces, run_mano, run_mano_left
+from hawor_utils.common_utils import prepare_hawor_and_add_to_path
+prepare_hawor_and_add_to_path()
+
+from hawor_utils.patches.process import get_mano_faces, run_mano, run_mano_left
 
 from lib.models.mano_wrapper import MANO
-
-MANO_RIGHT_PATH = os.path.join(HAWOR_ROOT, '_DATA/data/mano')
-
-
-# ---------------------------------------------------------------
-# Legacy format: custom MANO forward (handles wrist-offset transl)
-# ---------------------------------------------------------------
-
-def build_mano(use_cuda=True):
-    """Build RIGHT hand MANO model (legacy mapper uses right MANO for both)."""
-    mano = MANO(
-        model_path=MANO_RIGHT_PATH,
-        gender="neutral",
-        num_hand_joints=15,
-        create_body_pose=False,
-    )
-    if use_cuda:
-        mano = mano.cuda()
-    return mano
-
-
-def run_mano_forward_legacy(mano, transl, global_orient, hand_pose, betas,
-                            is_left=False, use_cuda=True):
-    """Run MANO forward for LEGACY format data (rotation matrices).
-
-    Returns:
-        vertices: (T, V, 3) numpy array
-        joints: (T, J, 3) numpy array
-    """
-    T = transl.shape[0]
-
-    t_pose = torch.tensor(hand_pose, dtype=torch.float32).reshape(T, 15, 3, 3)
-    t_betas = torch.tensor(betas, dtype=torch.float32).reshape(T, 10)
-
-    if use_cuda:
-        t_pose = t_pose.cuda()
-        t_betas = t_betas.cuda()
-
-    identity_orient = torch.eye(3, dtype=torch.float32).reshape(
-        1, 1, 3, 3).expand(T, -1, -1, -1)
-    if use_cuda:
-        identity_orient = identity_orient.cuda()
-    with torch.no_grad():
-        zero_output = mano(
-            global_orient=identity_orient,
-            hand_pose=t_pose,
-            betas=t_betas,
-            pose2rot=False,
-        )
-
-    verts_zero = zero_output.vertices.detach().cpu().numpy()
-    joints_zero = zero_output.joints.detach().cpu().numpy()
-    wrist_right = joints_zero[:, 0:1, :]
-
-    R = global_orient
-
-    if is_left:
-        flip_x = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, 1]],
-                          dtype=np.float32)
-
-        R_predicted = np.einsum('ij,tjk,kl->til', flip_x, R, flip_x)
-
-        wrist_left = wrist_right.copy()
-        wrist_left[:, :, 0] *= -1
-        t_predicted = transl[:, np.newaxis, :] - wrist_left
-
-        delta_v = verts_zero - wrist_right
-        delta_j = joints_zero - wrist_right
-        v_flipped = (np.einsum('tij,tvj->tvi', R_predicted, delta_v)
-                     + wrist_right + t_predicted)
-        j_flipped = (np.einsum('tij,tnj->tni', R_predicted, delta_j)
-                     + wrist_right + t_predicted)
-
-        vertices = v_flipped.copy()
-        vertices[:, :, 0] *= -1
-        joints = j_flipped.copy()
-        joints[:, :, 0] *= -1
-
-        actual_wrist = joints[:, 0:1, :]
-        desired_wrist = transl[:, np.newaxis, :]
-        wrist_correction = desired_wrist - actual_wrist
-        vertices = vertices + wrist_correction
-        joints = joints + wrist_correction
-    else:
-        delta_v = verts_zero - wrist_right
-        delta_j = joints_zero - wrist_right
-        vertices = (np.einsum('tij,tvj->tvi', R, delta_v)
-                    + transl[:, np.newaxis, :])
-        joints = (np.einsum('tij,tnj->tni', R, delta_j)
-                  + transl[:, np.newaxis, :])
-
-    return vertices, joints
-
 
 # ---------------------------------------------------------------
 # Data loading & format detection
 # ---------------------------------------------------------------
 
 def load_pkl_data(pkl_path, sample_idx=0, video_idx=0):
-    """Load stage pkl, detect format, compute hand vertices and joints.
+    """Load pkl data, detect format, compute hand vertices and joints.
 
-    Auto-detects camera poses from ``video_camera_pose_tags`` if present
-    (stage2/stage3 pkl).
+    Auto-detects camera poses from ``video_camera_pose_tags`` if present.
 
     Returns:
         results: dict with 'right' and 'left' keys, each containing:
@@ -179,8 +74,6 @@ def load_pkl_data(pkl_path, sample_idx=0, video_idx=0):
             cam_c2w = np.array(cam_pose['cam_c2w'])
             print(f"  Camera poses detected: {cam_c2w.shape}")
 
-    is_new_format = 'left' in hawor and isinstance(hawor['left'], dict)
-
     # Focal length
     if 'img_focal' in hawor:
         img_focal = float(hawor['img_focal'])
@@ -203,65 +96,34 @@ def load_pkl_data(pkl_path, sample_idx=0, video_idx=0):
 
     results = {}
 
-    if is_new_format:
-        print("Detected NEW format (axis-angle)")
-        for hand_type, mano_fn, hand_faces in [
-            ("right", run_mano, faces_right),
-            ("left", run_mano_left, faces_left),
-        ]:
-            hand = hawor[hand_type]
-            if not hand['frame_ids']:
-                results[hand_type] = None
-                continue
+    print("Detected NEW format (axis-angle)")
+    for hand_type, mano_fn, hand_faces in [
+        ("right", run_mano, faces_right),
+        ("left", run_mano_left, faces_left),
+    ]:
+        hand = hawor[hand_type]
+        if not hand['frame_ids']:
+            results[hand_type] = None
+            continue
 
-            transl = torch.tensor(
-                hand['transl'], dtype=torch.float32).unsqueeze(0)
-            rot = torch.tensor(
-                hand['global_orient'], dtype=torch.float32).unsqueeze(0)
-            pose = torch.tensor(
-                hand['hand_pose'], dtype=torch.float32).unsqueeze(0)
-            betas = torch.tensor(
-                hand['betas'], dtype=torch.float32).unsqueeze(0)
+        transl = torch.tensor(
+            hand['transl'], dtype=torch.float32).unsqueeze(0)
+        rot = torch.tensor(
+            hand['global_orient'], dtype=torch.float32).unsqueeze(0)
+        pose = torch.tensor(
+            hand['hand_pose'], dtype=torch.float32).unsqueeze(0)
+        betas = torch.tensor(
+            hand['betas'], dtype=torch.float32).unsqueeze(0)
 
-            mano_out = mano_fn(transl, rot, pose, betas=betas)
-            results[hand_type] = {
-                "vertices": mano_out['vertices'][0].cpu().numpy(),
-                "joints": mano_out['joints'][0].cpu().numpy(),
-                "faces": hand_faces,
-                "frame_ids": hand['frame_ids'],
-            }
-            print(f"  {hand_type}: vertices {results[hand_type]['vertices'].shape}")
-    else:
-        print("Detected LEGACY format (rotation matrices)")
-        use_cuda = torch.cuda.is_available()
-        mano_model = build_mano(use_cuda)
+        mano_out = mano_fn(transl, rot, pose, betas=betas)
+        results[hand_type] = {
+            "vertices": mano_out['vertices'][0].cpu().numpy(),
+            "joints": mano_out['joints'][0].cpu().numpy(),
+            "faces": hand_faces,
+            "frame_ids": hand['frame_ids'],
+        }
+        print(f"  {hand_type}: vertices {results[hand_type]['vertices'].shape}")
 
-        for hand_type, hand_faces in [
-            ("right", faces_right), ("left", faces_left)
-        ]:
-            prefix = f"{hand_type}_"
-            frame_ids = hawor.get(f'{prefix}frame_id_list', [])
-            if not frame_ids:
-                results[hand_type] = None
-                continue
-
-            is_left = (hand_type == "left")
-            verts, joints = run_mano_forward_legacy(
-                mano_model,
-                np.array(hawor[f'{prefix}transl_list'], dtype=np.float32),
-                np.array(hawor[f'{prefix}global_orient_list'],
-                         dtype=np.float32),
-                np.array(hawor[f'{prefix}hand_pose_list'], dtype=np.float32),
-                np.array(hawor[f'{prefix}beta_list'], dtype=np.float32),
-                is_left=is_left, use_cuda=use_cuda,
-            )
-            results[hand_type] = {
-                "vertices": verts,
-                "joints": joints,
-                "faces": hand_faces,
-                "frame_ids": frame_ids,
-            }
-            print(f"  {hand_type}: vertices {verts.shape}")
 
     n_frames = len(frame_paths)
     print(f"  Frames: {n_frames}, focal: {img_focal:.1f}")
@@ -592,7 +454,7 @@ def run_opencv_renderer(results, img_focal, frame_paths, save_dir,
                         render_mode="both", fps=2.0, cam_c2w=None):
     """Render hand mesh overlay on video frames using OpenCV.
 
-    When *cam_c2w* is provided (stage2/stage3 pkl), also renders:
+    When *cam_c2w* is provided, also renders:
       - World-space wrist trajectory projected onto each frame
       - A bird's-eye (XZ plane) mini-map showing camera path and wrist tracks
     """
@@ -737,7 +599,8 @@ def run_aitviewer_renderer(results, img_focal, frame_paths, save_dir,
                            cam_c2w=None, slam_npz=None, vis_mode='world',
                            interactive=False):
     """Visualize hands with camera poses using aitviewer."""
-    from lib.vis.run_vis2 import run_vis2_on_video, run_vis2_on_video_cam
+    from lib.vis.run_vis2 import run_vis2_on_video
+    from hawor_utils.patches.run_vis2 import run_vis2_on_video_cam
 
     faces_right = results["right"]["faces"] if results.get("right") else None
     faces_left = results["left"]["faces"] if results.get("left") else None
@@ -822,7 +685,7 @@ def run_aitviewer_renderer(results, img_focal, frame_paths, save_dir,
     elif vis_mode == 'cam':
         run_vis2_on_video_cam(
             left_dict, right_dict, save_dir, img_focal, image_names,
-            R_w2c=R_w2c_sla_all, t_w2c=t_w2c_sla_all)
+            R_w2c=R_w2c_sla_all, t_w2c=t_w2c_sla_all, interactive=interactive)
 
 
 # ---------------------------------------------------------------
@@ -836,8 +699,7 @@ def main():
         epilog=__doc__,
     )
     parser.add_argument("--pkl", type=str, required=True,
-                        help="Path to stage pkl (stage1/stage2/stage3). "
-                             "Camera poses are auto-detected if present.")
+                        help="Path to data pkl. Camera poses are auto-detected if present.")
     parser.add_argument("--save_dir", type=str, default="./vis_hand")
     parser.add_argument("--sample_idx", type=int, default=0)
     parser.add_argument("--video_idx", type=int, default=0)
@@ -876,7 +738,7 @@ def main():
     if cam_c2w is not None:
         print("Camera poses: available (auto-detected from pkl)")
     else:
-        print("Camera poses: not available (stage1 pkl or missing)")
+        print("Camera poses: not available")
 
     # Render
     if args.renderer == "opencv":
