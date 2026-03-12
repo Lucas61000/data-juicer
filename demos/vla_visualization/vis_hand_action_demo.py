@@ -7,7 +7,7 @@ Combines:
 
 Usage:
     python vis_hand_action_demo.py \
-        --pkl data.pkl \
+        --data_path data.pkl \
         --save_dir ./vis_action_verify
 """
 
@@ -207,8 +207,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Verify action annotations with 3D hand mesh + trajectory (both hands)",
     )
-    parser.add_argument("--pkl", type=str, required=True,
-                        help="Path to pickle data (must have hand_action_tags)")
+    parser.add_argument("--data_path", type=str, required=True,
+                        help="Path to data (must have hand_action_tags)")
     parser.add_argument("--save_dir", type=str, default="./vis_action_verify")
     parser.add_argument("--sample_idx", type=int, default=0)
     parser.add_argument("--video_idx", type=int, default=0)
@@ -218,14 +218,17 @@ def main():
     os.makedirs(args.save_dir, exist_ok=True)
 
     # Load data
-    print(f"Loading: {args.pkl}")
-    with open(args.pkl, "rb") as f:
-        samples = pickle.load(f)
+    print(f"Loading: {args.data_path}")
+    with open(args.data_path, "rb") as f:
+        if data_path.endswith('.jsonl'):
+            samples = [json.loads(line) for line in f.readlines()]
+        elif data_path.endswith('.pkl'):
+            samples = pickle.load(f)
 
-    meta = samples[Fields.meta][args.sample_idx]
+    tgt_sample = samples[args.sample_idx]
+    meta = tgt_sample[Fields.meta]
 
-    # TODO: adapt nesting videos structure
-    frame_paths = samples[MetaKeys.video_frames][args.video_idx][0]
+    frame_paths = tgt_sample[MetaKeys.video_frames][args.video_idx]
 
     assert MetaKeys.hand_action_tags in meta, "Need hand_action_tags"
     assert MetaKeys.hand_reconstruction_hawor_tags in meta, "Need hawor tags"

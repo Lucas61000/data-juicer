@@ -9,15 +9,15 @@ Render modes:
                display or xvfb)
 
 Usage:
-    # OpenCV overlay — data pkl (auto-detects camera poses, adds trajectory)
+    # OpenCV overlay (auto-detects camera poses, adds trajectory)
     python vis_hand_demo.py \
-        --pkl /path/to/data.pkl \
+        --data_path /path/to/data.pkl (jsonl)\
         --save_dir ./vis_hand \
         --renderer opencv --render_mode both
 
     # aitviewer 3D with VLA pipeline camera poses
     xvfb-run -a python vis_hand_demo.py \
-        --pkl /path/to/data.pkl \
+        --data_path /path/to/data.pkl (jsonl)\
         --save_dir ./vis_hand \
         --renderer aitviewer --vis_mode cam
 """
@@ -43,8 +43,8 @@ from lib.models.mano_wrapper import MANO
 # Data loading & format detection
 # ---------------------------------------------------------------
 
-def load_pkl_data(pkl_path, sample_idx=0, video_idx=0):
-    """Load pkl data, detect format, compute hand vertices and joints.
+def load_data(data_path, sample_idx=0, video_idx=0):
+    """Load data, detect format, compute hand vertices and joints.
 
     Auto-detects camera poses from ``video_camera_pose_tags`` if present.
 
@@ -58,12 +58,16 @@ def load_pkl_data(pkl_path, sample_idx=0, video_idx=0):
         cam_c2w: (N, 4, 4) numpy array of camera-to-world transforms,
                  or None if not available
     """
-    with open(pkl_path, 'rb') as f:
-        data = pickle.load(f)
+    with open(data_path, 'rb') as f:
+        if data_path.endswith('.jsonl'):
+            data = [json.loads(line) for line in f.readlines()]
+        elif data_path.endswith('.pkl'):
+            data = pickle.load(f)
 
-    meta = data['__dj__meta__'][sample_idx]
+    tgt_sample = data[sample_idx]
+    meta = tgt_sample['__dj__meta__']
     hawor = meta['hand_reconstruction_hawor_tags'][video_idx]
-    frame_paths = data['video_frames'][sample_idx][video_idx]
+    frame_paths = tgt_sample['video_frames'][video_idx]
 
     # Auto-detect camera poses
     cam_c2w = None
@@ -698,8 +702,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument("--pkl", type=str, required=True,
-                        help="Path to data pkl. Camera poses are auto-detected if present.")
+    parser.add_argument("--data_path", type=str, required=True,
+                        help="Path to data. The data format  Camera poses are auto-detected if present.")
     parser.add_argument("--save_dir", type=str, default="./vis_hand")
     parser.add_argument("--sample_idx", type=int, default=0)
     parser.add_argument("--video_idx", type=int, default=0)
@@ -730,13 +734,13 @@ def main():
 
     os.makedirs(args.save_dir, exist_ok=True)
 
-    # Load data (camera poses auto-detected from pkl)
-    print(f"Loading: {args.pkl}")
-    results, img_focal, frame_paths, cam_c2w = load_pkl_data(
-        args.pkl, args.sample_idx, args.video_idx)
+    # Load data (camera poses auto-detected from data)
+    print(f"Loading: {args.data_path}")
+    results, img_focal, frame_paths, cam_c2w = load_data(
+        args.data_path, args.sample_idx, args.video_idx)
 
     if cam_c2w is not None:
-        print("Camera poses: available (auto-detected from pkl)")
+        print("Camera poses: available (auto-detected from data)")
     else:
         print("Camera poses: not available")
 
