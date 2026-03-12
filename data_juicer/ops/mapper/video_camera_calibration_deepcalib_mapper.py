@@ -7,14 +7,14 @@ from data_juicer.utils.model_utils import get_model, prepare_model
 from ..base_op import OPERATORS, Mapper
 from ..op_fusion import LOADED_VIDEOS
 
-OP_NAME = "video_camera_calibration_static_deepcalib_mapper"
+OP_NAME = "video_camera_calibration_deepcalib_mapper"
 
 cv2 = LazyLoader("cv2", "opencv-python")
 
 
 @OPERATORS.register_module(OP_NAME)
 @LOADED_VIDEOS.register_module(OP_NAME)
-class VideoCameraCalibrationStaticDeepcalibMapper(Mapper):
+class VideoCameraCalibrationDeepcalibMapper(Mapper):
     """Compute the camera intrinsics and field of view (FOV)
     for a static camera using DeepCalib."""
 
@@ -24,7 +24,7 @@ class VideoCameraCalibrationStaticDeepcalibMapper(Mapper):
         self,
         model_path: str = "weights_10_0.02.h5",
         frame_field: str = MetaKeys.video_frames,
-        tag_field_name: str = MetaKeys.static_camera_calibration_deepcalib_tags,
+        tag_field_name: str = MetaKeys.camera_calibration_deepcalib_tags,
         *args,
         **kwargs,
     ):
@@ -34,7 +34,7 @@ class VideoCameraCalibrationStaticDeepcalibMapper(Mapper):
         :param model_path: The path to the DeepCalib Regression model.
         :param frame_field: The field name where the video frames are stored.
         :param tag_field_name: The field name to store the tags. It's
-            "static_camera_calibration_deepcalib_tags" in default.
+            "camera_calibration_deepcalib_tags" in default.
         :param args: extra args
         :param kwargs: extra args
 

@@ -15,6 +15,7 @@ import argparse
 import fractions
 import os
 import pickle
+import json
 import sys
 
 import cv2
@@ -220,9 +221,9 @@ def main():
     # Load data
     print(f"Loading: {args.data_path}")
     with open(args.data_path, "rb") as f:
-        if data_path.endswith('.jsonl'):
+        if args.data_path.endswith('.jsonl'):
             samples = [json.loads(line) for line in f.readlines()]
-        elif data_path.endswith('.pkl'):
+        elif args.data_path.endswith('.pkl'):
             samples = pickle.load(f)
 
     tgt_sample = samples[args.sample_idx]

@@ -7,7 +7,7 @@ from data_juicer.utils.model_utils import get_model, prepare_model
 from ..base_op import OPERATORS, Mapper
 from ..op_fusion import LOADED_VIDEOS
 
-OP_NAME = "video_camera_calibration_static_moge_mapper"
+OP_NAME = "video_camera_calibration_moge_mapper"
 
 cv2 = LazyLoader("cv2", "opencv-python")
 torch = LazyLoader("torch")
@@ -15,7 +15,7 @@ torch = LazyLoader("torch")
 
 @OPERATORS.register_module(OP_NAME)
 @LOADED_VIDEOS.register_module(OP_NAME)
-class VideoCameraCalibrationStaticMogeMapper(Mapper):
+class VideoCameraCalibrationMogeMapper(Mapper):
     """Compute the camera intrinsics and field of view (FOV)
     for a static camera using Moge-2 (more accurate
     than DeepCalib)."""
@@ -25,7 +25,7 @@ class VideoCameraCalibrationStaticMogeMapper(Mapper):
     def __init__(
         self,
         model_path: str = "Ruicheng/moge-2-vitl",
-        tag_field_name: str = MetaKeys.static_camera_calibration_moge_tags,
+        tag_field_name: str = MetaKeys.camera_calibration_moge_tags,
         frame_field: str = MetaKeys.video_frames,
         output_intrinsics: bool = True,
         output_hfov: bool = True,
@@ -41,7 +41,7 @@ class VideoCameraCalibrationStaticMogeMapper(Mapper):
 
         :param model_path: The path to the Moge-2 model.
         :param tag_field_name: The field name to store the tags. It's
-            "static_camera_calibration_moge_tags" in default.
+            "camera_calibration_moge_tags" in default.
         :param frame_field: The field name where the video frames are stored.
         :param output_intrinsics: Determines whether to output camera intrinsics.
         :param output_hfov: Determines whether to output horizontal field of view.

@@ -3,14 +3,14 @@ import unittest
 import numpy as np
 
 from data_juicer.core.data import NestedDataset as Dataset
-from data_juicer.ops.mapper.video_camera_calibration_static_moge_mapper import VideoCameraCalibrationStaticMogeMapper
+from data_juicer.ops.mapper.video_camera_calibration_deepcalib_mapper import VideoCameraCalibrationDeepcalibMapper
 from data_juicer.utils.mm_utils import SpecialTokens
 from data_juicer.utils.constant import Fields, MetaKeys, CameraCalibrationKeys
 from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
 
 
-class VideoCameraCalibrationStaticMogeMapperTest(DataJuicerTestCaseBase):
+class VideoCameraCalibrationDeepcalibMapperTest(DataJuicerTestCaseBase):
     data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..',
                              'data')
     vid3_path = os.path.join(data_path, 'video3.mp4')
@@ -28,38 +28,28 @@ class VideoCameraCalibrationStaticMogeMapperTest(DataJuicerTestCaseBase):
 
         tgt_list = [{"frame_names_shape": [49],
             "intrinsics_list_shape": [49, 3, 3],
+            "xi_list_shape": [49],
             "hfov_list_shape": [49],
-            "vfov_list_shape": [49],
-            "points_list_shape": [49, 640, 362, 3],
-            "depth_list_shape": [49, 640, 362],
-            "mask_list_shape": [49, 640, 362]},
+            "vfov_list_shape": [49]},
             {"frame_names_shape": [22],
             "intrinsics_list_shape": [22, 3, 3],
+            "xi_list_shape": [22],
             "hfov_list_shape": [22],
-            "vfov_list_shape": [22],
-            "points_list_shape": [22, 360, 480, 3],
-            "depth_list_shape": [22, 360, 480],
-            "mask_list_shape": [22, 360, 480]},
+            "vfov_list_shape": [22]},
             {"frame_names_shape": [3],
             "intrinsics_list_shape": [3, 3, 3],
+            "xi_list_shape": [3],
             "hfov_list_shape": [3],
-            "vfov_list_shape": [3],
-            "points_list_shape": [3, 1080, 1920, 3],
-            "depth_list_shape": [3, 1080, 1920],
-            "mask_list_shape": [3, 1080, 1920]}]
-
-        op = VideoCameraCalibrationStaticMogeMapper(
-            model_path="Ruicheng/moge-2-vitl",
+            "vfov_list_shape": [3]}]
+        
+        op = VideoCameraCalibrationDeepcalibMapper(
+            model_path="weights_10_0.02.h5",
             frame_num=1,
             duration=1,
             frame_dir=DATA_JUICER_ASSETS_CACHE,
             if_output_info=True,
             output_info_dir=DATA_JUICER_ASSETS_CACHE,
-            if_output_points_info=True,
-            if_output_depth_info=True,
-            if_output_mask_info=True,
         )
-
         dataset = Dataset.from_list(ds_list)
         if Fields.meta not in dataset.features:
             dataset = dataset.add_column(name=Fields.meta,
@@ -67,14 +57,11 @@ class VideoCameraCalibrationStaticMogeMapperTest(DataJuicerTestCaseBase):
         dataset = dataset.map(op.process, num_proc=num_proc, with_rank=True)
         res_list = dataset.to_list()
 
-
         for sample, target in zip(res_list, tgt_list):
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.static_camera_calibration_moge_tags][CameraCalibrationKeys.intrinsics]).shape), target["intrinsics_list_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.static_camera_calibration_moge_tags][CameraCalibrationKeys.hfov]).shape), target["hfov_list_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.static_camera_calibration_moge_tags][CameraCalibrationKeys.vfov]).shape), target["vfov_list_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.static_camera_calibration_moge_tags][CameraCalibrationKeys.points]).shape), target["points_list_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.static_camera_calibration_moge_tags][CameraCalibrationKeys.depth]).shape), target["depth_list_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.static_camera_calibration_moge_tags][CameraCalibrationKeys.mask]).shape), target["mask_list_shape"])
+            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][CameraCalibrationKeys.intrinsics]).shape), target["intrinsics_list_shape"])
+            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][CameraCalibrationKeys.xi]).shape), target["xi_list_shape"])
+            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][CameraCalibrationKeys.hfov]).shape), target["hfov_list_shape"])
+            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][CameraCalibrationKeys.vfov]).shape), target["vfov_list_shape"])
 
 
     def test(self):

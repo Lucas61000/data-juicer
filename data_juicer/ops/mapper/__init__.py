@@ -83,15 +83,13 @@ from .sentence_split_mapper import SentenceSplitMapper
 from .text_chunk_mapper import TextChunkMapper
 from .text_tagging_by_prompt_mapper import TextTaggingByPromptMapper
 from .vggt_mapper import VggtMapper
+from .video_camera_calibration_deepcalib_mapper import (
+    VideoCameraCalibrationDeepcalibMapper,
+)
 from .video_camera_calibration_droidcalib_mapper import (
     VideoCameraCalibrationDroidCalibMapper,
 )
-from .video_camera_calibration_static_deepcalib_mapper import (
-    VideoCameraCalibrationStaticDeepcalibMapper,
-)
-from .video_camera_calibration_static_moge_mapper import (
-    VideoCameraCalibrationStaticMogeMapper,
-)
+from .video_camera_calibration_moge_mapper import VideoCameraCalibrationMogeMapper
 from .video_camera_pose_megasam_mapper import VideoCameraPoseMegaSaMMapper
 from .video_captioning_from_audio_mapper import VideoCaptioningFromAudioMapper
 from .video_captioning_from_frames_mapper import VideoCaptioningFromFramesMapper
@@ -200,8 +198,8 @@ __all__ = [
     "TextChunkMapper",
     "TextTaggingByPromptMapper",
     "VggtMapper",
-    "VideoCameraCalibrationStaticDeepcalibMapper",
-    "VideoCameraCalibrationStaticMogeMapper",
+    "VideoCameraCalibrationDeepcalibMapper",
+    "VideoCameraCalibrationMogeMapper",
     "VideoCaptioningFromAudioMapper",
     "VideoCaptioningFromFramesMapper",
     "VideoCaptioningFromSummarizerMapper",

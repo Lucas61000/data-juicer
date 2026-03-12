@@ -547,18 +547,18 @@ process:
       if_output_point_maps_from_projection: True              # Determines whether to output point maps directly inferred by VGGT.
       if_output_point_maps_from_unprojection: True            # Determines whether to output point maps constructed from depth maps and camera parameters.
       if_output_point_tracks: True                            # Determines whether to output point tracks.
-  - video_camera_calibration_static_deepcalib_mapper:   # Compute the camera intrinsics and field of view (FOV) for a static camera using DeepCalib.
+  - video_camera_calibration_deepcalib_mapper:   # Compute the camera intrinsics and field of view (FOV) for a static camera using DeepCalib.
       model_path: "weights_10_0.02.h5"                        # The path to the DeepCalib Regression model.
       frame_num: 3                                            # the number of frames to be extracted uniformly from the video. If it's 1, only the middle frame will be extracted. If it's 2, only the first and the last frames will be extracted. If it's larger than 2, in addition to the first and the last frames, other frames will be extracted uniformly within the video duration.
       duration: 0                                             # the duration of each segment in seconds. If 0, frames are extracted from the entire video. If duration > 0, the video is segmented into multiple segments based on duration, and frames are extracted from each segment.
-      tag_field_name: 'static_camera_calibration_deepcalib_tags'   # the field name to store the tags. It's "static_camera_calibration_deepcalib_tags" in default.
+      tag_field_name: 'camera_calibration_deepcalib_tags'   # the field name to store the tags. It's "camera_calibration_deepcalib_tags" in default.
       frame_dir: None                                         # Output directory to save extracted frames.
       output_info_dir: None                                   # Output directory for saving camera parameters.
-  - video_camera_calibration_static_moge_mapper:        # Compute the camera intrinsics and field of view (FOV) for a static camera using Moge-2 (more accurate than DeepCalib).
+  - video_camera_calibration_moge_mapper:        # Compute the camera intrinsics and field of view (FOV) for a static camera using Moge-2 (more accurate than DeepCalib).
       model_path: "Ruicheng/moge-2-vitl"                      # The path to the Moge-2 model.
       frame_num: 3                                            # the number of frames to be extracted uniformly from the video. If it's 1, only the middle frame will be extracted. If it's 2, only the first and the last frames will be extracted. If it's larger than 2, in addition to the first and the last frames, other frames will be extracted uniformly within the video duration.
       duration: 0                                             # the duration of each segment in seconds. If 0, frames are extracted from the entire video. If duration > 0, the video is segmented into multiple segments based on duration, and frames are extracted from each segment.
-      tag_field_name: 'static_camera_calibration_moge_tags'   # the field name to store the tags. It's "static_camera_calibration_moge_tags" in default.
+      tag_field_name: 'camera_calibration_moge_tags'   # the field name to store the tags. It's "camera_calibration_moge_tags" in default.
       frame_dir: None                                         # Output directory to save extracted frames.
       if_output_info: True                                    # Whether to save the camera parameters results to an JSON file.
       output_info_dir: None                                   # Output directory for saving camera parameters.
