@@ -66,14 +66,14 @@ The `VideoCameraPoseMegaSaMMapper` operator depends on MegaSaM (based on DROID-S
 ### Option 1: Python Script (Recommended)
 
 ```bash
-cd demos/vla_visualization
+cd demos/ego_hand_action_annotation
 python vla_pipeline.py
 ```
 
 ### Option 2: YAML Config
 
 ```bash
-python tools/process_data.py --config demos/vla_visualization/configs/vla_pipeline.yaml
+python tools/process_data.py --config demos/ego_hand_action_annotation/configs/vla_pipeline.yaml
 ```
 
 ## Input Data Format

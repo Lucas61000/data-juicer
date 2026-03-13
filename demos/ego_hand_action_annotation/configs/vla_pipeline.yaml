@@ -2,15 +2,15 @@
 
 project_name: 'vla-hand-action-pipeline'
 executor_type: 'ray'
-dataset_path: './demos/vla_visualization/data/demo-dataset.jsonl'
-export_path: './demos/vla_visualization/output/processed'
+dataset_path: './demos/ego_hand_action_annotation/data/demo-dataset.jsonl'
+export_path: './demos/ego_hand_action_annotation/output/processed'
 ray_address: 'auto'
 
 process:
   - video_extract_frames_mapper:
       frame_sampling_method: 'all_keyframes'
       output_format: 'path'
-      frame_dir: './demos/vla_visualization/output/frames'
+      frame_dir: './demos/ego_hand_action_annotation/output/frames'
       frame_field: 'video_frames'
       legacy_split_by_text_token: false
       video_backend: 'ffmpeg'
@@ -43,7 +43,7 @@ process:
       hand_type: 'both'
       batch_mode: true
   - export_to_lerobot_mapper:
-      output_dir: './demos/vla_visualization/output/lerobot_dataset'
+      output_dir: './demos/ego_hand_action_annotation/output/lerobot_dataset'
       hand_action_field: 'hand_action_tags'
       frame_field: 'video_frames'
       fps: 10
