@@ -154,8 +154,9 @@ class VideoCameraCalibrationDroidCalibMapper(Mapper):
         try:
             import torch_scatter  # noqa F401
         except ImportError:
-            """ "Please refer to https://github.com/rusty1s/pytorch_scatter to locate the
-            installation link that is compatible with your PyTorch and CUDA versions."""
+            # Please refer to https://github.com/rusty1s/pytorch_scatter to locate the
+            # installation link that is compatible with your PyTorch and CUDA versions.
+            # For example:
             # torch_version = "2.6.0"
             # cuda_version = "cu124"
             subprocess.run(
@@ -166,6 +167,7 @@ class VideoCameraCalibrationDroidCalibMapper(Mapper):
                     # "-f",
                     # f"https://data.pyg.org/whl/torch-{torch_version}+{cuda_version}.html",
                 ],
+                check=True,
             )
 
         try:

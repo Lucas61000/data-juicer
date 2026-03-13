@@ -149,12 +149,12 @@ class VideoUndistortMapper(Mapper):
 
         for video_idx in range(len(sample[self.video_key])):
             cur_video_calibration = sample[Fields.meta][camera_calibration_field][video_idx]
-            if intrinsics_field not in cur_video_calibration and not cur_video_calibration.get(intrinsics_field, None):
+            if not cur_video_calibration.get(intrinsics_field):
                 raise ValueError(
                     f"The sample must include an '{intrinsics_field}' field to store the 3x3 camera intrinsics matrix."
                 )
 
-            if xi_field not in cur_video_calibration and not cur_video_calibration.get(xi_field, None):
+            if not cur_video_calibration.get(xi_field):
                 raise ValueError(
                     f"The sample must include an '{xi_field}' field to store the parameter xi in CMei's model."
                 )
