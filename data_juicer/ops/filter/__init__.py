@@ -56,6 +56,7 @@ from .video_tagging_from_frames_filter import VideoTaggingFromFramesFilter
 from .video_watermark_filter import VideoWatermarkFilter
 from .word_repetition_filter import WordRepetitionFilter
 from .words_num_filter import WordsNumFilter
+from .video_face_ratio_filter import VideoFaceRatioFilter
 
 __all__ = [
     "AlphanumericFilter",
@@ -114,6 +115,7 @@ __all__ = [
     "WordRepetitionFilter",
     "WordsNumFilter",
     "GeneralFieldFilter",
+    "VideoFaceRatioFilter"
 ]
 
 NON_STATS_FILTERS = [

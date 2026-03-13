@@ -47,8 +47,6 @@ from .imgdiff_difference_area_generator_mapper import Difference_Area_Generator_
 from .imgdiff_difference_caption_generator_mapper import (
     Difference_Caption_Generator_Mapper,
 )
-from .latex_figure_context_extractor_mapper import LatexFigureContextExtractorMapper
-from .latex_merge_tex_mapper import LatexMergeTexMapper
 from .mllm_mapper import MllmMapper
 from .nlpaug_en_mapper import NlpaugEnMapper
 from .nlpcda_zh_mapper import NlpcdaZhMapper
@@ -114,6 +112,16 @@ from .video_tagging_from_frames_mapper import VideoTaggingFromFramesMapper
 from .video_undistort_mapper import VideoUndistortMapper
 from .video_whole_body_pose_estimation_mapper import VideoWholeBodyPoseEstimationMapper
 from .whitespace_normalization_mapper import WhitespaceNormalizationMapper
+from .video_human_tracks_extraction_mapper import VideoHumanTracksExtractionMapper
+from .video_active_speaker_detect_mapper import VideoActiveSpeakerDetectMapper
+from .video_audio_detect_age_gender_mapper import VideoAudioDetectAgeGenderMapper
+from .video_audio_ASR_mapper import VideoAudioASRMapper
+from .video_audio_speech_emotion_mapper import VideoAudioSpeechEmotionMapper
+from .video_captioning_face_attribute_emotion_mapper import VideoCaptioningFaceAttributeEmotionMapper
+from .video_captioning_from_human_tracks_mapper import VideoCaptioningFromHumanTracksMapper
+from .video_captioning_face_attribute_emotion_mapper import VideoCaptioningFaceAttributeEmotionMapper
+from .video_human_tracks_face_demographic_mapper import VideoHumantrackFaceDemographicMapper
+
 
 __all__ = [
     "AudioAddGaussianNoiseMapper",
@@ -161,8 +169,6 @@ __all__ = [
     "ImageSegmentMapper",
     "ImageTaggingMapper",
     "ImageTaggingVLMMapper",
-    "LatexFigureContextExtractorMapper",
-    "LatexMergeTexMapper",
     "MllmMapper",
     "NlpaugEnMapper",
     "NlpcdaZhMapper",
@@ -221,4 +227,13 @@ __all__ = [
     "VideoUndistortMapper",
     "VideoWholeBodyPoseEstimationMapper",
     "WhitespaceNormalizationMapper",
+    "VideoHumanTracksExtractionMapper",
+    "VideoActiveSpeakerDetectMapper",
+    'VideoAudioDetectAgeGenderMapper', 
+    'VideoAudioASRMapper',
+    'VideoCaptioningFaceAttributeEmotionMapper',
+    'VideoCaptioningFromHumanTracksMapper', 
+    'VideoCaptioningFaceAttributeEmotionMapper',
+    'VideoHumantrackFaceDemographicMapper', 
+    'VideoAudioSpeechEmotionMapper'
 ]
