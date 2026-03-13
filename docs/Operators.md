@@ -46,7 +46,7 @@ Data-Juicer 中的算子分为以下 8 种类型。
 | [filter](#filter) | 56 | Filters out low-quality samples. 过滤低质量样本。 |
 | [formatter](#formatter) | 8 | Discovers, loads, and canonicalizes source data. 发现、加载、规范化原始数据。 |
 | [grouper](#grouper) | 3 | Group samples to batched samples. 将样本分组，每一组组成一个批量样本。 |
-| [mapper](#mapper) | 106 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
+| [mapper](#mapper) | 108 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
 | [pipeline](#pipeline) | 3 | Applies dataset-level processing; both input and output are datasets. 执行数据集级别的操作，输入和输出均为完整数据集。 |
 | [selector](#selector) | 5 | Selects top samples based on ranking. 基于排序选取高质量样本。 |
 
@@ -225,6 +225,8 @@ All the specific operators are listed below, each featured with several capabili
 | image_tagging_vlm_mapper | 🔮Multimodal 🚀GPU 🔗API 🌊vLLM 🟡Beta | Mapper to generates image tags. 映射器生成图像标签。 | [info](operators/mapper/image_tagging_vlm_mapper.md) | - |
 | imgdiff_difference_area_generator_mapper | 🚀GPU 🟡Beta | Generates and filters bounding boxes for image pairs based on similarity, segmentation, and text matching. 根据相似性、分割和文本匹配生成和过滤图像对的边界框。 | [info](operators/mapper/imgdiff_difference_area_generator_mapper.md) | [ImgDiff](https://arxiv.org/abs/2408.04594) |
 | imgdiff_difference_caption_generator_mapper | 🚀GPU 🟡Beta | Generates difference captions for bounding box regions in two images. 为两个图像中的边界框区域生成差异字幕。 | [info](operators/mapper/imgdiff_difference_caption_generator_mapper.md) | [ImgDiff](https://arxiv.org/abs/2408.04594) |
+| latex_figure_context_extractor_mapper | 🔮Multimodal 💻CPU 🟡Beta | A subfigure within a figure environment. 图环境中的子图。 | [info](operators/mapper/latex_figure_context_extractor_mapper.md) | - |
+| latex_merge_tex_mapper | 🔤Text 💻CPU 🟡Beta | Extracts and concatenates all ``.tex`` files from a compressed LaTeX project archive into a single text field. 将压缩的LaTeX项目存档中的所有 “.tex&#39;&#39; 文件提取并连接到单个文本字段中。 | [info](operators/mapper/latex_merge_tex_mapper.md) | - |
 | mllm_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Mapper to use MLLMs for visual question answering tasks. Mapper使用MLLMs进行视觉问答任务。 | [info](operators/mapper/mllm_mapper.md) | - |
 | nlpaug_en_mapper | 🔤Text 💻CPU 🟢Stable | Augments English text samples using various methods from the nlpaug library. 使用nlpaug库中的各种方法增强英语文本样本。 | [info](operators/mapper/nlpaug_en_mapper.md) | - |
 | nlpcda_zh_mapper | 🔤Text 💻CPU 🟢Stable | Augments Chinese text samples using the nlpcda library. 使用nlpcda库扩充中文文本样本。 | [info](operators/mapper/nlpcda_zh_mapper.md) | - |
@@ -258,8 +260,8 @@ All the specific operators are listed below, each featured with several capabili
 | text_chunk_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Split input text into chunks based on specified criteria. 根据指定的条件将输入文本拆分为块。 | [info](operators/mapper/text_chunk_mapper.md) | - |
 | text_tagging_by_prompt_mapper | 🔤Text 🚀GPU 🌊vLLM 🧩HF 🟡Beta | Mapper to generate text tags using prompt with LLM. Mapper使用带有LLM的prompt生成文本标记。 | [info](operators/mapper/text_tagging_by_prompt_mapper.md) | - |
 | vggt_mapper | 🎬Video 🚀GPU 🟡Beta | Input a video of a single scene, and use VGGT to extract information including Camera Pose, Depth Maps, Point Maps, and 3D Point Tracks. 输入单个场景的视频，并使用VGGT提取包括相机姿态、深度图、点图和3D点轨迹的信息。 | [info](operators/mapper/vggt_mapper.md) | - |
-| video_camera_calibration_droidcalib_mapper | 🎬Video 🚀GPU 🔴Alpha | Extract camera intrinsics from videos using DroidCalib. 使用DroidCalib从视频中提取相机内部函数。 | - | - |
 | video_camera_calibration_deepcalib_mapper | 🎬Video 🚀GPU 🟡Beta | Compute the camera intrinsics and field of view (FOV) for a static camera using DeepCalib. 使用DeepCalib计算静态摄像机的摄像机内部和视场 (FOV)。 | [info](operators/mapper/video_camera_calibration_deepcalib_mapper.md) | - |
+| video_camera_calibration_droidcalib_mapper | 🎬Video 🚀GPU 🔴Alpha | Extract camera intrinsics from videos using DroidCalib. 使用DroidCalib从视频中提取相机内部函数。 | - | - |
 | video_camera_calibration_moge_mapper | 🎬Video 🚀GPU 🟡Beta | Compute the camera intrinsics and field of view (FOV) for a static camera using Moge-2 (more accurate than DeepCalib). 使用Moge-2 (比DeepCalib更准确) 计算静态摄像机的摄像机内部函数和视场 (FOV)。 | [info](operators/mapper/video_camera_calibration_moge_mapper.md) | - |
 | video_camera_pose_megasam_mapper | 🎬Video 🚀GPU 🔴Alpha | Extract camera poses by leveraging MegaSaM and MoGe-2. 通过利用MegaSaM和MoGe-2提取相机姿势。 | - | - |
 | video_captioning_from_audio_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Mapper to caption a video according to its audio streams based on Qwen-Audio model. 映射器根据基于qwen-audio模型的音频流为视频添加字幕。 | [info](operators/mapper/video_captioning_from_audio_mapper.md) | - |
