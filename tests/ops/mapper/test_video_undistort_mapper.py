@@ -5,7 +5,7 @@ import numpy as np
 from data_juicer.core.data import NestedDataset as Dataset
 from data_juicer.ops.mapper.video_undistort_mapper import VideoUndistortMapper
 from data_juicer.utils.mm_utils import SpecialTokens
-from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.constant import Fields, MetaKeys, CameraCalibrationKeys
 from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
 
@@ -18,34 +18,40 @@ class VideoUndistortMapperTest(DataJuicerTestCaseBase):
     def _run_and_assert(self, output_video_dir, num_proc):
         ds_list = [{
             'videos': [self.vid3_path],
-            'intrinsics': [[465.4728460758426, 0, 181.0], [0, 465.4728460758426, 320.0], [0, 0, 1]],
-            'distortion_coefficients': None,
-            'xi': 0.203957462310791,
-            'rotation_matrix': None,
-            'intrinsics_new': None
+            Fields.meta: {
+                'camera_calibration': [{
+                    CameraCalibrationKeys.intrinsics: [[465.4728460758426, 0, 181.0], [0, 465.4728460758426, 320.0], [0, 0, 1]],
+                    CameraCalibrationKeys.xi: 0.203957462310791,
+                    CameraCalibrationKeys.dist_coeffs: None,
+                    CameraCalibrationKeys.rectify_R: None,
+                    CameraCalibrationKeys.new_intrinsics: None,
+                }],
+            }
         },  {
             'videos': [self.vid12_path],
-            'intrinsics': [[1227.3657989501953, 0, 960.0], [0, 1227.3657989501953, 540.0], [0, 0, 1]],
-            'distortion_coefficients': None,
-            'xi': 0.33518279,
-            'rotation_matrix': None,
-            'intrinsics_new': None
+            Fields.meta: {
+                'camera_calibration': [{
+                    CameraCalibrationKeys.intrinsics: [[1227.3657989501953, 0, 960.0], [0, 1227.3657989501953, 540.0], [0, 0, 1]],
+                    CameraCalibrationKeys.xi: 0.33518279,
+                    CameraCalibrationKeys.dist_coeffs: None,
+                    CameraCalibrationKeys.rectify_R: None,
+                    CameraCalibrationKeys.new_intrinsics: None,
+                }],
+            }
         }]
 
-        tgt_key_names = ["new_video_path"]
-
         op = VideoUndistortMapper(
-            output_video_dir=output_video_dir
+            output_video_dir=output_video_dir,
+            camera_calibration_field='camera_calibration',
         )
         dataset = Dataset.from_list(ds_list)
-        if Fields.meta not in dataset.features:
-            dataset = dataset.add_column(name=Fields.meta,
-                                         column=[{}] * dataset.num_rows)
         dataset = dataset.map(op.process, num_proc=num_proc, with_rank=True)
         res_list = dataset.to_list()
 
         for sample in res_list:
-            self.assertEqual(list(sample[Fields.meta][MetaKeys.video_undistortion_tags].keys()), tgt_key_names)
+            tag_list = sample[Fields.meta][MetaKeys.video_undistortion_tags]
+            self.assertIsInstance(tag_list, list)
+            self.assertGreater(len(tag_list), 0)
 
 
     def test(self):
