@@ -204,7 +204,7 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
 
         # there is no video in this sample
         if self.video_key not in sample or not sample[self.video_key]:
-            return []
+            return sample
 
         videos_frames = sample[self.frame_field]
 

@@ -320,7 +320,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
 
         # there is no video in this sample
         if self.video_key not in sample or not sample[self.video_key]:
-            return []
+            return sample
 
         if rank is not None:
             torch.cuda.set_device(rank)
