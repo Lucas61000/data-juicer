@@ -119,7 +119,6 @@ if __name__ == '__main__':
         ).map_batches(
             VideoCameraCalibrationMogeMapper,
             fn_constructor_kwargs=dict(
-                model_path='moge-2-vitl-normal/model.pt',
                 tag_field_name=MetaKeys.camera_calibration_moge_tags,
                 frame_field=MetaKeys.video_frames,
                 output_depth=True,
@@ -140,7 +139,8 @@ if __name__ == '__main__':
                 skip_op_error=False,
                 camera_calibration_field=MetaKeys.camera_calibration_moge_tags,
                 tag_field_name=MetaKeys.hand_reconstruction_hawor_tags,
-                mano_right_path='/mano_v1_2/models/MANO_RIGHT.pkl',
+                mano_right_path='/path/to/MANO_RIGHT.pkl',
+                mano_left_path='/path/to/MANO_LEFT.pkl',
                 frame_field=MetaKeys.video_frames,
             ),
             batch_size=1,
