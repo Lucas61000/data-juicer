@@ -20,6 +20,8 @@ import sys
 
 import cv2
 import numpy as np
+import pyarrow.parquet as pq
+
 import torch
 
 from hawor_utils.common_utils import prepare_hawor_and_add_to_path
@@ -28,6 +30,25 @@ prepare_hawor_and_add_to_path()
 from hawor_utils.patches.process import get_mano_faces, run_mano, run_mano_left
 
 from data_juicer.utils.constant import Fields, MetaKeys
+
+
+def load_image(image_input):
+    if isinstance(image_input, (str, bytes)):
+        if isinstance(image_input, str):
+            if not os.path.exists(image_input):
+                raise ValueError(f"Error: File not found at {image_input}")
+            img = cv2.imread(image_input)
+        else:
+            nparr = np.frombuffer(image_input, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            raise ValueError("Failed to decode image.")
+
+        return img
+    
+    else:
+        raise TypeError("Input must be a file path (str) or image bytes (bytes).")
 
 
 # ---------------------------------------------------------------
@@ -225,11 +246,16 @@ def main():
             samples = [json.loads(line) for line in f.readlines()]
         elif args.data_path.endswith('.pkl'):
             samples = pickle.load(f)
+        elif args.data_path.endswith('.parquet'):
+            table = pq.read_table(f)
+            samples = table.to_pylist()
 
     tgt_sample = samples[args.sample_idx]
     meta = tgt_sample[Fields.meta]
+    if isinstance(meta, bytes):
+        meta = pickle.loads(meta)
 
-    frame_paths = tgt_sample[MetaKeys.video_frames][args.video_idx]
+    frames = tgt_sample[MetaKeys.video_frames][args.video_idx]
 
     assert MetaKeys.hand_action_tags in meta, "Need hand_action_tags"
     assert MetaKeys.hand_reconstruction_hawor_tags in meta, "Need hawor tags"
@@ -247,7 +273,7 @@ def main():
         ht = action_tags.get("hand_type", "right")
         action_tags = {ht: action_tags}
 
-    img = cv2.imread(frame_paths[0])
+    img = load_image(frames[0])
     img_h, img_w = img.shape[:2]
 
     # ---- Process BOTH hands ----
@@ -346,7 +372,7 @@ def main():
     output_frames = []
 
     for frame_seq, fid in enumerate(all_valid_fids):
-        frame = cv2.imread(frame_paths[fid])
+        frame = load_image(frames[fid])
         if frame is None:
             continue
 

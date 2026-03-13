@@ -30,6 +30,7 @@ import sys
 
 import cv2
 import numpy as np
+import pyarrow.parquet as pq
 import torch
 
 # ---- HaWoR imports ----
@@ -43,6 +44,24 @@ from lib.models.mano_wrapper import MANO
 # ---------------------------------------------------------------
 # Data loading & format detection
 # ---------------------------------------------------------------
+def load_image(image_input):
+    if isinstance(image_input, (str, bytes)):
+        if isinstance(image_input, str):
+            if not os.path.exists(image_input):
+                raise ValueError(f"Error: File not found at {image_input}")
+            img = cv2.imread(image_input)
+        else:
+            nparr = np.frombuffer(image_input, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            raise ValueError("Failed to decode image.")
+
+        return img
+    
+    else:
+        raise TypeError("Input must be a file path (str) or image bytes (bytes).")
+
 
 def load_data(data_path, sample_idx=0, video_idx=0):
     """Load data, detect format, compute hand vertices and joints.
@@ -61,14 +80,19 @@ def load_data(data_path, sample_idx=0, video_idx=0):
     """
     with open(data_path, 'rb') as f:
         if data_path.endswith('.jsonl'):
-            data = [json.loads(line) for line in f.readlines()]
+            samples = [json.loads(line) for line in f.readlines()]
         elif data_path.endswith('.pkl'):
-            data = pickle.load(f)
+            samples = pickle.load(f)
+        elif data_path.endswith('.parquet'):
+            table = pq.read_table(f)
+            samples = table.to_pylist()
 
-    tgt_sample = data[sample_idx]
+    tgt_sample = samples[sample_idx]
     meta = tgt_sample['__dj__meta__']
+    if isinstance(meta, bytes):
+        meta = pickle.loads(meta)
     hawor = meta['hand_reconstruction_hawor_tags'][video_idx]
-    frame_paths = tgt_sample['video_frames'][video_idx]
+    frames = tgt_sample['video_frames'][video_idx]
 
     # Auto-detect camera poses
     cam_c2w = None
@@ -84,7 +108,7 @@ def load_data(data_path, sample_idx=0, video_idx=0):
         img_focal = float(hawor['img_focal'])
     else:
         fov_x = float(hawor['fov_x'])
-        img0 = cv2.imread(frame_paths[0])
+        img0 = load_image(frames[0])
         W = img0.shape[1]
         img_focal = W / (2.0 * np.tan(fov_x / 2.0))
 
@@ -130,9 +154,9 @@ def load_data(data_path, sample_idx=0, video_idx=0):
         print(f"  {hand_type}: vertices {results[hand_type]['vertices'].shape}")
 
 
-    n_frames = len(frame_paths)
+    n_frames = len(frames)
     print(f"  Frames: {n_frames}, focal: {img_focal:.1f}")
-    return results, img_focal, frame_paths, cam_c2w
+    return results, img_focal, frames, cam_c2w
 
 
 # ---------------------------------------------------------------
@@ -455,7 +479,7 @@ def overlay_trajectory_on_frame(frame, world_wrists, cam_c2w, current_fid,
 # OpenCV renderer
 # ---------------------------------------------------------------
 
-def run_opencv_renderer(results, img_focal, frame_paths, save_dir,
+def run_opencv_renderer(results, img_focal, frames, save_dir,
                         render_mode="both", fps=2.0, cam_c2w=None):
     """Render hand mesh overlay on video frames using OpenCV.
 
@@ -463,7 +487,7 @@ def run_opencv_renderer(results, img_focal, frame_paths, save_dir,
       - World-space wrist trajectory projected onto each frame
       - A bird's-eye (XZ plane) mini-map showing camera path and wrist tracks
     """
-    n_frames = len(frame_paths)
+    n_frames = len(frames)
     has_cam = cam_c2w is not None
 
     right_id_map = {}
@@ -501,9 +525,9 @@ def run_opencv_renderer(results, img_focal, frame_paths, save_dir,
         print(f"Rendering {n_frames} frames...")
         annotated_frames = []
         for frame_idx in range(n_frames):
-            frame = cv2.imread(frame_paths[frame_idx])
+            frame = load_image(frames[frame_idx])
             if frame is None:
-                print(f"  [WARN] Cannot read: {frame_paths[frame_idx]}")
+                print(f"  [WARN] Cannot read: {frames[frame_idx]}")
                 continue
 
             r_frame_data = None
@@ -600,7 +624,7 @@ def load_camera_from_hawor_slam(slam_npz_path, num_frames):
     return R_c2w, t_c2w
 
 
-def run_aitviewer_renderer(results, img_focal, frame_paths, save_dir,
+def run_aitviewer_renderer(results, img_focal, frames, save_dir,
                            cam_c2w=None, slam_npz=None, vis_mode='world',
                            interactive=False):
     """Visualize hands with camera poses using aitviewer."""
@@ -679,17 +703,17 @@ def run_aitviewer_renderer(results, img_focal, frame_paths, save_dir,
             'faces': get_mano_faces(),
         }
 
-    image_names = frame_paths[:T_frames]
+    images = frames[:T_frames]
     print(f"Visualizing frames 0 to {T_frames}")
 
     if vis_mode == 'world':
         run_vis2_on_video(
-            left_dict, right_dict, save_dir, img_focal, image_names,
+            left_dict, right_dict, save_dir, img_focal, images,
             R_c2w=R_c2w_sla_all, t_c2w=t_c2w_sla_all,
             interactive=interactive)
     elif vis_mode == 'cam':
         run_vis2_on_video_cam(
-            left_dict, right_dict, save_dir, img_focal, image_names,
+            left_dict, right_dict, save_dir, img_focal, images,
             R_w2c=R_w2c_sla_all, t_w2c=t_w2c_sla_all, interactive=interactive)
 
 
