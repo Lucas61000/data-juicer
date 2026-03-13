@@ -200,7 +200,7 @@ All the specific operators are listed below, each featured with several capabili
 | dialog_topic_detection_mapper | 💻CPU 🔗API 🟢Stable | Generates user's topic labels and analysis in a dialog. 在对话框中生成用户的主题标签和分析。 | [info](operators/mapper/dialog_topic_detection_mapper.md) | - |
 | download_file_mapper | 💻CPU 🟡Beta | Mapper to download URL files to local files or load them into memory. 映射器将URL文件下载到本地文件或将其加载到内存中。 | [info](operators/mapper/download_file_mapper.md) | - |
 | expand_macro_mapper | 🔤Text 💻CPU 🟢Stable | Expands macro definitions in the document body of LaTeX samples. 展开LaTeX示例文档主体中的宏定义。 | [info](operators/mapper/expand_macro_mapper.md) | - |
-| export_to_lerobot_mapper | 🔮Multimodal 💻CPU 🔴Alpha | Export processed video data to LeRobot v2.0 dataset format (LIBERO-style). 将处理后的视频数据导出为LeRobot v2.0数据集格式 (LIBERO风格)。 | - | - |
+| export_to_lerobot_mapper | 🔮Multimodal 💻CPU 🟡Beta | Export processed video data to LeRobot v2.0 dataset format (LIBERO-style). 将处理后的视频数据导出为LeRobot v2.0数据集格式 (LIBERO风格)。 | - | - |
 | extract_entity_attribute_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Extracts attributes for given entities from the text and stores them in the sample's metadata. 从文本中提取给定实体的属性，并将其存储在示例的元数据中。 | [info](operators/mapper/extract_entity_attribute_mapper.md) | - |
 | extract_entity_relation_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Extracts entities and relations from text to build a knowledge graph. 从文本中提取实体和关系以构建知识图谱。 | [info](operators/mapper/extract_entity_relation_mapper.md) | - |
 | extract_event_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Extracts events and relevant characters from the text. 从文本中提取事件和相关字符。 | [info](operators/mapper/extract_event_mapper.md) | - |
@@ -261,9 +261,9 @@ All the specific operators are listed below, each featured with several capabili
 | text_tagging_by_prompt_mapper | 🔤Text 🚀GPU 🌊vLLM 🧩HF 🟡Beta | Mapper to generate text tags using prompt with LLM. Mapper使用带有LLM的prompt生成文本标记。 | [info](operators/mapper/text_tagging_by_prompt_mapper.md) | - |
 | vggt_mapper | 🎬Video 🚀GPU 🟡Beta | Input a video of a single scene, and use VGGT to extract information including Camera Pose, Depth Maps, Point Maps, and 3D Point Tracks. 输入单个场景的视频，并使用VGGT提取包括相机姿态、深度图、点图和3D点轨迹的信息。 | [info](operators/mapper/vggt_mapper.md) | - |
 | video_camera_calibration_deepcalib_mapper | 🎬Video 🚀GPU 🟡Beta | Compute the camera intrinsics and field of view (FOV) for a static camera using DeepCalib. 使用DeepCalib计算静态摄像机的摄像机内部和视场 (FOV)。 | [info](operators/mapper/video_camera_calibration_deepcalib_mapper.md) | - |
-| video_camera_calibration_droidcalib_mapper | 🎬Video 🚀GPU 🔴Alpha | Extract camera intrinsics from videos using DroidCalib. 使用DroidCalib从视频中提取相机内部函数。 | - | - |
+| video_camera_calibration_droidcalib_mapper | 🎬Video 🚀GPU 🟡Beta | Extract camera intrinsics from videos using DroidCalib. 使用DroidCalib从视频中提取相机内部函数。 | - | - |
 | video_camera_calibration_moge_mapper | 🎬Video 🚀GPU 🟡Beta | Compute the camera intrinsics and field of view (FOV) for a static camera using Moge-2 (more accurate than DeepCalib). 使用Moge-2 (比DeepCalib更准确) 计算静态摄像机的摄像机内部函数和视场 (FOV)。 | [info](operators/mapper/video_camera_calibration_moge_mapper.md) | - |
-| video_camera_pose_megasam_mapper | 🎬Video 🚀GPU 🔴Alpha | Extract camera poses by leveraging MegaSaM and MoGe-2. 通过利用MegaSaM和MoGe-2提取相机姿势。 | - | - |
+| video_camera_pose_megasam_mapper | 🎬Video 🚀GPU 🟡Beta | Extract camera poses by leveraging MegaSaM and MoGe-2. 通过利用MegaSaM和MoGe-2提取相机姿势。 | - | - |
 | video_captioning_from_audio_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Mapper to caption a video according to its audio streams based on Qwen-Audio model. 映射器根据基于qwen-audio模型的音频流为视频添加字幕。 | [info](operators/mapper/video_captioning_from_audio_mapper.md) | - |
 | video_captioning_from_frames_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Generates video captions from sampled frames using an image-to-text model. 使用图像到文本模型从采样帧生成视频字幕。 | [info](operators/mapper/video_captioning_from_frames_mapper.md) | - |
 | video_captioning_from_summarizer_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Mapper to generate video captions by summarizing several kinds of generated texts (captions from video/audio/frames, tags from audio/frames, ...). 映射器通过总结几种生成的文本 (来自视频/音频/帧的字幕，来自音频/帧的标签，...) 来生成视频字幕。 | [info](operators/mapper/video_captioning_from_summarizer_mapper.md) | - |
@@ -273,7 +273,7 @@ All the specific operators are listed below, each featured with several capabili
 | video_extract_frames_mapper | 🔮Multimodal 💻CPU 🟢Stable | Mapper to extract frames from video files according to specified methods. 映射器根据指定的方法从视频文件中提取帧。 | [info](operators/mapper/video_extract_frames_mapper.md) | - |
 | video_face_blur_mapper | 🎬Video 💻CPU 🟢Stable | Mapper to blur faces detected in videos. 映射器模糊在视频中检测到的人脸。 | [info](operators/mapper/video_face_blur_mapper.md) | - |
 | video_ffmpeg_wrapped_mapper | 🎬Video 💻CPU 🟢Stable | Wraps FFmpeg video filters for processing video files in a dataset. 包装FFmpeg视频过滤器，用于处理数据集中的视频文件。 | [info](operators/mapper/video_ffmpeg_wrapped_mapper.md) | - |
-| video_hand_action_compute_mapper | 🎬Video 💻CPU 🔴Alpha | Compute 7-DoF actions and 8-dim states from hand reconstruction and camera pose results. 根据手重建和相机姿态结果计算7自由度动作和8-dim状态。 | - | - |
+| video_hand_action_compute_mapper | 🎬Video 💻CPU 🟡Beta | Compute 7-DoF actions and 8-dim states from hand reconstruction and camera pose results. 根据手重建和相机姿态结果计算7自由度动作和8-dim状态。 | - | - |
 | video_hand_reconstruction_hawor_mapper | 🎬Video 🚀GPU 🟡Beta | Use HaWoR and MoGe-2 for hand reconstruction. 使用HaWoR和MoGe-2进行手部重建。 | - | - |
 | video_hand_reconstruction_mapper | 🎬Video 🚀GPU 🟡Beta | Use the WiLoR model for hand localization and reconstruction. 使用WiLoR模型进行手部定位和重建。 | [info](operators/mapper/video_hand_reconstruction_mapper.md) | - |
 | video_object_segmenting_mapper | 🎬Video 🚀GPU 🧩HF 🟡Beta | Text-guided semantic segmentation of valid objects throughout the video (YOLOE + SAM2). 在整个视频中对有效对象进行文本引导的语义分割 (YOLOE SAM2)。 | [info](operators/mapper/video_object_segmenting_mapper.md) | - |
