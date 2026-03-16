@@ -186,6 +186,9 @@ requires = [
 ]
 build-backend = "hatchling.build"
 
+[tool.uv]
+constraint-dependencies = ["kaleido==0.2.1"]
+
 [tool.hatch.version]
 path = "data_juicer/__init__.py"
 
