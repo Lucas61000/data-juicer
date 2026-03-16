@@ -84,7 +84,7 @@ def gather_test_cases(test_dir, pattern, tag, mode='partial'):
     test_to_run = unittest.TestSuite()
     partial_test_files = get_partial_test_cases() if mode == 'partial' else None
     test_loader = TaggedTestLoader(tag, included_test_files=partial_test_files)
-    discover = test_loader.discover(test_dir, pattern=pattern, top_level_dir=None)
+    discover = test_loader.discover(test_dir, pattern=pattern, top_level_dir=file_dir)
     for suite_discovered in discover:
         print('suite_discovered', suite_discovered)
         for test_suite in suite_discovered:
