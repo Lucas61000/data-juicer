@@ -316,7 +316,8 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         if isinstance(raw_value, str) and raw_value.lower() == "auto":
             try:
                 num_gpus = int(ray.cluster_resources().get("GPU", 0))
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Could not get GPU resources from Ray cluster, defaulting to 0. Error: {e}")
                 num_gpus = 0
             if num_gpus > 1:
                 logger.info(
