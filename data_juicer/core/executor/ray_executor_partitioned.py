@@ -767,6 +767,10 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
 
         # Union results
         logger.info("Merging concurrently processed partitions...")
+        if not processed_partitions:
+            logger.warning("All partitions were empty or skipped. Returning an empty dataset.")
+            return RayDataset(ray.data.from_items([]), cfg=self.cfg)
+
         if len(processed_partitions) == 1:
             merged_dataset = processed_partitions[0]
         else:
