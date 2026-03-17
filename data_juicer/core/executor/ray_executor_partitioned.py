@@ -1191,16 +1191,10 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
 
         # Ensure enough blocks so split() doesn't produce empty partitions.
         # split() distributes by blocks — if there are fewer non-empty
-        # blocks than partitions, some partitions get 0 rows.  We only
-        # repartition UP (never down) to preserve block-level parallelism
-        # for GPU actors within each partition.
-        num_blocks = dataset.data.num_blocks()
-        if num_blocks < self.num_partitions:
-            logger.info(
-                f"Repartitioning dataset from {num_blocks} blocks to "
-                f"{self.num_partitions} blocks (too few blocks for {self.num_partitions} partitions)"
-            )
-            dataset.data = dataset.data.repartition(self.num_partitions)
+        # blocks than partitions, some partitions get 0 rows.
+        # Always repartition to num_partitions to avoid materializing the
+        # dataset just to check num_blocks() (which kills lazy evaluation).
+        dataset.data = dataset.data.repartition(self.num_partitions)
 
         logger.info(f"Splitting dataset into {self.num_partitions} partitions (deterministic mode)...")
         partitions = dataset.data.split(self.num_partitions)
