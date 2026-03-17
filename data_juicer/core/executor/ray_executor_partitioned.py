@@ -749,7 +749,7 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
 
         # Collect results
         processed_partitions = []
-        for i in range(len(partitions)):
+        for i in sorted(futures.keys()):
             result = futures[i]
             if isinstance(result, ray.ObjectRef):
                 try:
