@@ -608,7 +608,7 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         ckpt_op_names = getattr(self.ckpt_manager, "checkpoint_op_names", [])
         op_fusion_enabled = getattr(cfg, "op_fusion", False)
 
-        @ray.remote
+        @ray.remote(num_cpus=0)
         def _process_single_partition_task(
             partition_data,
             partition_id,
@@ -644,9 +644,9 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
             # ops default to task mode (model reloads per batch). Force
             # actor mode for GPU ops so the model loads once per actor.
             for op in task_ops:
-                op.num_proc = scope_op_concurrency(op, max_concurrent_partitions)
                 if getattr(op, "num_gpus", 0) and op.num_gpus > 0:
                     op.ray_execution_mode = "actor"
+                op.num_proc = scope_op_concurrency(op, max_concurrent_partitions)
 
             # Create local checkpoint manager
             ckpt_manager = RayCheckpointManager(
@@ -1189,16 +1189,16 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         # Check for existing partitioning info (resumption case)
         saved_info = self._load_partitioning_info()
 
-        # Repartition to exactly num_partitions blocks before splitting.
-        # split() distributes by blocks — if some input blocks are empty
-        # or the block count doesn't divide evenly, some partitions get
-        # 0 rows.  Repartitioning redistributes rows evenly without
-        # dropping any data (unlike split(equal=True) which truncates).
+        # Ensure enough blocks so split() doesn't produce empty partitions.
+        # split() distributes by blocks — if there are fewer non-empty
+        # blocks than partitions, some partitions get 0 rows.  We only
+        # repartition UP (never down) to preserve block-level parallelism
+        # for GPU actors within each partition.
         num_blocks = dataset.data.num_blocks()
-        if num_blocks != self.num_partitions:
+        if num_blocks < self.num_partitions:
             logger.info(
                 f"Repartitioning dataset from {num_blocks} blocks to "
-                f"{self.num_partitions} blocks for even splitting"
+                f"{self.num_partitions} blocks (too few blocks for {self.num_partitions} partitions)"
             )
             dataset.data = dataset.data.repartition(self.num_partitions)
 
