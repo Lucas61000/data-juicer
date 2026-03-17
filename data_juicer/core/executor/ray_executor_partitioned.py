@@ -708,9 +708,18 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
             partition_dataset.data = partition_dataset.data.materialize()
             return partition_dataset.data
 
-        # Submit tasks
+        # Submit tasks (skip empty partitions)
         futures = {}
         for i, partition in enumerate(partitions):
+            # Skip empty partitions to avoid wasting GPU resources
+            try:
+                row_count = partition.count()
+            except Exception:
+                row_count = -1  # can't determine, submit anyway
+            if row_count == 0:
+                logger.info(f"Partition {i}: empty (0 rows), skipping")
+                continue
+
             # Check if partition is fully checkpointed before submitting
             latest_ckpt = self.ckpt_manager.find_latest_checkpoint(i)
             if latest_ckpt and latest_ckpt[0] >= len(ops) - 1:
@@ -1180,7 +1189,19 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         # Check for existing partitioning info (resumption case)
         saved_info = self._load_partitioning_info()
 
-        # Split the dataset
+        # Repartition to exactly num_partitions blocks before splitting.
+        # split() distributes by blocks — if some input blocks are empty
+        # or the block count doesn't divide evenly, some partitions get
+        # 0 rows.  Repartitioning redistributes rows evenly without
+        # dropping any data (unlike split(equal=True) which truncates).
+        num_blocks = dataset.data.num_blocks()
+        if num_blocks != self.num_partitions:
+            logger.info(
+                f"Repartitioning dataset from {num_blocks} blocks to "
+                f"{self.num_partitions} blocks for even splitting"
+            )
+            dataset.data = dataset.data.repartition(self.num_partitions)
+
         logger.info(f"Splitting dataset into {self.num_partitions} partitions (deterministic mode)...")
         partitions = dataset.data.split(self.num_partitions)
         logger.info(f"Created {len(partitions)} partitions")
