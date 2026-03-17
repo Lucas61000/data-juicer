@@ -274,6 +274,13 @@
           main
         </a>
         
+        <a href="../../../../../v1.5.1/_modules/data_juicer/ops/mapper/video_camera_calibration_static_deepcalib_mapper.html"
+           class="dropdown-item "
+           role="menuitem"
+           >
+          v1.5.1
+        </a>
+        
         <a href="../../../../../v1.5.0/_modules/data_juicer/ops/mapper/video_camera_calibration_static_deepcalib_mapper.html"
            class="dropdown-item "
            role="menuitem"
@@ -505,6 +512,13 @@
           main
         </a>
         
+        <a href="../../../../../v1.5.1/_modules/data_juicer/ops/mapper/video_camera_calibration_static_deepcalib_mapper.html"
+           class="dropdown-item "
+           role="menuitem"
+           >
+          v1.5.1
+        </a>
+        
         <a href="../../../../../v1.5.0/_modules/data_juicer/ops/mapper/video_camera_calibration_static_deepcalib_mapper.html"
            class="dropdown-item "
            role="menuitem"
@@ -646,7 +660,7 @@
 
 <span class="n">OP_NAME</span> <span class="o">=</span> <span class="s2">&quot;video_camera_calibration_static_deepcalib_mapper&quot;</span>
 
-<span class="n">cv2</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;cv2&quot;</span><span class="p">,</span> <span class="s2">&quot;opencv-python&quot;</span><span class="p">)</span>
+<span class="n">cv2</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;cv2&quot;</span><span class="p">,</span> <span class="s2">&quot;opencv-contrib-python&quot;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="VideoCameraCalibrationStaticDeepcalibMapper">
@@ -700,7 +714,7 @@
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="n">LazyLoader</span><span class="o">.</span><span class="n">check_packages</span><span class="p">([</span><span class="s2">&quot;tensorflow&quot;</span><span class="p">])</span>
+        <span class="n">LazyLoader</span><span class="o">.</span><span class="n">check_packages</span><span class="p">([</span><span class="s2">&quot;tensorflow==2.20.0&quot;</span><span class="p">])</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">keras.applications.imagenet_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">preprocess_input</span>
 
