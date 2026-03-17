@@ -23,6 +23,9 @@ VideoCameraPoseMegaSaMMapper      # MegaSaM camera pose estimation (⚠️ requi
 VideoHandActionComputeMapper      # Compute 7-DoF actions + 8-dim states
   │
   ▼
+VideoActionCaptioningMapper       # action instruction captioning
+  │
+  ▼
 ExportToLeRobotMapper            # Export to LeRobot v2.0 dataset
 ```
 
