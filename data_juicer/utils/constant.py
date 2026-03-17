@@ -91,7 +91,7 @@ class MetaKeys(object):
     # # Camera Calibration Info (for Moge-2)
     camera_calibration_moge_tags = "camera_calibration_moge_tags"
     # # Video Undistortion Info
-    video_undistortion_tags = "video_undistortion_tags"
+    undistorted_video = "undistorted_video"
     # # Camera Pose Info
     video_camera_pose_tags = "video_camera_pose_tags"
     # # Camera Calibration Info (for DroidCalib)

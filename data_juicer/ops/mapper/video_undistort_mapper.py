@@ -37,7 +37,7 @@ class VideoUndistortMapper(Mapper):
     def __init__(
         self,
         output_video_dir: str = None,
-        tag_field_name: str = MetaKeys.video_undistortion_tags,
+        undistorted_video_field: str = MetaKeys.undistorted_video,
         camera_calibration_field: str = "camera_calibration",
         batch_size_each_video: int = 1000,
         crf: int = 22,
@@ -48,8 +48,8 @@ class VideoUndistortMapper(Mapper):
         Initialization method.
 
         :param output_video_dir: Output directory to save undistorted videos.
-        :param tag_field_name: The field name to store the tags. It's
-            "video_undistortion_tags" in default.
+        :param undistorted_video_field: The field name to store the tags. It's
+            "undistorted_video" in default.
         :param camera_calibration_field: The field name where the camera calibration info is stored.
         :param batch_size_each_video: Number of frames to process and save per
             temporary TS file batch.
@@ -77,7 +77,7 @@ class VideoUndistortMapper(Mapper):
         assert self.output_video_dir is not None, "output_video_dir must be specified to save the undistorted videos."
         os.makedirs(self.output_video_dir, exist_ok=True)
 
-        self.tag_field_name = tag_field_name
+        self.undistorted_video_field = undistorted_video_field
         self.batch_size_each_video = batch_size_each_video
         self.crf = crf
         self.camera_calibration_field = camera_calibration_field
@@ -131,7 +131,7 @@ class VideoUndistortMapper(Mapper):
 
     def process_single(self, sample, context=False):
         # check if it's generated already
-        if self.tag_field_name in sample[Fields.meta]:
+        if self.undistorted_video_field in sample:
             return sample
 
         # there is no videos in this sample
@@ -145,7 +145,7 @@ class VideoUndistortMapper(Mapper):
         rotation_matrix_field = CameraCalibrationKeys.rectify_R
         new_intrinsics_field = CameraCalibrationKeys.new_intrinsics
 
-        sample[Fields.meta][self.tag_field_name] = []
+        sample[self.undistorted_video_field] = []
 
         for video_idx in range(len(sample[self.video_key])):
             cur_video_calibration = sample[Fields.meta][camera_calibration_field][video_idx]
@@ -266,6 +266,7 @@ class VideoUndistortMapper(Mapper):
             # Merge all temporary TS chunks into the final MP4 file
             self.concatenate_ts_files(self.output_video_dir, video_name, batch_number + 1)
             out_video = os.path.join(self.output_video_dir, f"{video_name}.mp4")
-            sample[Fields.meta][self.tag_field_name].append({self.video_key: out_video})
+
+            sample[self.undistorted_video_field].append(out_video)
 
         return sample

@@ -1,30 +1,20 @@
 import os
-import sys
-import copy
-import numpy as np
 import json
-import pickle
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
 
 from ray.data import ActorPoolStrategy
 
-from data_juicer.core.data.ray_dataset import filter_batch, RayDataset
-from data_juicer.utils.constant import Fields, MetaKeys, StatsKeys
-from data_juicer.ops.filter import (
-    VideoDurationFilter,
-    VideoMotionScoreFilter,
-    )
+from data_juicer.utils.constant import Fields, MetaKeys
 from data_juicer.ops.mapper import (
-    VideoCameraCalibrationDeepcalibMapper,
     VideoCameraCalibrationMogeMapper,
-    VideoUndistortMapper,
     VideoHandReconstructionHaworMapper,
     VideoCameraPoseMegaSaMMapper,
-    VideoSplitByDurationMapper,
-    VideoCameraCalibrationDroidCalibMapper,
     VideoExtractFramesMapper,
     VideoHandActionComputeMapper,
-    ExportToLeRobotMapper,
-    VideoCaptioningFromVLMMapper,)
+    ExportToLeRobotMapper)
+
+from custom_ops.video_action_captioning_mapper import VideoActionCaptioningMapper
 
 
 def save_to_jsonl(samples, output_file):
@@ -98,6 +88,16 @@ if __name__ == '__main__':
         batch_mode=True,
         skip_op_error=False,
     )
+    caption_op = VideoActionCaptioningMapper(
+        api_or_hf_model='qwen-vl-max',
+        is_api_model=True,
+        hand_type='right',
+        frame_field=MetaKeys.video_frames,
+        tag_field_name="hand_action_caption",
+        batch_mode=True,
+        skip_op_error=False,
+    )
+
     export_op = ExportToLeRobotMapper(
         output_dir=LEROBOT_OUTPUT_DIR,
         hand_action_field=MetaKeys.hand_action_tags,
@@ -163,6 +163,12 @@ if __name__ == '__main__':
             runtime_env={"conda": "mega-sam"},
         ).map_batches(
             action_op,
+            batch_size=1,
+            num_cpus=2,
+            batch_format="pyarrow",
+            runtime_env=None,
+        ).map_batches(
+            caption_op,
             batch_size=1,
             num_cpus=2,
             batch_format="pyarrow",

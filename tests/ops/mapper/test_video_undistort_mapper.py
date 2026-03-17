@@ -49,7 +49,7 @@ class VideoUndistortMapperTest(DataJuicerTestCaseBase):
         res_list = dataset.to_list()
 
         for sample in res_list:
-            tag_list = sample[Fields.meta][MetaKeys.video_undistortion_tags]
+            tag_list = sample[MetaKeys.undistorted_video]
             self.assertIsInstance(tag_list, list)
             self.assertGreater(len(tag_list), 0)
 

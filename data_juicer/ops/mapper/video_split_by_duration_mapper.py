@@ -106,6 +106,8 @@ class VideoSplitByDurationMapper(Mapper):
 
     def split_videos_by_duration(self, video_key, container):
         video_duration = container.metadata.duration
+        if video_duration <= self.split_duration:
+            return [video_key]
         timestamps = np.arange(0, video_duration, self.split_duration).tolist()
         count = 0
         split_video_keys = []
