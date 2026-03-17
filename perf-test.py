@@ -277,6 +277,14 @@ def run_simple_benchmark(
 
     logger.info(f"Using executor type: {executor_type}")
 
+    # Detect available GPUs from Ray cluster
+    import ray as _ray
+
+    num_gpus = int(_ray.cluster_resources().get("GPU", 0))
+    if num_gpus <= 0:
+        raise RuntimeError("No GPUs available in Ray cluster")
+    logger.info(f"Detected {num_gpus} GPUs in Ray cluster")
+
     # Base config
     cfg_dict = {
         "project_name": "simple-benchmark",
@@ -302,7 +310,7 @@ def run_simple_benchmark(
                     "skip_op_error": False,  # fail loudly during debugging
                     "batch_mode": True,
                     "num_gpus": 1,
-                    "num_proc": 8,
+                    "num_proc": num_gpus,
                 },
             },
         ],

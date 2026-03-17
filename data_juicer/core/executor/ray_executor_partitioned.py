@@ -639,9 +639,14 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
             if op_fusion_enabled:
                 task_ops = fuse_operators(task_ops)
 
-            # Scope concurrency for each op
+            # Scope concurrency and fix actor mode for each op.
+            # The remote task has no GPU, so use_cuda() returns False and
+            # ops default to task mode (model reloads per batch). Force
+            # actor mode for GPU ops so the model loads once per actor.
             for op in task_ops:
                 op.num_proc = scope_op_concurrency(op, max_concurrent_partitions)
+                if getattr(op, "num_gpus", 0) and op.num_gpus > 0:
+                    op.ray_execution_mode = "actor"
 
             # Create local checkpoint manager
             ckpt_manager = RayCheckpointManager(
