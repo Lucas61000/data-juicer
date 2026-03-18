@@ -6,7 +6,7 @@ import uuid
 import numpy as np
 from loguru import logger
 
-from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.constant import Fields
 from data_juicer.utils.lazy_loader import LazyLoader
 
 from ..base_op import OPERATORS, Mapper
@@ -49,7 +49,6 @@ class ExportToLeRobotMapper(Mapper):
         self,
         output_dir: str = "./lerobot_output",
         hand_action_field: str = "hand_action_tags",
-        frame_field: str = MetaKeys.video_frames,
         fps: int = 10,
         robot_type: str = "egodex_hand",
         chunks_size: int = DEFAULT_CHUNKS_SIZE,
@@ -61,8 +60,6 @@ class ExportToLeRobotMapper(Mapper):
 
         :param output_dir: Root directory for the LeRobot dataset output.
         :param hand_action_field: Meta field with action/state data.
-        :param frame_field: Meta field with extracted frame paths.
-        :param video_key: Sample key for video clip paths.
         :param fps: Frames per second for the dataset.
         :param robot_type: Robot type identifier for info.json.
         :param chunks_size: Max episodes per chunk directory (default 1000).
@@ -70,7 +67,6 @@ class ExportToLeRobotMapper(Mapper):
         super().__init__(*args, **kwargs)
         self.output_dir = output_dir
         self.hand_action_field = hand_action_field
-        self.frame_field = frame_field
         self.fps = fps
         self.robot_type = robot_type
         self.chunks_size = chunks_size
@@ -124,19 +120,34 @@ class ExportToLeRobotMapper(Mapper):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(modality, f, indent=4)
 
-    def _stage_video(self, video_path, ep_uuid):
-        """Copy video to staging with UUID name."""
-        ext = os.path.splitext(video_path)[1] or ".mp4"
-        dst = os.path.join(self.staging_video_dir, f"{ep_uuid}{ext}")
-        if not os.path.exists(dst):
-            shutil.copy2(video_path, dst)
+    def _stage_video(self, video_source, ep_uuid):
+        """Copy or write video to staging with UUID name.
+
+        :param video_source: Video file path (str) or video bytes (bytes).
+        :param ep_uuid: Unique episode identifier.
+        """
+        if isinstance(video_source, bytes):
+            dst = os.path.join(self.staging_video_dir, f"{ep_uuid}.mp4")
+            if not os.path.exists(dst):
+                with open(dst, "wb") as f:
+                    f.write(video_source)
+        else:
+            ext = os.path.splitext(video_source)[1] or ".mp4"
+            dst = os.path.join(self.staging_video_dir, f"{ep_uuid}{ext}")
+            if not os.path.exists(dst):
+                shutil.copy2(video_source, dst)
         return dst
 
-    def _stage_parquet(self, states, actions, ep_uuid):
+    def _stage_parquet(self, states, actions, ep_uuid, valid_frame_ids=None):
         """Write parquet to staging with UUID name.
 
         episode_index, index, task_index are placeholders — they will
         be rewritten by finalize_dataset().
+
+        :param valid_frame_ids: Original video frame indices corresponding
+            to each state/action row. Used as frame_index so that LeRobot
+            can align parquet rows with video frames. Falls back to
+            sequential 0..T-1 when not provided.
         """
         T = len(states)
         states_arr = np.array(states, dtype=np.float32)
@@ -144,12 +155,13 @@ class ExportToLeRobotMapper(Mapper):
 
         rows = []
         for t in range(T):
+            frame_id = valid_frame_ids[t] if valid_frame_ids else t
             rows.append(
                 {
                     "observation.state": states_arr[t].tolist(),
                     "action": actions_arr[t].tolist(),
-                    "timestamp": float(t) / self.fps,
-                    "frame_index": t,
+                    "timestamp": float(frame_id) / self.fps,
+                    "frame_index": frame_id,
                     "episode_index": 0,  # placeholder
                     "index": t,  # placeholder
                     "task_index": 0,  # placeholder
@@ -170,11 +182,15 @@ class ExportToLeRobotMapper(Mapper):
         Each actor writes its own file — no cross-process contention.
         """
         meta_path = os.path.join(self.staging_meta_dir, f"{ep_uuid}.jsonl")
+        if video_path and isinstance(video_path, str):
+            video_ext = os.path.splitext(video_path)[1] or ".mp4"
+        else:
+            video_ext = ".mp4"
         entry = {
             "uuid": ep_uuid,
             "length": num_frames,
             "task": task_desc,
-            "video_ext": os.path.splitext(video_path)[1] if video_path else ".mp4",
+            "video_ext": video_ext,
         }
         with open(meta_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -193,8 +209,8 @@ class ExportToLeRobotMapper(Mapper):
         if not task_desc:
             task_desc = "manipulate object"
 
-        # Get video paths
-        video_paths = sample.get(self.video_key, [])
+        # Get video sources (paths or bytes)
+        video_sources = sample.get(self.video_key, [])
 
         # Track export results
         exported_episodes = []
@@ -214,6 +230,7 @@ class ExportToLeRobotMapper(Mapper):
 
             states = action_data.get("states", [])
             actions = action_data.get("actions", [])
+            valid_frame_ids = action_data.get("valid_frame_ids", None)
 
             if len(states) < 2:
                 continue
@@ -221,13 +238,13 @@ class ExportToLeRobotMapper(Mapper):
             # Generate a unique ID for this episode — no coordination
             ep_uuid = uuid.uuid4().hex
 
-            # Write parquet to staging
-            parquet_path, num_frames = self._stage_parquet(states, actions, ep_uuid)
+            # Write parquet to staging (use valid_frame_ids as frame_index)
+            parquet_path, num_frames = self._stage_parquet(states, actions, ep_uuid, valid_frame_ids)
 
-            # Copy video to staging
+            # Copy/write video to staging (supports both path and bytes)
             video_dst = None
-            if video_idx < len(video_paths):
-                video_dst = self._stage_video(video_paths[video_idx], ep_uuid)
+            if video_idx < len(video_sources):
+                video_dst = self._stage_video(video_sources[video_idx], ep_uuid)
 
             # Write episode metadata fragment
             self._stage_episode_meta(ep_uuid, num_frames, task_desc, video_dst)
