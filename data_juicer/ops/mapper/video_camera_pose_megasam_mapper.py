@@ -170,12 +170,16 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             import lietorch  # noqa F401
         except ImportError:
             subprocess.run(["pip", "uninstall", "droid_backends", "-y"])
-            subprocess.run(["pip", "install", "."], cwd=os.path.join(megasam_repo_path, "base"))
+            subprocess.run(["python", "setup.py", "install"], cwd=os.path.join(megasam_repo_path, "base"))
 
-    def image_stream(self, frames_path, depth_list, intrinsics_list):
+    def image_stream(self, frames, depth_list, intrinsics_list):
 
-        for t, (image_path, depth, intrinsics) in enumerate(zip(frames_path, depth_list, intrinsics_list)):
-            image = cv2.imread(image_path)
+        for t, (image, depth, intrinsics) in enumerate(zip(frames, depth_list, intrinsics_list)):
+            if isinstance(image, bytes):
+                image_array = np.frombuffer(image, dtype=np.uint8)
+                image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+            else:
+                image = cv2.imread(image)
             h0, w0, _ = image.shape
             h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
             w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))

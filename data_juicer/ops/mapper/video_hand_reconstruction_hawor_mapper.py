@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import tempfile
 
 import numpy as np
 
@@ -17,7 +18,7 @@ from ..op_fusion import LOADED_VIDEOS
 
 OP_NAME = "video_hand_reconstruction_hawor_mapper"
 
-cv2 = LazyLoader("cv2", "opencv-contrib-python")
+cv2 = LazyLoader("cv2", "opencv-python")
 ultralytics = LazyLoader("ultralytics")
 torch = LazyLoader("torch")
 
@@ -269,7 +270,21 @@ class VideoHandReconstructionHaworMapper(Mapper):
                 else:
                     do_flip = True
 
-                results = model.inference(img_ck, boxes_ck, img_focal=img_focal, img_center=img_center, do_flip=do_flip)
+                if isinstance(img_ck[0], bytes):
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        file_paths = []
+                        for i, img_bytes in enumerate(img_ck):
+                            file_path = os.path.join(temp_dir, f"image_{i}.jpg")
+                            with open(file_path, "wb") as f:
+                                f.write(img_bytes)
+                            file_paths.append(file_path)
+                        results = model.inference(
+                            file_paths, boxes_ck, img_focal=img_focal, img_center=img_center, do_flip=do_flip
+                        )
+                else:
+                    results = model.inference(
+                        img_ck, boxes_ck, img_focal=img_focal, img_center=img_center, do_flip=do_flip
+                    )
 
                 data_out = {
                     "init_root_orient": results["pred_rotmat"][None, :, 0],  # (B, T, 3, 3)

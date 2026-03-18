@@ -4,6 +4,7 @@ import numpy as np
 
 from data_juicer.core.data import NestedDataset as Dataset
 from data_juicer.ops.mapper.video_camera_calibration_deepcalib_mapper import VideoCameraCalibrationDeepcalibMapper
+from data_juicer.ops.mapper.video_extract_frames_mapper import VideoExtractFramesMapper
 from data_juicer.utils.mm_utils import SpecialTokens
 from data_juicer.utils.constant import Fields, MetaKeys, CameraCalibrationKeys
 from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
@@ -26,43 +27,54 @@ class VideoCameraCalibrationDeepcalibMapperTest(DataJuicerTestCaseBase):
             'videos': [self.vid12_path]
         }]
 
-        tgt_list = [{"frame_names_shape": [49],
-            "intrinsics_list_shape": [49, 3, 3],
-            "xi_list_shape": [49],
-            "hfov_list_shape": [49],
-            "vfov_list_shape": [49]},
-            {"frame_names_shape": [22],
-            "intrinsics_list_shape": [22, 3, 3],
-            "xi_list_shape": [22],
-            "hfov_list_shape": [22],
-            "vfov_list_shape": [22]},
-            {"frame_names_shape": [3],
-            "intrinsics_list_shape": [3, 3, 3],
-            "xi_list_shape": [3],
-            "hfov_list_shape": [3],
-            "vfov_list_shape": [3]}]
+        tgt_list = [{"frame_names_shape": [6],
+            "intrinsics_list_shape": [6, 3, 3],
+            "xi_list_shape": [6],
+            "hfov_list_shape": [6],
+            "vfov_list_shape": [6]},
+            {"frame_names_shape": [5],
+            "intrinsics_list_shape": [5, 3, 3],
+            "xi_list_shape": [5],
+            "hfov_list_shape": [5],
+            "vfov_list_shape": [5]},
+            {"frame_names_shape": [1],
+            "intrinsics_list_shape": [1, 3, 3],
+            "xi_list_shape": [1],
+            "hfov_list_shape": [1],
+            "vfov_list_shape": [1]}]
         
-        op = VideoCameraCalibrationDeepcalibMapper(
-            model_path="weights_10_0.02.h5",
-            frame_num=1,
-            duration=1,
-            frame_dir=DATA_JUICER_ASSETS_CACHE,
-            if_output_info=True,
-            output_info_dir=DATA_JUICER_ASSETS_CACHE,
+        # Step 1: Extract frames from videos
+        extract_op = VideoExtractFramesMapper(
+            frame_sampling_method='all_keyframes',
+            output_format='bytes',
+            legacy_split_by_text_token=False,
         )
         dataset = Dataset.from_list(ds_list)
         if Fields.meta not in dataset.features:
             dataset = dataset.add_column(name=Fields.meta,
                                          column=[{}] * dataset.num_rows)
-        dataset = dataset.map(op.process, num_proc=num_proc, with_rank=True)
+        dataset = dataset.map(extract_op.process, num_proc=num_proc, batched=True, batch_size=1)
+
+        # Step 2: Run camera calibration
+        op = VideoCameraCalibrationDeepcalibMapper(
+            model_path="weights_10_0.02.h5",
+        )
+        dataset = dataset.map(op.process, num_proc=num_proc)
         res_list = dataset.to_list()
 
         for sample, target in zip(res_list, tgt_list):
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][CameraCalibrationKeys.intrinsics]).shape), target["intrinsics_list_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][CameraCalibrationKeys.xi]).shape), target["xi_list_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][CameraCalibrationKeys.hfov]).shape), target["hfov_list_shape"])
-            self.assertEqual(list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][CameraCalibrationKeys.vfov]).shape), target["vfov_list_shape"])
-
+            self.assertEqual(
+                list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][0][CameraCalibrationKeys.intrinsics]).shape),
+                target["intrinsics_list_shape"])
+            self.assertEqual(
+                list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][0][CameraCalibrationKeys.xi]).shape),
+                target["xi_list_shape"])
+            self.assertEqual(
+                list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][0][CameraCalibrationKeys.hfov]).shape),
+                target["hfov_list_shape"])
+            self.assertEqual(
+                list(np.array(sample[Fields.meta][MetaKeys.camera_calibration_deepcalib_tags][0][CameraCalibrationKeys.vfov]).shape),
+                target["vfov_list_shape"])
 
     def test(self):
         self._run_and_assert(num_proc=1)

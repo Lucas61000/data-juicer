@@ -3,11 +3,9 @@ import unittest
 import numpy as np
 
 from data_juicer.core.data import NestedDataset as Dataset
-from data_juicer.ops.mapper.video_hand_reconstruction_hawor_mapper import VideoHandReconstructionHaworMapper
-from data_juicer.utils.mm_utils import SpecialTokens
+from data_juicer.ops.mapper import VideoExtractFramesMapper, VideoHandReconstructionHaworMapper
 from data_juicer.utils.constant import Fields, MetaKeys, CameraCalibrationKeys
 from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
-from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
 
 
 @unittest.skip('Users need to download MANO_RIGHT.pkl and MANO_LEFT.pkl.')
@@ -22,42 +20,49 @@ class VideoHandReconstructionHaworMapperTest(DataJuicerTestCaseBase):
         ds_list = [{
             'videos': [self.vid3_path],
             Fields.meta: {
-                MetaKeys.video_frames: [
-                    [self.vid3_path]  # placeholder; real test needs extracted frames
-                ],
-                'camera_calibration': [{
-                    CameraCalibrationKeys.hfov: [0.76] * 49,
-                }],
+                'camera_calibration': [{CameraCalibrationKeys.hfov: [0.76] * 6,}],
             }
         }, {
             'videos': [self.vid4_path],
             Fields.meta: {
-                MetaKeys.video_frames: [
-                    [self.vid4_path]
-                ],
                 'camera_calibration': [{
-                    CameraCalibrationKeys.hfov: [0.66] * 22,
+                    CameraCalibrationKeys.hfov: [0.66] * 5,
                 }],
             }
         }]
-        return ds_list
 
-    def _run_and_assert(self, num_proc):
+        extract_op = VideoExtractFramesMapper(
+            frame_sampling_method='all_keyframes',
+            output_format='bytes',
+            legacy_split_by_text_token=False,
+        )
+        dataset = Dataset.from_list(ds_list)
+        dataset = dataset.map(extract_op.process, batched=True, batch_size=1)
+
+        return dataset.to_list()
+
+    def test_default(self):
         ds_list = self._build_ds_list()
 
         op = VideoHandReconstructionHaworMapper(
             hawor_model_path="hawor.ckpt",
             hawor_config_path="model_config.yaml",
             hawor_detector_path="detector.pt",
-            mano_right_path="path_to_mano_right_pkl",
-            mano_left_path="path_to_mano_left_pkl",
+            tag_field_name=MetaKeys.hand_reconstruction_hawor_tags,
+            mano_right_path='MANO_RIGHT.pkl',
+            mano_left_path='MANO_LEFT.pkl',
             frame_field=MetaKeys.video_frames,
             camera_calibration_field='camera_calibration',
             thresh=0.2,
         )
-        dataset = Dataset.from_list(ds_list)
-        dataset = dataset.map(op.process, num_proc=num_proc, with_rank=True)
-        res_list = dataset.to_list()
+
+        # Process each sample directly to avoid Arrow type inference
+        # conflicts when hand detection results vary across samples
+        # (empty list [] inferred as null vs list<list<double>>).
+        res_list = []
+        for sample in ds_list:
+            result = op.process_single(sample)
+            res_list.append(result)
 
         for sample in res_list:
             tag = sample[Fields.meta][MetaKeys.hand_reconstruction_hawor_tags]
@@ -98,12 +103,6 @@ class VideoHandReconstructionHaworMapperTest(DataJuicerTestCaseBase):
                         self.assertEqual(
                             np.array(hand['transl']).shape,
                             (n_frames, 3))
-
-    def test(self):
-        self._run_and_assert(num_proc=1)
-
-    def test_mul_proc(self):
-        self._run_and_assert(num_proc=2)
 
 
 if __name__ == '__main__':
