@@ -8,7 +8,7 @@ from pydantic import PositiveInt
 
 from data_juicer.utils.constant import Fields, MetaKeys
 from data_juicer.utils.lazy_loader import LazyLoader
-from data_juicer.utils.mm_utils import image_path_to_base64
+from data_juicer.utils.mm_utils import image_path_to_base64, image_byte_to_base64
 from data_juicer.utils.model_utils import (
     get_model,
     prepare_model,
@@ -148,7 +148,7 @@ class VideoActionCaptioningMapper(Mapper):
             )
             self.sampling_params = vllm.SamplingParams(**sampling_params)
 
-    def _build_messages(self, frame_paths, hand_type, opposite_hand_type):
+    def _build_messages(self, frames, hand_type, opposite_hand_type):
         """Build the chat messages with frames embedded as images."""
         user_text = self.user_prompt_template.format(
             hand_type=hand_type,
@@ -157,7 +157,8 @@ class VideoActionCaptioningMapper(Mapper):
 
         # Build multimodal content: prompt text + Frame N: [image] ...
         user_content = [{'type': 'text', 'text': user_text}]
-        for i, frame_path in enumerate(frame_paths):
+        for i, frame in enumerate(frames):
+            image_data = image_byte_to_base64(frame) if isinstance(frame, bytes) else image_path_to_base64(frame)
             user_content.append({
                 'type': 'text',
                 'text': f'Frame {i + 1}:',
@@ -166,7 +167,7 @@ class VideoActionCaptioningMapper(Mapper):
                 'type': 'image_url',
                 'image_url': {
                     'url': f'data:image/jpeg;base64,'
-                           f'{image_path_to_base64(frame_path)}',
+                           f'{image_data}',
                 },
             })
         user_content.append({
@@ -243,10 +244,10 @@ class VideoActionCaptioningMapper(Mapper):
             'action': result.get('action', ''),
         }
 
-    def _caption_single_hand(self, frame_paths, hand_type, rank=None):
+    def _caption_single_hand(self, frames, hand_type, rank=None):
         """Run captioning for a single hand and return parsed result."""
         opposite = 'left' if hand_type == 'right' else 'right'
-        messages = self._build_messages(frame_paths, hand_type, opposite)
+        messages = self._build_messages(frames, hand_type, opposite)
         output = self._call_model(messages, rank=rank)
         return self._parse_output(output)
 
@@ -267,20 +268,20 @@ class VideoActionCaptioningMapper(Mapper):
 
         # frame_data is a list of lists (one per video), flatten if needed
         if isinstance(frame_data[0], list):
-            frame_paths = frame_data[0]
+            frames = frame_data[0]
         else:
-            frame_paths = frame_data
+            frames = frame_data
 
-        if not frame_paths:
+        if not frames:
             sample[Fields.meta][self.tag_field_name] = {
                 'think': '', 'action': 'N/A'}
             return sample
 
         if self.hand_type == 'both':
             right_result = self._caption_single_hand(
-                frame_paths, 'right', rank=rank)
+                frames, 'right', rank=rank)
             left_result = self._caption_single_hand(
-                frame_paths, 'left', rank=rank)
+                frames, 'left', rank=rank)
 
             sample[Fields.meta][self.tag_field_name] = {
                 'right': right_result,
@@ -298,7 +299,7 @@ class VideoActionCaptioningMapper(Mapper):
                 sample[self.text_key] = '; '.join(actions)
         else:
             result = self._caption_single_hand(
-                frame_paths, self.hand_type, rank=rank)
+                frames, self.hand_type, rank=rank)
             sample[Fields.meta][self.tag_field_name] = result
             action = result.get('action', '')
             if action and action != 'N/A':
