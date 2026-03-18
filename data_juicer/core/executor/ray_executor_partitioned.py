@@ -1194,13 +1194,12 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         # Check for existing partitioning info (resumption case)
         saved_info = self._load_partitioning_info()
 
-        # Ensure enough blocks so split() doesn't produce empty partitions.
-        # split() distributes by blocks — if there are fewer non-empty
-        # blocks than partitions, some partitions get 0 rows.
-        # Always repartition to num_partitions to avoid materializing the
-        # dataset just to check num_blocks() (which kills lazy evaluation).
-        dataset.data = dataset.data.repartition(self.num_partitions)
-
+        # Split using the dataset's natural block structure.  split()
+        # distributes existing blocks round-robin, so partitions inherit
+        # multiple blocks and Ray Data's streaming executor can pipeline
+        # stages within each partition.  If there are fewer blocks than
+        # partitions, some partitions will be empty — that's handled
+        # downstream (empty partitions are skipped).
         logger.info(f"Splitting dataset into {self.num_partitions} partitions (deterministic mode)...")
         partitions = dataset.data.split(self.num_partitions)
         logger.info(f"Created {len(partitions)} partitions")
