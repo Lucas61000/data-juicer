@@ -1194,18 +1194,14 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         # Check for existing partitioning info (resumption case)
         saved_info = self._load_partitioning_info()
 
-        # Repartition to num_partitions * blocks_per_partition so that
-        # after split() each partition has multiple blocks.  This enables
-        # Ray Data's streaming executor to pipeline stages (e.g. overlap
-        # process_batch_arrow with VideoAestheticsFilter across blocks).
-        # A single block per partition forces strictly sequential stages.
-        blocks_per_partition = 4
-        total_blocks = self.num_partitions * blocks_per_partition
-        logger.info(
-            f"Repartitioning to {total_blocks} blocks " f"({blocks_per_partition} blocks/partition) for streaming..."
-        )
-        dataset.data = dataset.data.repartition(total_blocks)
-
+        # Split using the dataset's natural block structure.  split()
+        # distributes existing blocks round-robin, so partitions inherit
+        # multiple blocks and Ray Data's streaming executor can pipeline
+        # stages within each partition.  Avoid repartition() here — it
+        # adds a costly shuffle and may reduce block count (e.g. 96 source
+        # blocks repartitioned to 32 loses parallelism).  If there are
+        # fewer blocks than partitions, some partitions will be empty —
+        # that's handled downstream (empty partitions are skipped).
         logger.info(f"Splitting dataset into {self.num_partitions} partitions (deterministic mode)...")
         partitions = dataset.data.split(self.num_partitions)
         logger.info(f"Created {len(partitions)} partitions")
