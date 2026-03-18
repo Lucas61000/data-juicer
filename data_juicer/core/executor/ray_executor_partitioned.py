@@ -1194,12 +1194,18 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
         # Check for existing partitioning info (resumption case)
         saved_info = self._load_partitioning_info()
 
-        # Split using the dataset's natural block structure.  split()
-        # distributes existing blocks round-robin, so partitions inherit
-        # multiple blocks and Ray Data's streaming executor can pipeline
-        # stages within each partition.  If there are fewer blocks than
-        # partitions, some partitions will be empty — that's handled
-        # downstream (empty partitions are skipped).
+        # Repartition to num_partitions * blocks_per_partition so that
+        # after split() each partition has multiple blocks.  This enables
+        # Ray Data's streaming executor to pipeline stages (e.g. overlap
+        # process_batch_arrow with VideoAestheticsFilter across blocks).
+        # A single block per partition forces strictly sequential stages.
+        blocks_per_partition = 4
+        total_blocks = self.num_partitions * blocks_per_partition
+        logger.info(
+            f"Repartitioning to {total_blocks} blocks " f"({blocks_per_partition} blocks/partition) for streaming..."
+        )
+        dataset.data = dataset.data.repartition(total_blocks)
+
         logger.info(f"Splitting dataset into {self.num_partitions} partitions (deterministic mode)...")
         partitions = dataset.data.split(self.num_partitions)
         logger.info(f"Created {len(partitions)} partitions")
@@ -1219,24 +1225,16 @@ class PartitionedRayExecutor(ExecutorBase, DAGExecutionMixin, EventLoggingMixin)
                 self._clear_invalid_checkpoints()
                 saved_info = None
 
-        # Collect metadata for new partitions
-        logger.info("Collecting partition metadata for checkpoint validation...")
-        total_rows = sum(p.count() for p in partitions)
-        partition_metadata = []
-
-        for i, partition in enumerate(partitions):
-            meta = self._collect_partition_metadata(partition, i)
-            partition_metadata.append(meta)
-            logger.debug(f"Partition {i}: {meta.row_count} rows, hash={meta.first_row_hash[:8]}...")
-
+        # On first run, skip expensive metadata collection (count(), take())
+        # which triggers redundant pipeline executions on lazy datasets.
+        # Save only the partition count; full metadata is not needed until
+        # resume validation.
         partitioning_info = PartitioningInfo(
             num_partitions=self.num_partitions,
-            total_rows=total_rows,
-            partitions=partition_metadata,
+            total_rows=-1,  # unknown until processing completes
+            partitions=[],
             deterministic=True,
         )
-
-        # Save partitioning info
         self._save_partitioning_info(partitioning_info)
 
         return partitions, partitioning_info
