@@ -1,13 +1,15 @@
 # flake8: noqa: E501
 
 import os
+import shutil
+import tempfile
 import unittest
 
 from data_juicer.core.data import NestedDataset as Dataset
+from data_juicer.ops.base_op import Fields
 from data_juicer.ops.mapper.video_split_by_duration_mapper import \
     VideoSplitByDurationMapper
-from data_juicer.utils.file_utils import add_suffix_to_filename
-from data_juicer.utils.mm_utils import SpecialTokens
+from data_juicer.utils.mm_utils import SpecialTokens, load_file_byte
 from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
@@ -18,6 +20,12 @@ class VideoSplitByDurationMapperTest(DataJuicerTestCaseBase):
     vid1_path = os.path.join(data_path, 'video1.mp4')
     vid2_path = os.path.join(data_path, 'video2.mp4')
     vid3_path = os.path.join(data_path, 'video3.mp4')
+    tmp_dir = tempfile.TemporaryDirectory().name
+
+    def tearDown(self):
+        super().tearDown()
+        if os.path.exists(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
 
     def _get_res_list(self, dataset, source_list):
         res_list = []
@@ -229,6 +237,109 @@ class VideoSplitByDurationMapperTest(DataJuicerTestCaseBase):
                                         min_last_split_duration=3,
                                         keep_original_sample=False)
         self._run_video_split_by_duration_mapper(op, ds_list, tgt_list)
+
+    def test_output_format_bytes(self, save_field=None):
+        ds_list = [{
+            'text': f'{SpecialTokens.video} 白色的小羊站在一旁讲话。旁边还有两只灰色猫咪和一只拉着灰狼的猫咪。',
+            'videos': [self.vid1_path]
+        }, {
+            'text':
+            f'{SpecialTokens.video} 身穿白色上衣的男子，拿着一个东西，拍打自己的胃部。{SpecialTokens.eoc}',
+            'videos': [self.vid2_path]
+        }, {
+            'text':
+            f'{SpecialTokens.video} 两个长头发的女子正坐在一张圆桌前讲话互动。 {SpecialTokens.eoc}',
+            'videos': [self.vid3_path]
+        }]
+        tgt_list = [{
+            'text':
+            f'{SpecialTokens.video}{SpecialTokens.video} 白色的小羊站在一旁讲话。旁边还有两只灰色猫咪和一只拉着灰狼的猫咪。{SpecialTokens.eoc}',
+            'split_frames_num': 2
+        }, {
+            'text':
+            f'{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video} 身穿白色上衣的男子，拿着一个东西，拍打自己的胃部。{SpecialTokens.eoc}',
+            'split_frames_num': 3
+        }, {
+            'text':
+            f'{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video} 两个长头发的女子正坐在一张圆桌前讲话互动。 {SpecialTokens.eoc}',
+            'split_frames_num': 5
+        }]
+        op = VideoSplitByDurationMapper(
+            split_duration=10,
+            keep_original_sample=False,
+            output_format="bytes",
+            save_field=save_field,
+            save_dir=self.tmp_dir,
+            legacy_split_by_text_token=True)
+
+        dataset = Dataset.from_list(ds_list)
+        dataset = dataset.map(op.process, num_proc=1)
+        res_list = dataset.to_list()
+
+        save_field = save_field or "videos"
+        for i in range(len(ds_list)):
+            res = res_list[i]
+            tgt = tgt_list[i]
+            self.assertEqual(res['text'], tgt['text'])
+            self.assertEqual(len(res[Fields.source_file]), tgt['split_frames_num'])
+            for clip_path in res[Fields.source_file]:
+                self.assertTrue(os.path.exists(clip_path))
+            self.assertEqual(len(res[save_field]), tgt['split_frames_num'])
+            self.assertTrue(all(isinstance(v, bytes) for v in res[save_field]))
+
+    def test_output_format_bytes_save_field(self):
+        self.test_output_format_bytes(save_field="clips")
+
+    def test_input_video_bytes(self):
+        ds_list = [{
+            'text': f'{SpecialTokens.video} 白色的小羊站在一旁讲话。旁边还有两只灰色猫咪和一只拉着灰狼的猫咪。',
+            'videos': [load_file_byte(self.vid1_path)]
+        }, {
+            'text':
+            f'{SpecialTokens.video} 身穿白色上衣的男子，拿着一个东西，拍打自己的胃部。{SpecialTokens.eoc}',
+            'videos': [load_file_byte(self.vid2_path)]
+        }, {
+            'text':
+            f'{SpecialTokens.video} 两个长头发的女子正坐在一张圆桌前讲话互动。 {SpecialTokens.eoc}',
+            'videos': [load_file_byte(self.vid3_path)]
+        }]
+        tgt_list = [{
+            'text':
+            f'{SpecialTokens.video}{SpecialTokens.video} 白色的小羊站在一旁讲话。旁边还有两只灰色猫咪和一只拉着灰狼的猫咪。{SpecialTokens.eoc}',
+            'split_frames_num': 2
+        }, {
+            'text':
+            f'{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video} 身穿白色上衣的男子，拿着一个东西，拍打自己的胃部。{SpecialTokens.eoc}',
+            'split_frames_num': 3
+        }, {
+            'text':
+            f'{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video} 两个长头发的女子正坐在一张圆桌前讲话互动。 {SpecialTokens.eoc}',
+            'split_frames_num': 5
+        }]
+
+        save_field = "clips"
+        op = VideoSplitByDurationMapper(
+            split_duration=10,
+            keep_original_sample=False,
+            output_format="bytes",
+            save_field=save_field,
+            save_dir=self.tmp_dir,
+            legacy_split_by_text_token=True,
+            video_backend="ffmpeg")
+
+        dataset = Dataset.from_list(ds_list)
+        dataset = dataset.map(op.process, num_proc=1)
+        res_list = dataset.to_list()
+
+        for i in range(len(ds_list)):
+            res = res_list[i]
+            tgt = tgt_list[i]
+            self.assertEqual(res['text'], tgt['text'])
+            self.assertEqual(len(res[Fields.source_file]), tgt['split_frames_num'])
+            for clip_path in res[Fields.source_file]:
+                self.assertTrue(os.path.exists(clip_path))
+            self.assertEqual(len(res[save_field]), tgt['split_frames_num'])
+            self.assertTrue(all(isinstance(v, bytes) for v in res[save_field]))
 
 
 if __name__ == '__main__':
