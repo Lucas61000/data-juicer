@@ -521,6 +521,152 @@ def run_direct_gpu_test(
     logger.info(f"Pipeline setup time: {time.time() - t1:.2f}s")
 
 
+def run_direct_gpu_test_dj_match(
+    data_path,
+    num_shards=96,
+    batch_size=10,  # DJ CUDA default
+    gpu_concurrency=8,
+    fail_fast=True,
+):
+    """
+    Direct GPU test that matches the DJ pipeline as closely as possible.
+    Adds: convert_to_absolute_paths, count(), columns(), filter step.
+    """
+    from functools import partial
+
+    import pyarrow
+    import ray
+
+    os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+
+    model_path = "/mnt/workspace/miaoxiang.zfr/models/aesthetics-predictor-v2-sac-logos-ava1-l14-linearMSE"
+
+    precheck_environment(model_path=model_path, fail_fast=fail_fast)
+    init_ray(object_store_gb=300)
+
+    logger.info("Direct GPU Test (DJ-matched pipeline)")
+    monitor_gpu()
+
+    t0 = time.time()
+    if os.path.isfile(data_path):
+        data_path = split_jsonl(data_path, num_shards)
+
+    ds = ray.data.read_json(data_path)
+
+    # --- Match DJ: count() before processing ---
+    t_count = time.time()
+    row_count = ds.count()
+    logger.info(f"count(): {row_count} rows in {time.time() - t_count:.2f}s")
+
+    # --- Match DJ: columns() ---
+    t_cols = time.time()
+    cols = ds.columns()
+    logger.info(f"columns(): {cols} in {time.time() - t_cols:.2f}s")
+
+    # --- Match DJ: convert_to_absolute_paths ---
+    dataset_dir = os.path.dirname(data_path)
+
+    def convert_to_absolute_paths(batch, dataset_dir, path_keys):
+        for key in path_keys:
+            if key in batch.column_names:
+                col = batch.column(key)
+                new_col = []
+                for val in col.to_pylist():
+                    if isinstance(val, list):
+                        new_col.append([os.path.join(dataset_dir, p) if not os.path.isabs(p) else p for p in val])
+                    elif isinstance(val, str):
+                        new_col.append(os.path.join(dataset_dir, val) if not os.path.isabs(val) else val)
+                    else:
+                        new_col.append(val)
+                idx = batch.column_names.index(key)
+                batch = batch.set_column(idx, key, [new_col])
+        return batch
+
+    path_keys = [k for k in ["videos", "images", "audios"] if k in cols]
+    if path_keys:
+        ds = ds.map_batches(
+            partial(convert_to_absolute_paths, dataset_dir=dataset_dir, path_keys=path_keys),
+            batch_format="pyarrow",
+            zero_copy_batch=True,
+            batch_size=1000,
+        )
+        logger.info(f"Added convert_to_absolute_paths for keys: {path_keys}")
+
+    # --- Match DJ: add __dj__stats__ column ---
+    def add_stats_column(table: pyarrow.Table):
+        new_column_data = [{} for _ in range(len(table))]
+        return table.append_column("__dj__stats__", [new_column_data])
+
+    ds = ds.map_batches(add_stats_column, batch_format="pyarrow", batch_size=1000)
+    logger.info("Added __dj__stats__ column")
+
+    # --- Match DJ: compute_stats via actor ---
+    from data_juicer.ops.filter.video_aesthetics_filter import VideoAestheticsFilter
+
+    op = VideoAestheticsFilter(
+        hf_scorer_model=model_path,
+        trust_remote_code=True,
+        min_score=0.4,
+        max_score=1.0,
+        frame_num=9223372036854775807,
+        reduce_mode="avg",
+        num_gpus=1,
+        batch_mode=True,
+    )
+    logger.info(f"Op: {op._name}, batch_size={batch_size}, is_batched={op.is_batched_op()}")
+
+    import torch
+
+    available_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    if available_gpus <= 0:
+        raise RuntimeError("No CUDA GPUs visible")
+    gpu_concurrency = min(gpu_concurrency, available_gpus)
+    logger.info(f"gpu_concurrency={gpu_concurrency}, batch_size={batch_size}")
+
+    t1 = time.time()
+    ds = ds.map_batches(
+        VideoAestheticsFilter,
+        fn_constructor_args=op._init_args,
+        fn_constructor_kwargs=op._init_kwargs,
+        batch_size=batch_size,
+        num_gpus=1,
+        concurrency=gpu_concurrency,
+        batch_format="pyarrow",
+    )
+    logger.info("Added compute_stats map_batches (actor mode)")
+
+    # --- Match DJ: filter step ---
+    def filter_batch(batch, filter_func):
+        mask = pyarrow.array(filter_func(batch.to_pydict()))
+        return batch.filter(mask)
+
+    ds = ds.map_batches(
+        partial(filter_batch, filter_func=op.process),
+        batch_format="pyarrow",
+        zero_copy_batch=True,
+        batch_size=1000,
+    )
+    logger.info("Added filter_batch step")
+
+    # --- Execute ---
+    logger.info("Executing full DJ-matched pipeline...")
+    t2 = time.time()
+    try:
+        result = ds.materialize()
+    except Exception:
+        logger.exception("Pipeline execution failed")
+        raise
+
+    logger.info(f"Pipeline execution: {time.time() - t2:.2f}s")
+    count = result.count()
+    logger.info(f"Result: {count} rows (filtered from {row_count})")
+    monitor_gpu()
+    logger.info(f"Total time: {time.time() - t0:.2f}s")
+    logger.info(f"Pipeline time (from first map_batches): {time.time() - t1:.2f}s")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Simple benchmark")
     parser.add_argument(
@@ -540,7 +686,7 @@ def main():
     parser.add_argument("--gpu-concurrency", type=int, default=8)
     parser.add_argument("--fail-fast", action="store_true", default=True)
     parser.add_argument("--no-fail-fast", dest="fail_fast", action="store_false")
-    parser.add_argument("--mode", type=str, choices=["ray", "dj", "gpu", "both"], default="gpu")
+    parser.add_argument("--mode", type=str, choices=["ray", "dj", "gpu", "gpu-dj", "both"], default="gpu")
     parser.add_argument(
         "--executor",
         type=str,
@@ -581,6 +727,18 @@ def main():
             jsonl_path,
             num_shards=args.num_shards,
             batch_size=args.batch_size,
+            gpu_concurrency=args.gpu_concurrency,
+            fail_fast=args.fail_fast,
+        )
+
+    if args.mode == "gpu-dj":
+        logger.info("\n" + "=" * 60)
+        logger.info("Testing Direct GPU (DJ-matched pipeline)")
+        logger.info("=" * 60)
+        run_direct_gpu_test_dj_match(
+            jsonl_path,
+            num_shards=args.num_shards,
+            batch_size=10,  # DJ CUDA default
             gpu_concurrency=args.gpu_concurrency,
             fail_fast=args.fail_fast,
         )
