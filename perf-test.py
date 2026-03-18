@@ -15,14 +15,16 @@ from datetime import datetime
 
 from loguru import logger
 
-# Data-Juicer path
+# ── Paths ─────────────────────────────────────────────────────────────────────
 DJ_CODE_PATH = "/mnt/workspace/yileiz/data-juicer"
+OUTPUT_DIR = "/mnt/workspace/yileiz/outputs/partitioned_ray/simple_workdir"
+MODEL_PATH = "/mnt/workspace/miaoxiang.zfr/models/aesthetics-predictor-v2-sac-logos-ava1-l14-linearMSE"
+DEFAULT_CAPTION_JSONL = "/mnt/workspace/miaoxiang.zfr/data/Youku-AliceMind/caption_val_abs_6k.jsonl"
+DEFAULT_VIDEO_DIR = "/mnt/workspace/shurui.ksr/Project/data/modelscope/Youku-AliceMind/videos/caption"
+# ──────────────────────────────────────────────────────────────────────────────
+
 if os.path.exists(DJ_CODE_PATH):
     sys.path.insert(0, DJ_CODE_PATH)
-
-
-# Output directory
-OUTPUT_DIR = "/mnt/workspace/yileiz/outputs/partitioned_ray/simple_workdir"
 
 
 def setup_logging(log_dir=None):
@@ -147,7 +149,7 @@ def require_module(module_name, pip_hint=None):
         raise RuntimeError(f"Missing required module [{module_name}].{hint}\nOriginal error: {e}") from e
 
 
-def precheck_environment(model_path, fail_fast=True):
+def precheck_environment(fail_fast=True):
     """
     Precheck environment in driver process to avoid hanging inside Ray actors.
     """
@@ -161,21 +163,19 @@ def precheck_environment(model_path, fail_fast=True):
     logger.info(f'HF_ENDPOINT={os.environ.get("HF_ENDPOINT")}')
 
     # Model path
-    if not os.path.exists(model_path):
-        msg = f"Model path does not exist: {model_path}"
+    if not os.path.exists(MODEL_PATH):
+        msg = f"Model path does not exist: {MODEL_PATH}"
         if fail_fast:
             raise FileNotFoundError(msg)
         logger.warning(msg)
     else:
-        logger.info(f"Model path exists: {model_path}")
+        logger.info(f"Model path exists: {MODEL_PATH}")
 
     # Required modules
     require_module("torch", "pip install torch")
     require_module("transformers", "pip install transformers")
     require_module("ray", "pip install ray")
     require_module("pyarrow", "pip install pyarrow")
-
-    # This is the key one from your log
 
     # Torch / CUDA visibility
     import torch
@@ -259,10 +259,8 @@ def run_simple_benchmark(
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
-    model_path = "/mnt/workspace/miaoxiang.zfr/models/aesthetics-predictor-v2-sac-logos-ava1-l14-linearMSE"
-
     # Fail fast before actors
-    precheck_environment(model_path=model_path, fail_fast=fail_fast)
+    precheck_environment(fail_fast=fail_fast)
 
     # Initialize Ray
     init_ray(object_store_gb=300)
@@ -301,7 +299,7 @@ def run_simple_benchmark(
         "process": [
             {
                 "video_aesthetics_filter": {
-                    "hf_scorer_model": model_path,
+                    "hf_scorer_model": MODEL_PATH,
                     "trust_remote_code": True,
                     "min_score": 0.4,
                     "max_score": 1.0,
@@ -415,10 +413,8 @@ def run_direct_gpu_test(
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
-    model_path = "/mnt/workspace/miaoxiang.zfr/models/aesthetics-predictor-v2-sac-logos-ava1-l14-linearMSE"
-
     # Precheck before actor creation
-    precheck_environment(model_path=model_path, fail_fast=fail_fast)
+    precheck_environment(fail_fast=fail_fast)
 
     init_ray(object_store_gb=300)
 
@@ -445,7 +441,7 @@ def run_direct_gpu_test(
     # Create operator on driver for validation only
     op_t0 = time.time()
     op = VideoAestheticsFilter(
-        hf_scorer_model=model_path,
+        hf_scorer_model=MODEL_PATH,
         trust_remote_code=True,
         min_score=0.4,
         max_score=1.0,
@@ -541,9 +537,7 @@ def run_direct_gpu_test_dj_match(
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
-    model_path = "/mnt/workspace/miaoxiang.zfr/models/aesthetics-predictor-v2-sac-logos-ava1-l14-linearMSE"
-
-    precheck_environment(model_path=model_path, fail_fast=fail_fast)
+    precheck_environment(fail_fast=fail_fast)
     init_ray(object_store_gb=300)
 
     logger.info("Direct GPU Test (DJ-matched pipeline)")
@@ -606,7 +600,7 @@ def run_direct_gpu_test_dj_match(
     from data_juicer.ops.filter.video_aesthetics_filter import VideoAestheticsFilter
 
     op = VideoAestheticsFilter(
-        hf_scorer_model=model_path,
+        hf_scorer_model=MODEL_PATH,
         trust_remote_code=True,
         min_score=0.4,
         max_score=1.0,
@@ -672,12 +666,12 @@ def main():
     parser.add_argument(
         "--caption-jsonl",
         type=str,
-        default="/mnt/workspace/miaoxiang.zfr/data/Youku-AliceMind/caption_val_abs_6k.jsonl",
+        default=DEFAULT_CAPTION_JSONL,
     )
     parser.add_argument(
         "--video-dir",
         type=str,
-        default="/mnt/workspace/shurui.ksr/Project/data/modelscope/Youku-AliceMind/videos/caption",
+        default=DEFAULT_VIDEO_DIR,
     )
     parser.add_argument("--num-samples", type=int, default=6000)
     parser.add_argument("--num-shards", type=int, default=96)
