@@ -90,6 +90,10 @@ class VideoHandReconstructionHaworMapper(Mapper):
         self.parse_chunks = parse_chunks
         self.rotation_matrix_to_angle_axis = rotation_matrix_to_angle_axis
         self.frame_field = frame_field
+        self.hawor_detector_path = hawor_detector_path
+        self.tag_field_name = tag_field_name
+        self.thresh = thresh
+        self.camera_calibration_field = camera_calibration_field
 
         self.model_key = prepare_model(
             model_type="hawor",
@@ -113,10 +117,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
                 check=True,
             )
 
-        self.hawor_detector_path = hawor_detector_path
-        self.tag_field_name = tag_field_name
-        self.thresh = thresh
-        self.camera_calibration_field = camera_calibration_field
+        self.det_model_key = prepare_model(model_type="yolo", model_path=self.hawor_detector_path)
 
     def detect_track(self, imgfiles: list, hand_det_model, thresh: float = 0.5) -> tuple:
         """
@@ -337,15 +338,8 @@ class VideoHandReconstructionHaworMapper(Mapper):
         if self.video_key not in sample or not sample[self.video_key]:
             return sample
 
-        if rank is not None:
-            torch.cuda.set_device(rank)
-            device = f"cuda:{rank}" if self.use_cuda() else "cpu"
-        else:
-            device = "cuda" if self.use_cuda() else "cpu"
-
         hawor_model, model_cfg, _, _ = get_model(self.model_key, rank, self.use_cuda())
-        # TODO: optimize by sharing the loaded model across samples
-        hand_det_model = ultralytics.YOLO(self.hawor_detector_path).to(device)
+        hand_det_model = get_model(self.det_model_key, rank, self.use_cuda())
 
         videos_frames = sample[self.frame_field]
 
