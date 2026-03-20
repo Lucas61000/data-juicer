@@ -5,7 +5,7 @@
 # dialog/text ops. Supports multi-platform, multi-agent tool formats.
 
 import re
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 
 from data_juicer.ops.base_op import OPERATORS, TAGGING_OPS, Mapper
 from data_juicer.utils.constant import Fields, MetaKeys
@@ -156,6 +156,36 @@ def _messages_to_history(
     return history
 
 
+def _last_user_assistant_msg_indices(
+    messages: List[dict],
+) -> Tuple[Optional[int], Optional[int]]:
+    """0-based indices in ``messages`` of the last user / assistant turns."""
+    last_u: Optional[int] = None
+    last_a: Optional[int] = None
+    for i, m in enumerate(messages):
+        if not isinstance(m, dict):
+            continue
+        role = (m.get("role") or "").lower()
+        if role == "user":
+            last_u = i
+        elif role == "assistant":
+            last_a = i
+    return last_u, last_a
+
+
+def _first_non_empty_str(sample: dict, keys: Sequence[str]) -> Optional[str]:
+    for k in keys:
+        if k not in sample:
+            continue
+        v = sample.get(k)
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s:
+            return s
+    return None
+
+
 def _choices_to_text(choices: Any) -> str:
     """Extract reply text from choices (OpenAI / Anthropic / generic)."""
     if not choices or not isinstance(choices, list):
@@ -197,7 +227,12 @@ class AgentDialogNormalizeMapper(Mapper):
     """Normalize agent format (messages + choices) to DJ fields.
 
     Outputs: text, dialog_history, query, response; optionally meta tags
-    agent_tool_types, agent_skill_types, agent_turn_count.
+    agent_tool_types, agent_skill_types, agent_turn_count. When
+    ``copy_lineage_fields`` is True, also copies request_model, pt,
+    total_cost_time, and (when ``copy_request_id``) the first non-empty
+    id among ``request_id_keys`` from the sample root into meta for cohort
+    analysis and stable drill-down links. Always records last user/assistant
+    message indices (in the raw ``messages`` list) when present.
     Supports multi-format tool_calls (e.g. tool_calls[].function.name as in
     OpenAI / demos/local/demo-agent-data-content.json) and configurable
     user/assistant labels.
@@ -215,6 +250,13 @@ class AgentDialogNormalizeMapper(Mapper):
         include_system_in_first_user: bool = False,
         user_label: str = DEFAULT_USER_LABEL,
         assistant_label: str = DEFAULT_ASSISTANT_LABEL,
+        copy_lineage_fields: bool = True,
+        copy_request_id: bool = True,
+        request_id_keys: Tuple[str, ...] = (
+            "request_id",
+            "trace_id",
+            "id",
+        ),
         **kwargs,
     ):
         super().__init__(text_key=text_key, **kwargs)
@@ -227,6 +269,9 @@ class AgentDialogNormalizeMapper(Mapper):
         self.include_system_in_first_user = include_system_in_first_user
         self.user_label = user_label
         self.assistant_label = assistant_label
+        self.copy_lineage_fields = copy_lineage_fields
+        self.copy_request_id = copy_request_id
+        self.request_id_keys = request_id_keys
 
     def process_single(self, sample):
         messages = sample.get(self.messages_key) or []
@@ -261,5 +306,24 @@ class AgentDialogNormalizeMapper(Mapper):
         if self.extract_tool_skill_tags:
             meta[MetaKeys.agent_tool_types] = _extract_tool_types(messages)
             meta[MetaKeys.agent_skill_types] = _extract_skill_types(messages)
+
+        last_u_idx, last_a_idx = _last_user_assistant_msg_indices(messages)
+        if last_u_idx is not None:
+            meta[MetaKeys.agent_last_user_msg_idx] = last_u_idx
+        if last_a_idx is not None:
+            meta[MetaKeys.agent_last_assistant_msg_idx] = last_a_idx
+        if self.copy_request_id:
+            rid = _first_non_empty_str(sample, self.request_id_keys)
+            if rid is not None:
+                meta[MetaKeys.agent_request_id] = rid
+
+        # Cohort fields for bad-case / A-B analysis (request_model, date bucket, latency)
+        if self.copy_lineage_fields:
+            if sample.get("request_model") is not None:
+                meta[MetaKeys.agent_request_model] = sample["request_model"]
+            if sample.get("pt") is not None:
+                meta[MetaKeys.agent_pt] = sample["pt"]
+            if sample.get("total_cost_time") is not None:
+                meta[MetaKeys.agent_total_cost_time_ms] = sample["total_cost_time"]
 
         return sample

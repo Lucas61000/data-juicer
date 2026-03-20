@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# 一键：bad case 冒烟 / 全量菜谱 / 仅后处理 / 单元测试
+# 在仓库根目录执行，或从任意目录：bash demos/agent/scripts/run_bad_case_pipeline.sh <cmd>
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+cd "$ROOT"
+
+PY="${PYTHON:-}"
+if [[ -z "$PY" ]]; then
+  if [[ -x "$ROOT/.venv/bin/python" ]]; then
+    PY="$ROOT/.venv/bin/python"
+  else
+    PY="python3"
+  fi
+fi
+SMOKE_OUT="${SMOKE_OUT:-./outputs/agent_bad_case_smoke/processed.jsonl}"
+FULL_OUT="${FULL_OUT:-./outputs/agent_quality/processed.jsonl}"
+CAL_OUT="${CAL_OUT:-./outputs/agent_quality/bad_case_calibration.json}"
+RECIPE_FULL="demos/agent/agent_interaction_quality_analysis.yaml"
+RECIPE_SMOKE="demos/agent/minimal_configs/09_bad_case_smoke.yaml"
+
+usage() {
+  cat <<'EOF'
+用法（在仓库根目录，或任意目录调用本脚本）:
+
+  bash demos/agent/scripts/run_bad_case_pipeline.sh smoke
+      dj-process 最小 09 配置 → 校验 → 分位数 → cohort → 切片示例 → HTML 报告（可 SKIP_AUTO_REPORT=1）
+
+  bash demos/agent/scripts/run_bad_case_pipeline.sh report [JSONL] [OUT.html]
+      一键：校验 + 生成自助 HTML 报告（图表+表；进阶说明折叠在页内）
+      默认 JSONL: ./outputs/agent_quality/processed.jsonl
+
+  bash demos/agent/scripts/run_bad_case_pipeline.sh postprocess [JSONL]
+      对已导出的 jsonl 跑 verify + percentiles + cohorts + slice（深度调试用；不生成 HTML）
+
+  bash demos/agent/scripts/run_bad_case_pipeline.sh calibrate-and-slice [JSONL]
+      从 JSONL 写 P95 校准文件到 CAL_OUT，并打印下一步 YAML 配置提示
+
+  bash demos/agent/scripts/run_bad_case_pipeline.sh full
+      跑完整 agent_interaction_quality_analysis.yaml（需 LLM API；耗时/费用高）
+
+  bash demos/agent/scripts/run_bad_case_pipeline.sh unittest
+      仅跑 agent_bad_case_signal_mapper 单元测试（无需 dj-process）
+
+环境变量:
+  PYTHON   python 可执行文件（默认 python3）
+  SMOKE_OUT / FULL_OUT / CAL_OUT  输出路径覆盖
+  SKIP_AUTO_REPORT=1  smoke/full 末尾不自动生成 HTML
+
+日常只看结论: demos/agent/BAD_CASE_REPORT.md
+详见: demos/agent/BAD_CASE_INSIGHTS.md 与 demos/agent/scripts/README.md
+EOF
+}
+
+run_report() {
+  local input="${1:-$FULL_OUT}"
+  local out="${2:-}"
+  if [[ ! -f "$input" ]]; then
+    echo "ERROR: $input not found" >&2
+    exit 3
+  fi
+  if [[ -z "$out" ]]; then
+    out="${input%.jsonl}_bad_case_report.html"
+  fi
+  echo "==> verify_bad_case_export.py"
+  "$PY" demos/agent/scripts/verify_bad_case_export.py --input "$input"
+  echo "==> generate_bad_case_report.py -> $out"
+  "$PY" demos/agent/scripts/generate_bad_case_report.py \
+    --input "$input" --output "$out"
+  echo "Open in browser: $out"
+}
+
+run_postprocess() {
+  local input="${1:-$SMOKE_OUT}"
+  if [[ ! -f "$input" ]]; then
+    echo "ERROR: input not found: $input" >&2
+    echo "先运行: bash demos/agent/scripts/run_bad_case_pipeline.sh smoke" >&2
+    exit 3
+  fi
+  echo "==> verify_bad_case_export.py"
+  "$PY" demos/agent/scripts/verify_bad_case_export.py --input "$input"
+  echo "==> compute_percentile_thresholds.py (console report)"
+  "$PY" demos/agent/scripts/compute_percentile_thresholds.py --input "$input"
+  local cohort_csv="${input%.jsonl}_cohort_summary.csv"
+  echo "==> analyze_bad_case_cohorts.py -> $cohort_csv"
+  "$PY" demos/agent/scripts/analyze_bad_case_cohorts.py --input "$input" --out-csv "$cohort_csv"
+  local slice_out="${input%.jsonl}_high_precision_sample.jsonl"
+  echo "==> slice_export_by_tier.py (high_precision, limit 20) -> $slice_out"
+  "$PY" demos/agent/scripts/slice_export_by_tier.py \
+    --input "$input" --tier high_precision --output "$slice_out" --limit 20
+  echo "Done postprocess on $input"
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  smoke)
+    if ! command -v dj-process >/dev/null 2>&1; then
+      echo "ERROR: dj-process not in PATH. 请先激活本仓库环境，例如:" >&2
+      echo "  uv venv && source .venv/bin/activate && uv pip install -e ." >&2
+      echo "  见 demos/agent/minimal_configs/README.md" >&2
+      exit 1
+    fi
+    mkdir -p "$(dirname "$SMOKE_OUT")"
+    echo "==> dj-process (minimal bad-case smoke, no LLM API)"
+    dj-process --config "$RECIPE_SMOKE"
+    run_postprocess "$SMOKE_OUT"
+    if [[ "${SKIP_AUTO_REPORT:-}" != "1" ]]; then
+      run_report "$SMOKE_OUT" "${SMOKE_OUT%.jsonl}_bad_case_report.html"
+    fi
+    ;;
+  report)
+    run_report "${2:-$FULL_OUT}" "${3:-}"
+    ;;
+  postprocess)
+    run_postprocess "${2:-$SMOKE_OUT}"
+    ;;
+  calibrate-and-slice)
+    input="${2:-$FULL_OUT}"
+    if [[ ! -f "$input" ]]; then
+      echo "ERROR: $input not found. Set path or run full/smoke first." >&2
+      exit 3
+    fi
+    mkdir -p "$(dirname "$CAL_OUT")"
+    echo "==> write calibration JSON -> $CAL_OUT"
+    "$PY" demos/agent/scripts/compute_percentile_thresholds.py \
+      --input "$input" \
+      --write-calibration "$CAL_OUT" \
+      --calibration-percentile 95
+    cat <<EOF
+
+下一步：在 agent_bad_case_signal_mapper 中增加:
+  auto_calibrate_thresholds: true
+  calibration_json_path: "$CAL_OUT"
+
+然后对**同结构**数据再跑一遍 dj-process（或全量重跑）。
+EOF
+    ;;
+  full)
+    if ! command -v dj-process >/dev/null 2>&1; then
+      echo "ERROR: dj-process not in PATH. 见 smoke 命令的说明。" >&2
+      exit 1
+    fi
+    mkdir -p "$(dirname "$FULL_OUT")"
+    echo "WARN: full recipe calls many LLM APIs (cost + keys). export_path -> $FULL_OUT"
+    dj-process --config "$RECIPE_FULL"
+    echo "==> verify (with agent_insight_llm if pipeline completed step 10)"
+    "$PY" demos/agent/scripts/verify_bad_case_export.py --input "$FULL_OUT" --require-insight || \
+      "$PY" demos/agent/scripts/verify_bad_case_export.py --input "$FULL_OUT"
+    run_postprocess "$FULL_OUT"
+    if [[ "${SKIP_AUTO_REPORT:-}" != "1" ]]; then
+      run_report "$FULL_OUT" "${FULL_OUT%.jsonl}_bad_case_report.html"
+    fi
+    ;;
+  unittest)
+    echo "==> unittest agent_bad_case_signal_mapper"
+    PYTHONPATH=. "$PY" -m unittest tests.ops.mapper.test_agent_bad_case_signal_mapper -v
+    ;;
+  ""|-h|--help|help)
+    usage
+    ;;
+  *)
+    echo "Unknown command: $cmd" >&2
+    usage
+    exit 2
+    ;;
+esac

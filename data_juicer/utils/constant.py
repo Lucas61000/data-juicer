@@ -145,6 +145,20 @@ class MetaKeys(object):
     agent_skill_types = "agent_skill_types"
     agent_skill_insights = "agent_skill_insights"
     agent_turn_count = "agent_turn_count"
+    # # lineage / cohort fields (copied from raw agent JSON e.g. request_model, pt)
+    agent_request_model = "agent_request_model"
+    agent_pt = "agent_pt"
+    agent_total_cost_time_ms = "agent_total_cost_time_ms"
+    # # stable ids / message indices (for reports, showcase, log correlation)
+    agent_request_id = "agent_request_id"
+    agent_last_user_msg_idx = "agent_last_user_msg_idx"
+    agent_last_assistant_msg_idx = "agent_last_assistant_msg_idx"
+    # # from agent_bad_case_signal_mapper — structured, conservatively triaged
+    agent_bad_case_signals = "agent_bad_case_signals"
+    agent_bad_case_tier = "agent_bad_case_tier"
+    # # from agent_insight_llm_mapper — LLM synthesis for attribution / dashboards
+    agent_insight_llm = "agent_insight_llm"
+    agent_insight_llm_raw = "agent_insight_llm_raw"
     # # from agent_tool_type_mapper
     primary_tool_type = "primary_tool_type"
     dominant_tool_types = "dominant_tool_types"
