@@ -43,10 +43,17 @@ dj-process --config demos/agent/minimal_configs/07_entity_keyword.yaml
 
 # 08 单个 LLM filter
 dj-process --config demos/agent/minimal_configs/08_one_llm_filter.yaml
+
+# 09 bad case 信号 + 分层（无 LLM；对齐 BAD_CASE_INSIGHTS 本地验证）
+dj-process --config demos/agent/minimal_configs/09_bad_case_smoke.yaml
+
+# 或一键：后处理 + 校验 + 分位数 + cohort（见 demos/agent/QUICKSTART_BAD_CASE.md）
+bash demos/agent/scripts/run_bad_case_pipeline.sh smoke
 ```
 
 ## 配置说明摘要
 
+- **09**：在 **04+05** 基础上增加 `copy_lineage_fields` 与 `agent_bad_case_signal_mapper`，并关闭依赖 LLM 评估的 `signal_on_llm_*`，用于本地验证 `meta.agent_bad_case_tier` / `agent_bad_case_signals`。
 - **06**：dialog_intent/topic/sentiment 等 mapper 会对多轮标签做**去重**（保持顺序），避免重复意图标签。
 - **07**：extract_entity_attribute 需配置 `query_entities`、`query_attributes`；relation_identity 需配置 `source_entity`、`target_entity`，否则实体/关系多为空。当前 07 已配「用户/助手/任务」与「目标/行为」、「用户→助手」关系。
 - **agent_skill_insights**：完整 recipe 中在 agent_tool_type_mapper 后增加 `agent_skill_insight_mapper`，用 LLM 将 agent_tool_types + agent_skill_types 归纳为 3～5 个高层能力标签（如 文件与编辑、搜索与记忆），写入 `meta.agent_skill_insights`，比仅用正则的 skill_types 更有洞察。
@@ -55,7 +62,8 @@ dj-process --config demos/agent/minimal_configs/08_one_llm_filter.yaml
 
 1. 先跑 **01**，确认大 yaml 的「单 op」写法是否被 parser 接受。
 2. 若 01 通过，再跑 **02、03、04、05**，确认无 LLM 段是否都正常。
-3. 再跑 **06、07、08**，确认带 LLM 的 op 是否因配置或 parser 报错。
+3. 跑 **09** 可验证 `agent_bad_case_signal_mapper` 与导出字段，无需 API。
+4. 再跑 **06、07、08**，确认带 LLM 的 op 是否因配置或 parser 报错。
 
 若某一编号报错，可基本定位到是「某 op 或某组合」导致；再对比大 yaml 中该段的写法即可缩小范围。
 
