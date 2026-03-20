@@ -169,6 +169,7 @@ class MetaKeys(object):
     # # from tool_success_tagger_mapper
     tool_success_count = "tool_success_count"
     tool_fail_count = "tool_fail_count"
+    tool_unknown_count = "tool_unknown_count"
     tool_success_ratio = "tool_success_ratio"
     tool_results = "tool_results"
 

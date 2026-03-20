@@ -17,9 +17,26 @@ DEFAULT_USER_LABEL = "用户"
 DEFAULT_ASSISTANT_LABEL = "助手"
 
 
+def _coerce_content_fragment(val: Any) -> str:
+    """Turn a content block's text-ish field into a single flat string (no .strip on dict)."""
+    if val is None:
+        return ""
+    if isinstance(val, str):
+        return val.strip()
+    if isinstance(val, dict):
+        for k in ("value", "text", "content"):
+            if k in val and val[k] not in (None, ""):
+                return _coerce_content_fragment(val[k])
+        return ""
+    if isinstance(val, list):
+        return "\n".join(_coerce_content_fragment(x) for x in val if x not in (None, "")).strip()
+    return str(val).strip()
+
+
 def _content_to_text(content: Any) -> str:
     """Extract plain text from message.content.
     Supports: str, list of {type, text} (OpenAI multimodal), list of str.
+    ``text`` may be nested (dict/list); Qwen-style ``thinking`` blocks are included.
     """  # noqa: E501
     if content is None:
         return ""
@@ -29,13 +46,23 @@ def _content_to_text(content: Any) -> str:
         parts = []
         for block in content:
             if isinstance(block, dict):
-                if block.get("type") == "text":
-                    parts.append((block.get("text") or "").strip())
-                elif block.get("type") == "input_text" or "text" in block:
-                    parts.append((block.get("text") or "").strip())
+                btype = block.get("type")
+                if btype == "text":
+                    parts.append(_coerce_content_fragment(block.get("text")))
+                elif btype == "input_text" or (btype not in ("thinking", "reasoning") and "text" in block):
+                    parts.append(_coerce_content_fragment(block.get("text")))
+                elif btype in ("thinking", "reasoning") or "thinking" in block or "reasoning_content" in block:
+                    # Qwen / DeepSeek / DashScope style reasoning (may omit type)
+                    parts.append(
+                        _coerce_content_fragment(
+                            block.get("thinking") or block.get("reasoning") or block.get("reasoning_content")
+                        )
+                    )
             elif isinstance(block, str):
                 parts.append(block.strip())
         return "\n".join(p for p in parts if p).strip()
+    if isinstance(content, dict):
+        return _coerce_content_fragment(content)
     return str(content).strip()
 
 
@@ -118,7 +145,15 @@ def _messages_to_history(
     messages: List[dict],
     include_system_in_first_user: bool = False,
 ) -> List[Tuple[str, str]]:
-    """Convert messages to [(query, response), ...]. User/assistant only."""
+    """Convert messages to [(query, response), ...]. User/assistant only.
+
+    Agent/tool note: within one user turn, the model may emit **multiple**
+    ``assistant`` messages (tool calls → ``tool`` → assistant again). Earlier
+    implementations **replaced** the assistant side each time, dropping
+    intermediate reasoning and tool traces. We **accumulate** consecutive
+    assistant segments (and still append each ``tool`` result onto the same
+    pair) so ``query`` / ``response`` / ``text`` match multi-step agent runs.
+    """
     history = []
     pending_system = []
 
@@ -140,18 +175,29 @@ def _messages_to_history(
         if role == "assistant":
             if not content and tool_calls:
                 content = _tool_calls_summary(tool_calls)
+            piece = content or ""
             if history:
-                history[-1] = (history[-1][0], content)
+                prev_q, prev_r = history[-1]
+                if prev_r and piece:
+                    new_r = prev_r + "\n\n" + piece
+                elif piece:
+                    new_r = piece
+                else:
+                    new_r = prev_r
+                history[-1] = (prev_q, new_r)
             else:
-                history.append(("", content))
+                history.append(("", piece))
             continue
         if role == "tool":
             # Append tool result to last assistant response for context
             if history and history[-1][1]:
                 history[-1] = (
                     history[-1][0],
-                    history[-1][1] + "\n[Tool result]\n" + content[:500],
+                    history[-1][1] + "\n[Tool result]\n" + content[:10000],
                 )
+            elif history:
+                # Rare: tool result before any assistant text (still attach)
+                history[-1] = (history[-1][0], "[Tool result]\n" + content[:10000])
             continue
     return history
 
