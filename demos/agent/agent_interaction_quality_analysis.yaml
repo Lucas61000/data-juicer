@@ -34,6 +34,12 @@ process:
       copy_lineage_fields: true
       # user_label: "用户"
       # assistant_label: "助手"
+      # --- 写回 dialog_history / text / query / response 的体积上限 ---
+      # 默认单 tool 10000；设 0 表示不限制。与 dialog_* 的 max_*_for_prompt（只影响 LLM 输入）不同
+      history_tool_result_max_chars: 8192
+      history_max_assistant_trace_chars: 32000
+      # history_max_user_chars: 0
+      # history_compress_head_ratio: 0.62
 
   # ----- 2. PII 脱敏（路径/邮箱/密钥/ID/飞书·钉钉·企业微信 channel 与 open_id，支持多键与 messages 递归）-----
   - pii_redaction_mapper:
@@ -52,28 +58,46 @@ process:
   - clean_html_mapper: {}
   - clean_copyright_mapper: {}
 
-  # ----- 4. 对话属性打标（需 history_key / query_key / response_key；max_round 控制参与打标的轮数）-----
+  # ----- 4. 对话属性打标（LLM；agent 场景下 response 常含整段 tool 链，极易撑爆 prompt）-----
+  # 每个 dialog_history 轮次 = 1 次 API；末尾会再 append 一轮 (query,response)，单轮数据也可能打 2 次
+  # max_round↓、max_*_chars_for_prompt、try_num↓、max_tokens↓ 均可显著提速（见 PERFORMANCE_LLM.md）
   - dialog_intent_detection_mapper:
       api_model: "qwen-turbo"
       max_round: 5
+      max_query_chars_for_prompt: 6000
+      max_response_chars_for_prompt: 8000
+      try_num: 2
+      sampling_params: { max_tokens: 384 }
       history_key: "dialog_history"
       query_key: "query"
       response_key: "response"
   - dialog_sentiment_detection_mapper:
       api_model: "qwen-turbo"
       max_round: 5
+      max_query_chars_for_prompt: 6000
+      max_response_chars_for_prompt: 8000
+      try_num: 2
+      sampling_params: { max_tokens: 384 }
       history_key: "dialog_history"
       query_key: "query"
       response_key: "response"
   - dialog_topic_detection_mapper:
       api_model: "qwen-turbo"
       max_round: 5
+      max_query_chars_for_prompt: 6000
+      max_response_chars_for_prompt: 8000
+      try_num: 2
+      sampling_params: { max_tokens: 384 }
       history_key: "dialog_history"
       query_key: "query"
       response_key: "response"
   - dialog_sentiment_intensity_mapper:
       api_model: "qwen-turbo"
       max_round: 5
+      max_query_chars_for_prompt: 6000
+      max_response_chars_for_prompt: 8000
+      try_num: 2
+      sampling_params: { max_tokens: 384 }
       history_key: "dialog_history"
       query_key: "query"
       response_key: "response"
@@ -91,6 +115,7 @@ process:
   # LLM 归纳工具/技能为高层能力标签（如 文件与编辑、搜索与记忆），写入 meta.agent_skill_insights
   - agent_skill_insight_mapper:
       api_model: "qwen-turbo"
+      num_proc: 1
 
   # ----- 6. 文本质量与长度类 filter（保守：优先统计 text_len/num_words/lang/perplexity 等，几乎不删样本）-----
   - text_length_filter:

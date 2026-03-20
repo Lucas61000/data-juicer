@@ -16,7 +16,7 @@
 智能体数据**不是**严格的「user → assistant → user → assistant」一轮一轮交替：
 
 - 常见模式：`user` → 若干次 `(assistant + tool_calls) → tool → assistant → tool → …` → 最终 assistant 文本或下一轮 `user`。
-- **`agent_dialog_normalize_mapper`** 将 `messages` 压成 `dialog_history` / `query` / `response` / `text` 时，对**同一 user 回合内多段 assistant** 必须**拼接保留**（含 tool summary 与截断后的 tool 结果），否则下游 **`llm_quality_score_filter` / `llm_analysis_filter`** 只看到最后一次助手片段，容易误判「没干活」或「偏题」。
+- **`agent_dialog_normalize_mapper`** 将 `messages` 压成 `dialog_history` / `query` / `response` / `text` 时，对**同一 user 回合内多段 assistant** 必须**拼接保留**（含 tool summary）；可选 **`history_*_max_chars`** 对 tool/助手侧做**首尾保留 + 明确的中段省略标记**写回（与仅 prompt 截断不同），并打 **`meta.agent_dialog_history_compressed`**。否则下游 **`llm_quality_score_filter` / `llm_analysis_filter`** 只看到最后一次助手片段，容易误判「没干活」或「偏题」。
 - **`tool_success_tagger_mapper`** 按 **每条 `role=tool` 消息**计数；`failed` / `No such file` 等会记 **fail**。在探索性策略里单次失败可能随后被纠正——第 9 步提供 **`min_tool_fail_count_for_signal`**（默认 1；菜谱可调到 2+）再抬 `tool_message_error_pattern`，并与 **`meta.tool_unknown_count`**（无法-regex 分类的 tool 行）一起看。
 - **Dialog 打标算子**仍用 `dialog_history` 的 (q,r) 列表与 `max_round`；历史拼接正确后，多轮语义更一致。
 
