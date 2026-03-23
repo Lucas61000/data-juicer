@@ -173,25 +173,25 @@ class VideoCameraCalibrationMogeMapper(Mapper):
                 batch_len = batch_end - batch_start
                 for i in range(batch_len):
                     if need_intrinsics_related:
-                        intrinsics = output["intrinsics"][i].cpu().tolist()
+                        intr_np = output["intrinsics"][i].cpu().numpy()
                         if need_K:
                             final_k_list.append(
                                 [
-                                    [intrinsics[0][0] * width, 0, intrinsics[0][2] * width],
-                                    [0, intrinsics[1][1] * height, intrinsics[1][2] * height],
+                                    [float(intr_np[0][0]) * width, 0, float(intr_np[0][2]) * width],
+                                    [0, float(intr_np[1][1]) * height, float(intr_np[1][2]) * height],
                                     [0, 0, 1],
                                 ]
                             )
                         if need_hfov:
-                            final_hfov_list.append(2 * np.arctan(1 / 2 / intrinsics[0][0]))
+                            final_hfov_list.append(float(2 * np.arctan(1 / 2 / intr_np[0][0])))
                         if need_vfov:
-                            final_vfov_list.append(2 * np.arctan(1 / 2 / intrinsics[1][1]))
+                            final_vfov_list.append(float(2 * np.arctan(1 / 2 / intr_np[1][1])))
                     if need_points:
-                        final_points_list.append(output["points"][i].cpu().tolist())
+                        final_points_list.append(output["points"][i].cpu().numpy())
                     if need_depth:
-                        final_depth_list.append(output["depth"][i].cpu().tolist())
+                        final_depth_list.append(output["depth"][i].cpu().numpy())
                     if need_mask:
-                        final_mask_list.append(output["mask"][i].cpu().tolist())
+                        final_mask_list.append(output["mask"][i].cpu().numpy())
         else:
             # Fallback: per-frame inference when frames have different sizes
             logger.debug("Frames have mixed resolutions, falling back to per-frame inference.")
@@ -200,25 +200,25 @@ class VideoCameraCalibrationMogeMapper(Mapper):
                 height, width = heights[i], widths[i]
 
                 if need_intrinsics_related:
-                    intrinsics = output["intrinsics"].cpu().tolist()
+                    intr_np = output["intrinsics"].cpu().numpy()
                     if need_K:
                         final_k_list.append(
                             [
-                                [intrinsics[0][0] * width, 0, intrinsics[0][2] * width],
-                                [0, intrinsics[1][1] * height, intrinsics[1][2] * height],
+                                [float(intr_np[0][0]) * width, 0, float(intr_np[0][2]) * width],
+                                [0, float(intr_np[1][1]) * height, float(intr_np[1][2]) * height],
                                 [0, 0, 1],
                             ]
                         )
                     if need_hfov:
-                        final_hfov_list.append(2 * np.arctan(1 / 2 / intrinsics[0][0]))
+                        final_hfov_list.append(float(2 * np.arctan(1 / 2 / intr_np[0][0])))
                     if need_vfov:
-                        final_vfov_list.append(2 * np.arctan(1 / 2 / intrinsics[1][1]))
+                        final_vfov_list.append(float(2 * np.arctan(1 / 2 / intr_np[1][1])))
                 if need_points:
-                    final_points_list.append(output["points"].cpu().tolist())
+                    final_points_list.append(output["points"].cpu().numpy())
                 if need_depth:
-                    final_depth_list.append(output["depth"].cpu().tolist())
+                    final_depth_list.append(output["depth"].cpu().numpy())
                 if need_mask:
-                    final_mask_list.append(output["mask"].cpu().tolist())
+                    final_mask_list.append(output["mask"].cpu().numpy())
 
         # Step 3: Write results to tag_dict
         if need_K:

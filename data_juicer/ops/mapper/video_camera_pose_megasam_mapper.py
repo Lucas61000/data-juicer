@@ -195,13 +195,22 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             image = torch.as_tensor(image).permute(2, 0, 1)
             image = image[None]
 
-            depth = torch.as_tensor(to_standard_list(raw_depth))
+            # 兼容 numpy array (来自 MoGe 优化输出) 和 python list 两种格式
+            if isinstance(raw_depth, np.ndarray):
+                depth = torch.from_numpy(raw_depth.astype(np.float32))
+            else:
+                depth = torch.as_tensor(raw_depth, dtype=torch.float32)
             depth = torch.nn.functional.interpolate(depth[None, None], (h1, w1), mode="nearest-exact").squeeze()
             depth = depth[: h1 - h1 % 8, : w1 - w1 % 8]
 
             mask = torch.ones_like(depth)
 
-            intrinsics = torch.as_tensor([raw_intr[0][0], raw_intr[1][1], raw_intr[0][2], raw_intr[1][2]])
+            # 兼容 numpy array 和 python list 格式的 intrinsics
+            if isinstance(raw_intr, np.ndarray):
+                intr_arr = raw_intr.astype(np.float32)
+                intrinsics = torch.tensor([intr_arr[0, 0], intr_arr[1, 1], intr_arr[0, 2], intr_arr[1, 2]])
+            else:
+                intrinsics = torch.as_tensor([raw_intr[0][0], raw_intr[1][1], raw_intr[0][2], raw_intr[1][2]])
             intrinsics[0::2] *= w1 / w0
             intrinsics[1::2] *= h1 / h0
 
@@ -233,7 +242,10 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             depth_list = cur_video_calibration[CameraCalibrationKeys.depth]
             intrinsics = cur_video_calibration[CameraCalibrationKeys.intrinsics]
 
-            intrinsics = np.array(to_standard_list(intrinsics), dtype=np.float32)
+            if isinstance(intrinsics, np.ndarray):
+                intrinsics = intrinsics.astype(np.float32)
+            else:
+                intrinsics = np.array(to_standard_list(intrinsics), dtype=np.float32)
 
             # (3, 3) -> (N, 3, 3)
             if intrinsics.ndim == 2:
