@@ -195,7 +195,6 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             image = torch.as_tensor(image).permute(2, 0, 1)
             image = image[None]
 
-            # 兼容 numpy array (来自 MoGe 优化输出) 和 python list 两种格式
             if isinstance(raw_depth, np.ndarray):
                 depth = torch.from_numpy(raw_depth.astype(np.float32))
             else:
@@ -205,7 +204,6 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
 
             mask = torch.ones_like(depth)
 
-            # 兼容 numpy array 和 python list 格式的 intrinsics
             if isinstance(raw_intr, np.ndarray):
                 intr_arr = raw_intr.astype(np.float32)
                 intrinsics = torch.tensor([intr_arr[0, 0], intr_arr[1, 1], intr_arr[0, 2], intr_arr[1, 2]])
