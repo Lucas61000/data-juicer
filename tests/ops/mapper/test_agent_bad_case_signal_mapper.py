@@ -143,6 +143,53 @@ class TestAgentBadCaseSignalMapper(unittest.TestCase):
             codes = [x["code"] for x in out[Fields.meta][MetaKeys.agent_bad_case_signals]]
             self.assertNotIn("high_token_usage", codes)
 
+    def test_dialog_quality_meta_low_watchlist(self):
+        op = AgentBadCaseSignalMapper(
+            signal_on_tool_fail=False,
+            signal_on_suspect_empty_response=False,
+            signal_on_negative_sentiment_hint=False,
+            signal_on_llm_analysis_low=False,
+            signal_on_llm_text_quality_low=False,
+            signal_hard_query_poor_reply=False,
+            signal_on_low_dialog_quality_meta=True,
+            dialog_quality_low_score_threshold=2.0,
+            min_dialog_quality_low_axes_for_signal=1,
+        )
+        sample = {
+            Fields.meta: {
+                MetaKeys.dialog_memory_consistency: {"score": 1.5, "reason": "x"},
+            },
+            Fields.stats: {},
+            "query": "q",
+            "response": "r",
+        }
+        out = op.process_single(sample)
+        codes = [s["code"] for s in out[Fields.meta][MetaKeys.agent_bad_case_signals]]
+        self.assertIn("dialog_turn_quality_meta_low", codes)
+        self.assertEqual(out[Fields.meta][MetaKeys.agent_bad_case_tier], "watchlist")
+
+    def test_dialog_quality_meta_signal_disabled(self):
+        op = AgentBadCaseSignalMapper(
+            signal_on_tool_fail=False,
+            signal_on_suspect_empty_response=False,
+            signal_on_negative_sentiment_hint=False,
+            signal_on_llm_analysis_low=False,
+            signal_on_llm_text_quality_low=False,
+            signal_hard_query_poor_reply=False,
+            signal_on_low_dialog_quality_meta=False,
+        )
+        sample = {
+            Fields.meta: {
+                MetaKeys.dialog_memory_consistency: {"score": 1.0, "reason": "x"},
+            },
+            Fields.stats: {},
+            "query": "q",
+            "response": "r",
+        }
+        out = op.process_single(sample)
+        codes = [s["code"] for s in out[Fields.meta][MetaKeys.agent_bad_case_signals]]
+        self.assertNotIn("dialog_turn_quality_meta_low", codes)
+
 
 if __name__ == "__main__":
     unittest.main()

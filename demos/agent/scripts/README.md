@@ -59,3 +59,10 @@ python demos/agent/scripts/slice_export_by_tier.py \
 5. **`slice_export_by_tier.py`** — 导出待人工复核子集  
 
 第 10 步 LLM 洞察仅在全量菜谱中启用；smoke 配置已关闭 `signal_on_llm_*`，避免依赖 API。
+
+补充：
+
+- `run_bad_case_pipeline.sh report`（以及 `smoke` / `full` 末尾自动报告）默认附加 **`--bilingual`** 与 **`--llm-summary`**。关闭：`--no-bilingual` / `--no-llm-summary`，或环境变量 `BAD_CASE_REPORT_BILINGUAL=0` / `BAD_CASE_REPORT_LLM=0`。
+- 页首导读若出现 **`The read operation timed out`**：为 DashScope/OpenAI 兼容接口读超时；可调大 **`BAD_CASE_REPORT_LLM_TIMEOUT_SEC`**（默认 120）或 **`--llm-timeout-sec`**，超时会自动重试 1 次。
+- 也可直接调用 `generate_bad_case_report.py --bilingual --llm-summary ...`。
+- **产出 / 报告语言**：菜谱里各 LLM 算子可设 **`preferred_output_lang: zh`** 或 **`en`**（见 `data_juicer/utils/agent_output_locale.py`）；`agent_insight_llm_mapper` 会把选用语言写入 **`meta.agent_pipeline_output_lang`**。生成 HTML 时用 **`--report-lang auto|zh|en`**（`auto` 时读环境变量 **`BAD_CASE_REPORT_LANG`** 或上述 meta），仅影响报告里**分档展示名**与 `<html lang>` 等；全文 i18n 可逐步扩展。

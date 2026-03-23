@@ -46,7 +46,7 @@ Data-Juicer 中的算子分为以下 8 种类型。
 | [filter](#filter) | 56 | Filters out low-quality samples. 过滤低质量样本。 |
 | [formatter](#formatter) | 8 | Discovers, loads, and canonicalizes source data. 发现、加载、规范化原始数据。 |
 | [grouper](#grouper) | 3 | Group samples to batched samples. 将样本分组，每一组组成一个批量样本。 |
-| [mapper](#mapper) | 113 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
+| [mapper](#mapper) | 124 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
 | [pipeline](#pipeline) | 3 | Applies dataset-level processing; both input and output are datasets. 执行数据集级别的操作，输入和输出均为完整数据集。 |
 | [selector](#selector) | 5 | Selects top samples based on ranking. 基于排序选取高质量样本。 |
 
@@ -184,7 +184,9 @@ All the specific operators are listed below, each featured with several capabili
 | agent_dialog_normalize_mapper | 🔤Text 💻CPU 🟡Beta | Normalize agent format (messages + choices) to DJ fields. 将代理格式 (消息选择) 标准化为DJ字段。 | - | - |
 | agent_insight_llm_mapper | 💻CPU 🔗API 🟡Beta | Synthesize stats + LLM eval text into ``meta.agent_insight_llm`` (JSON). 将stats LLM eval文本合成为 &#39;&#39;meta.agent_insight_llm &#39;&#39;(JSON)。 | - | - |
 | agent_skill_insight_mapper | 💻CPU 🔗API 🔴Alpha | Summarize agent_tool_types and agent_skill_types into insights via LLM. 通过大语言模型将代理工具类型和代理技能类型总结为洞察。 | - | - |
+| agent_tool_relevance_mapper | 💻CPU 🔴Alpha | Rough fit between tools/capabilities and the user task (uses meta tool tags). 工具/功能与用户任务之间的粗略匹配 (使用元工具标签)。 | - | [OpenJudge tool graders](https://agentscope-ai.github.io/OpenJudge/built_in_graders/agent_graders/) |
 | agent_tool_type_mapper | 💻CPU 🔴Alpha | Set primary_tool_type and dominant_tool_types from meta.agent_tool_types. 从meta.Agent_ tool_types设置primary_tool_type和dominant_tool_types。 | - | - |
+| agent_trace_coherence_mapper | 🔤Text 💻CPU 🔴Alpha | Coherence of the flattened session ``text`` (goal focus, few detours). 扁平化会话 “文本” 的连贯性 (目标集中，少走弯路)。 | - | [OpenJudge trajectory graders](https://agentscope-ai.github.io/OpenJudge/built_in_graders/agent_graders/) |
 | audio_add_gaussian_noise_mapper | 📣Audio 💻CPU 🟡Beta | Mapper to add Gaussian noise to audio samples. 映射器将高斯噪声添加到音频样本。 | [info](operators/mapper/audio_add_gaussian_noise_mapper.md) | - |
 | audio_ffmpeg_wrapped_mapper | 📣Audio 💻CPU 🟢Stable | Wraps FFmpeg audio filters for processing audio files in a dataset. 包装FFmpeg音频过滤器，用于处理数据集中的音频文件。 | [info](operators/mapper/audio_ffmpeg_wrapped_mapper.md) | - |
 | calibrate_qa_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Calibrates question-answer pairs based on reference text using an API model. 使用API模型根据参考文本校准问答对。 | [info](operators/mapper/calibrate_qa_mapper.md) | - |
@@ -199,10 +201,18 @@ All the specific operators are listed below, each featured with several capabili
 | detect_character_attributes_mapper | 🚀GPU 🟡Beta | Takes an image, a caption, and main character names as input to extract the characters' attributes. 根据给定的图像、图像描述信息和（多个）角色名称，提取图像中主要角色的属性。 | [info](operators/mapper/detect_character_attributes_mapper.md) | [DetailMaster](https://arxiv.org/abs/2505.16915) |
 | detect_character_locations_mapper | 🚀GPU 🟡Beta | Given an image and a list of main character names, extract the bounding boxes for each present character. 给定一张图像和主要角色的名称列表，提取每个在场角色的边界框。(YOLOE + MLLM) | [info](operators/mapper/detect_character_locations_mapper.md) | [DetailMaster](https://arxiv.org/abs/2505.16915) |
 | detect_main_character_mapper | 🚀GPU 🟡Beta | Extract all main character names based on the given image and its caption. 根据给定的图像及其图像描述，提取所有主要角色的名字。 | [info](operators/mapper/detect_main_character_mapper.md) | [DetailMaster](https://arxiv.org/abs/2505.16915) |
+| dialog_clarification_quality_mapper | 💻CPU 🔴Alpha | Quality of clarifying questions when the ask is vague; direct solve when clear. 当询问含糊不清时澄清问题的质量; 明确时直接解决。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
+| dialog_coreference_mapper | 💻CPU 🔴Alpha | Whether the reply resolves pronouns/deictics in the latest user turn. 回复是否在最近的用户回合解析代词/指示词。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
+| dialog_error_recovery_mapper | 💻CPU 🔴Alpha | When the user disputes a prior assistant mistake, is the reply corrective. 当用户对先前的助手错误提出异议时，是答复纠正。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
 | dialog_intent_detection_mapper | 💻CPU 🔗API 🟢Stable | Generates user's intent labels in a dialog by analyzing the history, query, and response. 通过分析历史记录、查询和响应，在对话框中生成用户的意图标签。 | [info](operators/mapper/dialog_intent_detection_mapper.md) | - |
+| dialog_memory_consistency_mapper | 💻CPU 🔴Alpha | Whether the final assistant turn respects prior user constraints and facts. 最终助理转弯是否尊重先前的用户约束和事实。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
+| dialog_non_repetition_mapper | 💻CPU 🔴Alpha | New information vs prior assistant turns in the same prompt window. 新信息与先前助手在同一个提示窗口中打开。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
+| dialog_proactivity_mapper | 💻CPU 🔴Alpha | Balance helpful initiative against rambling or filler. 平衡有益的主动性和漫不经心或填充。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
+| dialog_quality_llm_base | 💻CPU 🔗API 🔴Alpha | One API call → meta[META_KEY] with score (1–5) and reason. 一个API调用 → meta[META_KEY]，得分 (1-5) 和原因。 | - | - |
 | dialog_sentiment_detection_mapper | 💻CPU 🔗API 🟢Stable | Generates sentiment labels and analysis for user queries in a dialog. 在对话框中为用户查询生成情绪标签和分析。 | [info](operators/mapper/dialog_sentiment_detection_mapper.md) | - |
 | dialog_sentiment_intensity_mapper | 💻CPU 🔗API 🟢Stable | Mapper to predict user's sentiment intensity in a dialog, ranging from -5 to 5. Mapper预测用户在对话框中的情绪强度，范围从-5到5。 | [info](operators/mapper/dialog_sentiment_intensity_mapper.md) | - |
 | dialog_topic_detection_mapper | 💻CPU 🔗API 🟢Stable | Generates user's topic labels and analysis in a dialog. 在对话框中生成用户的主题标签和分析。 | [info](operators/mapper/dialog_topic_detection_mapper.md) | - |
+| dialog_topic_shift_mapper | 💻CPU 🔴Alpha | Focus on new topic vs clinging to an obsolete thread. 专注于新主题vs坚持一个过时的线程。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
 | download_file_mapper | 💻CPU 🟡Beta | Mapper to download URL files to local files or load them into memory. 映射器将URL文件下载到本地文件或将其加载到内存中。 | [info](operators/mapper/download_file_mapper.md) | - |
 | expand_macro_mapper | 🔤Text 💻CPU 🟢Stable | Expands macro definitions in the document body of LaTeX samples. 展开LaTeX示例文档主体中的宏定义。 | [info](operators/mapper/expand_macro_mapper.md) | - |
 | extract_entity_attribute_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Extracts attributes for given entities from the text and stores them in the sample's metadata. 从文本中提取给定实体的属性，并将其存储在示例的元数据中。 | [info](operators/mapper/extract_entity_attribute_mapper.md) | - |
@@ -239,6 +249,7 @@ All the specific operators are listed below, each featured with several capabili
 | optimize_query_mapper | 🚀GPU 🟢Stable | Optimize queries in question-answer pairs to make them more specific and detailed. 优化问答对中的查询，使其更加具体和详细。 | [info](operators/mapper/optimize_query_mapper.md) | - |
 | optimize_response_mapper | 🚀GPU 🟢Stable | Optimize response in question-answer pairs to be more detailed and specific. 优化问答对中的响应，使其更加详细和具体。 | [info](operators/mapper/optimize_response_mapper.md) | - |
 | pair_preference_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Mapper to construct paired preference samples by generating a rejected response and its reason. Mapper通过生成拒绝响应及其原因来构造成对的偏好样本。 | [info](operators/mapper/pair_preference_mapper.md) | - |
+| pii_llm_suspect_mapper | 💻CPU 🔗API 🟡Beta | LLM audit (and optional redaction) for possibly missed PII. LLM审计 (和可选的编辑) 可能错过的PII。 | - | - |
 | pii_redaction_mapper | 💻CPU 🔴Alpha | Redact PII in text and optionally in messages/query/response. 在文本中以及可选地在消息/查询/响应中编辑PII。 | - | - |
 | punctuation_normalization_mapper | 🔤Text 💻CPU 🟢Stable | Normalizes unicode punctuations to their English equivalents in text samples. 将unicode标点规范化为文本示例中的英语等效项。 | [info](operators/mapper/punctuation_normalization_mapper.md) | - |
 | python_file_mapper | 💻CPU 🟢Stable | Executes a Python function defined in a file on input data. 对输入数据执行文件中定义的Python函数。 | [info](operators/mapper/python_file_mapper.md) | - |
@@ -265,7 +276,7 @@ All the specific operators are listed below, each featured with several capabili
 | text_chunk_mapper | 🔤Text 💻CPU 🔗API 🟢Stable | Split input text into chunks based on specified criteria. 根据指定的条件将输入文本拆分为块。 | [info](operators/mapper/text_chunk_mapper.md) | - |
 | text_tagging_by_prompt_mapper | 🔤Text 🚀GPU 🌊vLLM 🧩HF 🟡Beta | Mapper to generate text tags using prompt with LLM. Mapper使用带有LLM的prompt生成文本标记。 | [info](operators/mapper/text_tagging_by_prompt_mapper.md) | - |
 | tool_success_tagger_mapper | 💻CPU 🔴Alpha | Set meta tool_success_count, tool_fail_count, tool_success_ratio. 设置meta tool_success_count、tool_fail_count、tool_success_ratio。 | - | - |
-| usage_counter_mapper | 💻CPU 🔴Alpha | Write token usage to meta from choices/usage (OpenAI/Anthropic-style). 从选择/用法 (OpenAI/Anthropic风格) 将令牌用法写入meta。 | - | - |
+| usage_counter_mapper | 💻CPU 🟡Beta | Write token usage to meta from choices/usage (OpenAI/Anthropic-style). 从选择/用法 (OpenAI/Anthropic风格) 将令牌用法写入meta。 | - | - |
 | vggt_mapper | 🎬Video 🚀GPU 🟡Beta | Input a video of a single scene, and use VGGT to extract information including Camera Pose, Depth Maps, Point Maps, and 3D Point Tracks. 输入单个场景的视频，并使用VGGT提取包括相机姿态、深度图、点图和3D点轨迹的信息。 | [info](operators/mapper/vggt_mapper.md) | - |
 | video_camera_calibration_static_deepcalib_mapper | 🎬Video 🚀GPU 🟡Beta | Compute the camera intrinsics and field of view (FOV) for a static camera using DeepCalib. 使用DeepCalib计算静态摄像机的摄像机内部和视场 (FOV)。 | [info](operators/mapper/video_camera_calibration_static_deepcalib_mapper.md) | - |
 | video_camera_calibration_static_moge_mapper | 🎬Video 🚀GPU 🟡Beta | Compute the camera intrinsics and field of view (FOV) for a static camera using Moge-2 (more accurate than DeepCalib). 使用Moge-2 (比DeepCalib更准确) 计算静态摄像机的摄像机内部函数和视场 (FOV)。 | [info](operators/mapper/video_camera_calibration_static_moge_mapper.md) | - |

@@ -14,34 +14,50 @@ from loguru import logger
 from pydantic import PositiveInt
 
 from data_juicer.ops.base_op import OPERATORS, TAGGING_OPS, Mapper
+from data_juicer.utils.agent_output_locale import (
+    agent_insight_system_prompt,
+    normalize_preferred_output_lang,
+)
 from data_juicer.utils.constant import Fields, MetaKeys, StatsKeys
 from data_juicer.utils.model_utils import get_model, prepare_model
 
 OP_NAME = "agent_insight_llm_mapper"
 
-DEFAULT_SYSTEM_PROMPT = (
-    "You are a careful analyst for agent interaction logs "
-    "(auto data-scientist style).\n"
-    "You receive ONE sample as a JSON object: numeric stats, short "
-    "previews of query/response, optional LLM evaluation rationales, "
-    "dialog tags, tool usage, and deterministic bad-case signals.\n\n"
-    "Tasks:\n"
-    "1) Integrate numbers and qualitative rationales; note agreement "
-    "or conflict.\n"
-    "2) Attribute only with keys from the input JSON (no invented "
-    "facts).\n"
-    '3) Prefer "uncertain" / low confidence (precision for human QA).\n\n'
-    "Output a single JSON object with exactly these keys:\n"
-    "- headline: one short Chinese sentence for dashboard cards\n"
-    "- root_causes: array of {factor, confidence (high|medium|low), "
-    "cited_fields (strings from input), rationale_one_line}\n"
-    '- narrative_alignment: "aligned"|"mixed"|"conflict"\n'
-    '- human_review_priority: "P0"|"P1"|"P2"|"P3" (P0 sparingly)\n'
-    "- viz_facets: strings for chart dimensions "
-    "(e.g. agent_request_model, agent_pt)\n"
-    "- audit_notes: optional caveats\n\n"
-    "Respond with valid JSON only, no markdown fences."
+_DIALOG_QUALITY_LLM_META_KEYS = (
+    MetaKeys.dialog_memory_consistency,
+    MetaKeys.dialog_coreference,
+    MetaKeys.dialog_topic_shift,
+    MetaKeys.dialog_error_recovery,
+    MetaKeys.dialog_clarification_quality,
+    MetaKeys.dialog_proactivity,
+    MetaKeys.dialog_non_repetition,
+    MetaKeys.agent_trace_coherence,
+    MetaKeys.agent_tool_relevance,
 )
+
+
+def _dialog_quality_llm_pack(meta: dict) -> Optional[dict]:
+    """Compact 1–5 axis scores from lightweight turn/trace LLM mappers."""
+    out: Dict[str, Any] = {}
+    for k in _DIALOG_QUALITY_LLM_META_KEYS:
+        rec = meta.get(k)
+        if not isinstance(rec, dict):
+            continue
+        if rec.get("skipped"):
+            out[k] = {"skipped": True}
+            continue
+        if rec.get("error"):
+            out[k] = {"error": str(rec.get("error"))}
+            continue
+        piece: Dict[str, Any] = {}
+        if rec.get("score") is not None:
+            piece["score"] = rec["score"]
+        reason = rec.get("reason")
+        if isinstance(reason, str) and reason.strip():
+            piece["reason"] = reason[:400]
+        if piece:
+            out[k] = piece
+    return out if out else None
 
 
 def _json_safe(x: Any, depth: int = 0) -> Any:
@@ -106,6 +122,8 @@ def _build_evidence_pack(
             return labels
         return labels[:n]
 
+    dq_pack = _dialog_quality_llm_pack(meta)
+
     return {
         "lineage": {
             "agent_request_model": meta.get(MetaKeys.agent_request_model),
@@ -151,6 +169,7 @@ def _build_evidence_pack(
             "signals": meta.get(MetaKeys.agent_bad_case_signals),
             "tier": meta.get(MetaKeys.agent_bad_case_tier),
         },
+        "dialog_quality_llm": _truncate_record(dq_pack, max_chars=2800) if dq_pack else None,
         "query_preview": q[:query_max],
         "response_preview": r[:response_max],
     }
@@ -183,10 +202,12 @@ class AgentInsightLLMMapper(Mapper):
         try_num: PositiveInt = 2,
         model_params: Dict = {},
         sampling_params: Dict = {},
+        preferred_output_lang: str = "en",
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
+        self.preferred_output_lang = normalize_preferred_output_lang(preferred_output_lang)
+        self.system_prompt = system_prompt or agent_insight_system_prompt(self.preferred_output_lang)
         self.query_key = query_key
         self.response_key = response_key
         self.query_preview_max_chars = query_preview_max_chars
@@ -211,6 +232,8 @@ class AgentInsightLLMMapper(Mapper):
         tier = meta.get(MetaKeys.agent_bad_case_tier)
         if self.run_for_tiers is not None and tier not in self.run_for_tiers:
             return sample
+
+        meta[MetaKeys.agent_pipeline_output_lang] = self.preferred_output_lang
 
         pack = _build_evidence_pack(
             sample,
@@ -240,12 +263,18 @@ class AgentInsightLLMMapper(Mapper):
         if parsed is not None:
             meta[MetaKeys.agent_insight_llm] = parsed
         else:
+            if self.preferred_output_lang == "zh":
+                headline = "解析失败，见 meta.agent_insight_llm_raw"
+                audit = "JSON parse failed"
+            else:
+                headline = "Parse failed; see meta.agent_insight_llm_raw"
+                audit = "JSON parse failed"
             meta[MetaKeys.agent_insight_llm] = {
-                "headline": "解析失败，见 meta.agent_insight_llm_raw",
+                "headline": headline,
                 "root_causes": [],
                 "narrative_alignment": "mixed",
                 "human_review_priority": "P2",
                 "viz_facets": [],
-                "audit_notes": "JSON parse failed",
+                "audit_notes": audit,
             }
         return sample

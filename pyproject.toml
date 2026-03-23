@@ -158,7 +158,6 @@ ai_services = [
     "label-studio==1.17.0",  # Data labeling
 ]
 
-
 # All dependencies (default + all optional)
 all = [
     "py-data-juicer[generic]",

@@ -19,6 +19,19 @@ from data_juicer.utils.constant import Fields, MetaKeys, StatsKeys
 OP_NAME = "agent_bad_case_signal_mapper"
 logger = logging.getLogger(__name__)
 
+# Lightweight 1–5 turn/trace judges (dialog_* / agent_* quality LLM mappers).
+_DIALOG_QUALITY_SCORE_META_KEYS = (
+    MetaKeys.dialog_memory_consistency,
+    MetaKeys.dialog_coreference,
+    MetaKeys.dialog_topic_shift,
+    MetaKeys.dialog_error_recovery,
+    MetaKeys.dialog_clarification_quality,
+    MetaKeys.dialog_proactivity,
+    MetaKeys.dialog_non_repetition,
+    MetaKeys.agent_trace_coherence,
+    MetaKeys.agent_tool_relevance,
+)
+
 _calibration_missing_path_warned: Optional[str] = None
 
 
@@ -81,6 +94,8 @@ class AgentBadCaseSignalMapper(Mapper):
       ``agent_turn_count``, lineage keys.
     - ``stats``: ``llm_analysis_*``, ``llm_quality_*``, ``llm_difficulty_*``,
       ``text_len``, ``num_words``, ``perplexity``, ``lang_score``.
+    - ``meta``: optional ``dialog_*`` / ``agent_trace_coherence`` /
+      ``agent_tool_relevance`` records (1–5 scores from lightweight LLM mappers).
 
     Each signal group can be toggled via constructor flags. ``high`` weight feeds
     ``high_precision`` tier (with config); ``medium`` feeds ``watchlist`` only.
@@ -149,6 +164,10 @@ class AgentBadCaseSignalMapper(Mapper):
         # --- tier composition ---
         high_precision_on_tool_fail_alone: bool = True,
         min_medium_signals_for_watchlist: int = 2,
+        # --- dialog / trace 1–5 meta (no extra LLM; reads upstream mapper output) ---
+        signal_on_low_dialog_quality_meta: bool = True,
+        dialog_quality_low_score_threshold: float = 2.0,
+        min_dialog_quality_low_axes_for_signal: int = 1,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -192,6 +211,9 @@ class AgentBadCaseSignalMapper(Mapper):
             "angry",
             "沮丧",
             "不满",
+            "frustrated",
+            "disappointed",
+            "unhappy",
         ]
         self.signal_on_high_perplexity = signal_on_high_perplexity
         self.perplexity_high_threshold = perplexity_high_threshold
@@ -200,6 +222,9 @@ class AgentBadCaseSignalMapper(Mapper):
         self.poor_reply_quality_max = poor_reply_quality_max
         self.high_precision_on_tool_fail_alone = high_precision_on_tool_fail_alone
         self.min_medium_signals_for_watchlist = min_medium_signals_for_watchlist
+        self.signal_on_low_dialog_quality_meta = bool(signal_on_low_dialog_quality_meta)
+        self.dialog_quality_low_score_threshold = float(dialog_quality_low_score_threshold)
+        self.min_dialog_quality_low_axes_for_signal = max(1, int(min_dialog_quality_low_axes_for_signal))
 
     def _resolve_calibration_row(self, meta: dict) -> Dict[str, Any]:
         if not self.auto_calibrate_thresholds or not self._calibration:
@@ -446,6 +471,32 @@ class AgentBadCaseSignalMapper(Mapper):
                     signals,
                     "hard_query_low_reply_quality_conjunction",
                     f"difficulty={d}, llm_quality_score={qs}",
+                    "medium",
+                )
+
+        if self.signal_on_low_dialog_quality_meta:
+            lows: List[str] = []
+            th = float(self.dialog_quality_low_score_threshold)
+            for k in _DIALOG_QUALITY_SCORE_META_KEYS:
+                rec = meta.get(k)
+                if not isinstance(rec, dict):
+                    continue
+                if rec.get("skipped") or rec.get("error"):
+                    continue
+                sc = rec.get("score")
+                if sc is None:
+                    continue
+                try:
+                    fv = float(sc)
+                except (TypeError, ValueError):
+                    continue
+                if fv <= th:
+                    lows.append(k)
+            if len(lows) >= self.min_dialog_quality_low_axes_for_signal:
+                self._append(
+                    signals,
+                    "dialog_turn_quality_meta_low",
+                    f"axes={lows}, threshold={th}",
                     "medium",
                 )
 

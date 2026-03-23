@@ -4,12 +4,45 @@
 # Extract token usage from agent response (choices, usage, response_metadata).
 # Multi-format: OpenAI, Anthropic, generic usage objects.
 
-from typing import Any, List
+from typing import Any, List, Set, Tuple
 
 from data_juicer.ops.base_op import OPERATORS, TAGGING_OPS, Mapper
 from data_juicer.utils.constant import Fields, MetaKeys
 
 OP_NAME = "usage_counter_mapper"
+
+
+def _usage_dedup_key(u: dict) -> Tuple[int, int, int]:
+    """Stable key so duplicate copies of the same usage (e.g. top-level + choice) merge."""
+    try:
+        p = int(u.get("prompt_tokens") or 0)
+    except (TypeError, ValueError):
+        p = 0
+    try:
+        c = int(u.get("completion_tokens") or 0)
+    except (TypeError, ValueError):
+        c = 0
+    raw_t = u.get("total_tokens")
+    if raw_t is not None:
+        try:
+            t = int(raw_t)
+        except (TypeError, ValueError):
+            t = p + c
+    else:
+        t = p + c
+    return (p, c, t)
+
+
+def _dedupe_usages_preserve_order(usages: List[dict]) -> List[dict]:
+    seen: Set[Tuple[int, int, int]] = set()
+    out: List[dict] = []
+    for u in usages:
+        key = _usage_dedup_key(u)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(u)
+    return out
 
 
 def _get_usage_from_obj(obj: Any) -> dict:
@@ -45,19 +78,29 @@ def _aggregate_usage(usages: List[dict]) -> tuple:
 @TAGGING_OPS.register_module(OP_NAME)
 @OPERATORS.register_module(OP_NAME)
 class UsageCounterMapper(Mapper):
-    """Write token usage to meta from choices/usage (OpenAI/Anthropic-style)."""
+    """Write token usage to meta from choices/usage (OpenAI/Anthropic-style).
+
+    Collects every non-empty usage dict found (top-level ``usage_key``,
+    ``response_metadata``, each ``choices[]`` entry, nested message usage).
+    By default, **deduplicates** identical usage snapshots before summing: same
+    ``(prompt_tokens, completion_tokens, total_tokens or prompt+completion)``
+    only counts once (typical when ``response_usage`` mirrors ``choices[0].usage``).
+    Set ``dedupe_identical_usage: false`` to restore legacy double-counting.
+    """
 
     def __init__(
         self,
         choices_key: str = "choices",
         usage_key: str = "usage",
         response_metadata_key: str = "response_metadata",
+        dedupe_identical_usage: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.choices_key = choices_key
         self.usage_key = usage_key
         self.response_metadata_key = response_metadata_key
+        self.dedupe_identical_usage = bool(dedupe_identical_usage)
 
     def process_single(self, sample):
         usages = []
@@ -89,6 +132,9 @@ class UsageCounterMapper(Mapper):
                     u = _get_usage_from_obj(msg)
                     if u:
                         usages.append(u)
+
+        if self.dedupe_identical_usage:
+            usages = _dedupe_usages_preserve_order(usages)
 
         if Fields.meta not in sample:
             sample[Fields.meta] = {}

@@ -4,6 +4,7 @@
 - 图表使用中文字体配置，避免中文显示为方框。
 - 典型样例默认页内最多 50 条，全量写入同目录 ``*_drilldown_full.jsonl``。
 - ``--llm-summary``：调用 OpenAI 兼容接口（默认读 ``DASHSCOPE_API_KEY`` / ``OPENAI_API_KEY``）。
+- 导读 HTTP 读超时默认 120s，可用 ``--llm-timeout-sec`` 或环境变量 ``BAD_CASE_REPORT_LLM_TIMEOUT_SEC``；超时自动重试 1 次。
 
 示例::
 
@@ -21,6 +22,7 @@ import html
 import io
 import json
 import os
+import socket
 import sys
 import urllib.error
 import urllib.request
@@ -29,12 +31,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import DefaultDict, Dict, List, Optional, Tuple
 
+# HTML 分档展示语言（main 中根据 --report-lang / 环境变量 / meta 设定）
+_REPORT_LOCALE = "zh"
+
 _SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from analyze_bad_case_cohorts import aggregate_cohort_stdlib, load_merged_rows  # noqa: E402
-from bad_case_signal_support import SIGNAL_SUPPORT_ROWS  # noqa: E402
+from bad_case_signal_support import (  # noqa: E402
+    DIALOG_QUALITY_SCORE_META_KEYS,
+    SIGNAL_SUPPORT_ROWS,
+)
 from dj_export_row import get_dj_meta, get_dj_stats  # noqa: E402
 
 # 机器枚举（jsonl / jq）不变；页面与图例用中文降低误解（原 high_precision ≠「高精度模型」）
@@ -43,9 +51,51 @@ TIER_LABEL_ZH: Dict[str, str] = {
     "watchlist": "待观察（弱证据）",
     "none": "未标记",
 }
+TIER_LABEL_EN: Dict[str, str] = {
+    "high_precision": "High suspicion (primary evidence)",
+    "watchlist": "Watchlist (weak evidence)",
+    "none": "Unlabeled",
+}
+
+
+def set_report_locale(lang: str) -> None:
+    """Set HTML tier display language: ``zh`` or ``en``."""
+    global _REPORT_LOCALE
+    s = (lang or "zh").strip().lower()
+    _REPORT_LOCALE = "en" if s.startswith("en") else "zh"
+
+
+def _normalize_report_lang_token(value: Optional[str]) -> str:
+    if not value or not str(value).strip():
+        return "zh"
+    s = str(value).strip().lower()
+    return "en" if s.startswith("en") else "zh"
+
+
+def infer_report_locale(
+    rows: List[dict],
+    arg_mode: str,
+    env_lang: Optional[str],
+) -> str:
+    """Resolve report UI language: explicit zh/en, or auto from env / meta."""
+    am = (arg_mode or "auto").strip().lower()
+    if am == "en":
+        return "en"
+    if am == "zh":
+        return "zh"
+    if env_lang and str(env_lang).strip():
+        return _normalize_report_lang_token(env_lang)
+    for row in rows[:120]:
+        meta = get_dj_meta(row)
+        v = meta.get("agent_pipeline_output_lang")
+        if v:
+            return _normalize_report_lang_token(str(v))
+    return "zh"
 
 
 def _tier_zh(machine: str) -> str:
+    if _REPORT_LOCALE == "en":
+        return TIER_LABEL_EN.get(str(machine), str(machine))
     return TIER_LABEL_ZH.get(str(machine), str(machine))
 
 
@@ -58,7 +108,53 @@ def _fmt_evidence_val(val: object, maxlen: int = 200) -> str:
     return s
 
 
-def _evidence_rows_for_signal(code: str, row: dict, meta: dict, stats: dict) -> List[Tuple[str, str]]:
+def _is_llm_read_timeout(err: BaseException) -> bool:
+    """urllib / socket 读超时常见为 URLError(reason=timeout) 或文案含 timed out。"""
+    if isinstance(err, TimeoutError):
+        return True
+    if isinstance(err, socket.timeout):
+        return True
+    low = str(err).lower()
+    if "timed out" in low or "timeout" in low:
+        return True
+    reason = getattr(err, "reason", None)
+    if reason is not None and reason is not err:
+        return _is_llm_read_timeout(reason)
+    return False
+
+
+def _dialog_quality_axis_cell(meta: dict, key: str) -> str:
+    """Format one axis record under meta[key] for evidence table."""
+    rec = meta.get(key)
+    if rec is None:
+        return "—"
+    if not isinstance(rec, dict):
+        return _fmt_evidence_val(rec, 220)
+    if rec.get("skipped"):
+        r = (rec.get("reason") or "").strip()
+        return f"skipped{f' ({r})' if r else ''}"
+    err = rec.get("error")
+    if err is not None and err != "":
+        return f"error={_fmt_evidence_val(err, 140)}"
+    sc = rec.get("score")
+    reason = (rec.get("reason") or "").strip()
+    parts: List[str] = []
+    if sc is not None:
+        parts.append(f"score={sc}")
+    else:
+        parts.append("(no score)")
+    if reason:
+        parts.append(f"reason={reason[:220]}")
+    return "; ".join(parts)
+
+
+def _evidence_rows_for_signal(
+    code: str,
+    row: dict,
+    meta: dict,
+    stats: dict,
+    sig: Optional[dict] = None,
+) -> List[Tuple[str, str]]:
     """Map signal code → (field_path, display_value) for report tables."""
     rows: List[Tuple[str, str]] = []
 
@@ -104,6 +200,19 @@ def _evidence_rows_for_signal(code: str, row: dict, meta: dict, stats: dict) -> 
         add("stats.llm_difficulty_score", stats.get("llm_difficulty_score"))
         add("stats.llm_quality_score", stats.get("llm_quality_score"))
         add("算子", "llm_difficulty_score_filter ∩ llm_quality_score_filter")
+    elif code == "dialog_turn_quality_meta_low":
+        if sig and sig.get("detail"):
+            add("signal.detail", sig.get("detail"))
+        add(
+            "说明",
+            "各轴 1–5 分与 reason 如下；触发本信号时 detail.axes 中轴通常 score≤threshold。",
+        )
+        for axis_key in DIALOG_QUALITY_SCORE_META_KEYS:
+            add(f"meta.{axis_key}", _dialog_quality_axis_cell(meta, axis_key))
+        add(
+            "算子",
+            "dialog_*_mapper / agent_trace_coherence_mapper / agent_tool_relevance_mapper",
+        )
     else:
         add("(见归因总表)", "本信号上游字段未逐项绑定，可查 meta / stats 全文")
     # de-dup keys keeping first
@@ -130,46 +239,88 @@ def _signal_evidence_tables_html(signals: List[dict], row: dict) -> str:
             continue
         w = html.escape(str(sig.get("weight") or ""))
         det = html.escape(_fmt_evidence_val(sig.get("detail"), 300))
-        erows = _evidence_rows_for_signal(code, row, meta, stats)
+        erows = _evidence_rows_for_signal(code, row, meta, stats, sig)
         body = "".join(
             f"<tr><td><code>{html.escape(k)}</code></td><td>{html.escape(v)}</td></tr>"
             for k, v in erows
+        )
+        sig_thead = (
+            "<thead><tr><th scope='col'>字段路径</th>"
+            "<th scope='col'>取值 / 说明</th></tr></thead>"
         )
         blocks.append(
             f"<div class='sig-evidence'><div class='sig-evidence-h'>"
             f"<code>{html.escape(code)}</code> "
             f"<span class='wtag'>weight={w}</span> "
             f"<span class='det'>{det}</span></div>"
-            f"<table class='inner'><tbody>{body}</tbody></table></div>"
+            f"<table class='inner sig-evidence-table'>{sig_thead}<tbody>{body}</tbody></table></div>"
         )
     if not blocks:
         return "<p class='note'>本样本无结构化信号。</p>"
     return "<div class='sig-evidence-wrap'>" + "".join(blocks) + "</div>"
 
 
+def _fmt_snapshot_cell(v: object) -> str:
+    """Format meta/stats scalars for the global snapshot (cleaner floats than raw JSON)."""
+    if v is None:
+        return "—"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, int) and not isinstance(v, bool):
+        return str(v)
+    if isinstance(v, float):
+        if v != v:  # NaN
+            return "NaN"
+        # trim float noise e.g. 0.27999999999999997 → 0.28
+        s = f"{v:.6f}".rstrip("0").rstrip(".")
+        return s if s else "0"
+    return _fmt_evidence_val(v, 220)
+
+
+# 与下方「各信号 ↔ 上游字段」小表结构对齐：末尾一行「算子」说明常见写入来源
+_SNAPSHOT_UPSTREAM_OPS = (
+    "tool_success_tagger_mapper（meta.tool_success_*）；"
+    "usage_counter_mapper（meta.total_tokens）；"
+    "agent_dialog_normalize_mapper（meta.agent_turn_count 等 lineage）；"
+    "llm_analysis_filter（stats.llm_analysis_score）；"
+    "llm_quality_score_filter（stats.llm_quality_score）；"
+    "llm_difficulty_score_filter（stats.llm_difficulty_score）"
+)
+
+
 def _global_evidence_snapshot_html(row: dict) -> str:
     """Snapshot of key meta/stats for quick sanity check."""
     meta = get_dj_meta(row)
     stats = get_dj_stats(row)
-    pairs = [
-        ("meta.tool_success_count", meta.get("tool_success_count")),
-        ("meta.tool_fail_count", meta.get("tool_fail_count")),
-        ("meta.tool_unknown_count", meta.get("tool_unknown_count")),
-        ("meta.tool_success_ratio", meta.get("tool_success_ratio")),
-        ("meta.total_tokens", meta.get("total_tokens")),
-        ("meta.agent_turn_count", meta.get("agent_turn_count")),
-        ("stats.llm_analysis_score", stats.get("llm_analysis_score")),
-        ("stats.llm_quality_score", stats.get("llm_quality_score")),
-        ("stats.llm_difficulty_score", stats.get("llm_difficulty_score")),
+    pairs: List[Tuple[str, str]] = [
+        ("meta.tool_success_count", _fmt_snapshot_cell(meta.get("tool_success_count"))),
+        ("meta.tool_fail_count", _fmt_snapshot_cell(meta.get("tool_fail_count"))),
+        ("meta.tool_unknown_count", _fmt_snapshot_cell(meta.get("tool_unknown_count"))),
+        ("meta.tool_success_ratio", _fmt_snapshot_cell(meta.get("tool_success_ratio"))),
+        ("meta.total_tokens", _fmt_snapshot_cell(meta.get("total_tokens"))),
+        ("meta.agent_turn_count", _fmt_snapshot_cell(meta.get("agent_turn_count"))),
+        ("stats.llm_analysis_score", _fmt_snapshot_cell(stats.get("llm_analysis_score"))),
+        ("stats.llm_quality_score", _fmt_snapshot_cell(stats.get("llm_quality_score"))),
+        ("stats.llm_difficulty_score", _fmt_snapshot_cell(stats.get("llm_difficulty_score"))),
+        ("算子", _SNAPSHOT_UPSTREAM_OPS),
     ]
-    body = "".join(
-        f"<tr><td><code>{html.escape(k)}</code></td><td>{html.escape(_fmt_evidence_val(v))}</td></tr>"
-        for k, v in pairs
+    rows_html: List[str] = []
+    for k, v in pairs:
+        tr_cls = " class='snap-ops'" if k == "算子" else ""
+        rows_html.append(
+            f"<tr{tr_cls}><td><code>{html.escape(k)}</code></td>"
+            f"<td>{html.escape(v)}</td></tr>"
+        )
+    body = "".join(rows_html)
+    thead = (
+        "<thead><tr><th scope='col'>字段路径</th>"
+        "<th scope='col'>取值 / 说明</th></tr></thead>"
     )
     return (
         "<section class='snap'><h4>关键 meta / stats 快照</h4>"
-        "<p class='note'>与归因链对照；缺失项为 <code>—</code>（可能未跑对应算子或未写入导出）。</p>"
-        f"<table class='inner'><tbody>{body}</tbody></table></section>"
+        "<p class='note'>与归因链对照；缺失项为 <code>—</code>（可能未跑对应算子或未写入导出）。"
+        "本表为跨信号汇总，逐条信号的上游字段见下方各 <code>sig-evidence</code> 小表。</p>"
+        f"<table class='inner snap-table'>{thead}<tbody>{body}</tbody></table></section>"
     )
 
 
@@ -243,10 +394,26 @@ def _signal_counts_by_weight(rows: List[dict]) -> Tuple[Counter, Counter]:
     return high_c, med_c
 
 
+_SIGNAL_ROLE_ORDER = {"primary": 0, "structured": 1, "appendix": 2}
+_SIGNAL_ROLE_LABEL_ZH = {
+    "primary": "主证据",
+    "structured": "结构化·轴分（建议重点读）",
+    "appendix": "附录·启发式",
+}
+
+
 def _attribution_table_html() -> str:
     parts = []
-    for r in SIGNAL_SUPPORT_ROWS:
-        role = "主证据" if r["role"] == "primary" else "附录·启发式"
+    rows_sorted = sorted(
+        SIGNAL_SUPPORT_ROWS,
+        key=lambda r: (
+            _SIGNAL_ROLE_ORDER.get(str(r.get("role")), 9),
+            str(r.get("code", "")),
+        ),
+    )
+    for r in rows_sorted:
+        rk = str(r.get("role", "appendix"))
+        role = _SIGNAL_ROLE_LABEL_ZH.get(rk, rk)
         parts.append(
             "<tr>"
             f"<td><code>{html.escape(r['code'])}</code></td>"
@@ -259,7 +426,93 @@ def _attribution_table_html() -> str:
         "<thead><tr><th>信号代码</th><th>证据角色</th><th>典型权重</th>"
         "<th>上游字段与算子</th></tr></thead>"
     )
-    return f"<table>{thead}<tbody>{''.join(parts)}</tbody></table>"
+    foot = (
+        "<p class='note'><strong>证据角色：</strong>"
+        "<code>主证据</code> 多对应 high 权重或强分层依据；"
+        "<code>结构化·轴分</code> 来自 §5b 多轴 1–5 质检 meta 汇总（多为 medium，"
+        "但与 discard/低分主证据同读更有解释力）；"
+        "<code>附录·启发式</code> 多为弱提示，需结合业务判断。</p>"
+    )
+    return f"<table>{thead}<tbody>{''.join(parts)}</tbody></table>{foot}"
+
+
+def _insight_fields_legend_html() -> str:
+    """Semantics for badges / JSON fields emitted by agent_insight_llm_mapper."""
+    rows_pr = [
+        (
+            "P0",
+            "最高优先级人工复核；仅在极强、可复核证据下使用（默认应稀少）。",
+            "Highest manual-review priority; use sparingly for the strongest, "
+            "auditable evidence only.",
+        ),
+        (
+            "P1",
+            "建议优先排期复核。",
+            "Schedule review soon.",
+        ),
+        (
+            "P2",
+            "常规复核或抽样即可。",
+            "Normal / sampled review.",
+        ),
+        (
+            "P3",
+            "低优先级；多为信息性或与主问题弱相关。",
+            "Low priority; informational or weakly related.",
+        ),
+    ]
+    rows_al = [
+        (
+            "aligned",
+            "数值类 stats 与 LLM 文字 rationale 方向一致、可互相印证。",
+            "Numeric stats and qualitative rationales agree.",
+        ),
+        (
+            "mixed",
+            "部分一致、部分存疑或证据不足，需在样例里对照 query/response/meta。",
+            "Partly consistent; verify against per-sample fields.",
+        ),
+        (
+            "conflict",
+            "数字与文字判断明显矛盾，或 insight 与 bad-case 信号解读冲突；"
+            "建议打开「典型样例」核对原始 meta/stats。",
+            "Clear tension between numbers and text; drill into raw meta/stats.",
+        ),
+    ]
+    pr_body = "".join(
+        "<tr>"
+        f"<td><code>{html.escape(k)}</code></td>"
+        f"<td>{html.escape(zh)}</td>"
+        f"<td lang='en'>{html.escape(en)}</td>"
+        "</tr>"
+        for k, zh, en in rows_pr
+    )
+    al_body = "".join(
+        "<tr>"
+        f"<td><code>{html.escape(k)}</code></td>"
+        f"<td>{html.escape(zh)}</td>"
+        f"<td lang='en'>{html.escape(en)}</td>"
+        "</tr>"
+        for k, zh, en in rows_al
+    )
+    th3 = (
+        "<thead><tr><th>取值</th><th>中文说明</th>"
+        "<th lang='en'>English</th></tr></thead>"
+    )
+    return (
+        "<section class='insight-legend' id='sec-insight-fields'>"
+        "<h2>Insight 字段说明（<code>meta.agent_insight_llm</code>）</h2>"
+        "<p class='note' lang='en'>Tokens below are produced as English enums in JSON; "
+        "cards show the same strings as pink/blue badges.</p>"
+        "<h3><code>human_review_priority</code>（卡片粉色徽标）</h3>"
+        f"<table class='inner'>{th3}<tbody>{pr_body}</tbody></table>"
+        "<h3><code>narrative_alignment</code>（卡片蓝色徽标）</h3>"
+        "<p class='note'>约定取值：<code>aligned</code> | <code>mixed</code> | "
+        "<code>conflict</code>（与 <code>agent_insight_llm_mapper</code> 的 schema 一致；"
+        "若模型输出其它字符串，以 JSON 原文为准）。</p>"
+        f"<table class='inner'>{th3}<tbody>{al_body}</tbody></table>"
+        "</section>"
+    )
 
 
 def _model_tier_matrix(rows: List[dict]) -> Dict[str, Counter]:
@@ -279,19 +532,54 @@ def _json_pretty(obj: object) -> str:
         return str(obj)
 
 
+def _human_priority_rank(token: str) -> int:
+    """P0 most urgent first → P3; unknown last."""
+    u = (token or "").strip().upper()
+    order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
+    return order.get(u, 50)
+
+
+def _narrative_alignment_rank(token: str) -> int:
+    """aligned → mixed → conflict (increasing tension); unknown last."""
+    v = (token or "").strip().lower()
+    order = {"aligned": 0, "mixed": 1, "conflict": 2}
+    return order.get(v, 50)
+
+
+def _insight_sort_tuple(row: dict, row_index: int) -> Tuple[int, int, int]:
+    meta = get_dj_meta(row)
+    ins = meta.get("agent_insight_llm") or {}
+    if not isinstance(ins, dict):
+        ins = {}
+    pr = _human_priority_rank(str(ins.get("human_review_priority") or ""))
+    ar = _narrative_alignment_rank(str(ins.get("narrative_alignment") or ""))
+    return (pr, ar, row_index)
+
+
 def _iter_bad_case_drill_rows(rows: List[dict]):
-    """Yield rows in tier order: high_precision first, then watchlist (stable by row index)."""
+    """Yield high_precision then watchlist; within each tier sort by P0→P3, aligned→conflict, then row index."""
     tier_rank = {"high_precision": 0, "watchlist": 1}
-    scored: List[Tuple[int, int, dict]] = []
+    scored: List[Tuple[int, int, int, int, dict]] = []
     for i, row in enumerate(rows):
         meta = get_dj_meta(row)
         tier = str(meta.get("agent_bad_case_tier", "none"))
         if tier not in tier_rank:
             continue
-        scored.append((tier_rank[tier], i, row))
-    scored.sort(key=lambda x: (x[0], x[1]))
-    for _tr, _i, row in scored:
+        pr, ar, _ = _insight_sort_tuple(row, i)
+        scored.append((tier_rank[tier], pr, ar, i, row))
+    scored.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
+    for _a, _b, _c, _i, row in scored:
         yield row
+
+
+def _request_id_to_drill_anchor(drill: List[dict]) -> Dict[str, str]:
+    """Map request_id → fragment id for in-page drill cards (first occurrence wins)."""
+    out: Dict[str, str] = {}
+    for i, d in enumerate(drill):
+        rid = str(d.get("request_id") or "").strip()
+        if rid and rid not in out:
+            out[rid] = f"#bc-drill-{i}"
+    return out
 
 
 def _row_to_drill_entry(row: dict) -> dict:
@@ -390,7 +678,8 @@ def _drilldown_section_html(
     extra_note = ""
     if total_count > shown:
         extra_note = (
-            f"<p class='note'><strong>页内展示 {shown} 条</strong>（按分档优先级排序），"
+            f"<p class='note'><strong>页内展示 {shown} 条</strong>（先强怀疑再待观察；"
+            f"同档内按 P0→P3、aligned→mixed→conflict，再按原行号），"
             f"本批同条件共 <strong>{total_count}</strong> 条。"
         )
         if export_rel:
@@ -449,8 +738,11 @@ def _drilldown_section_html(
     intro = (
         "<p class='note'>每条卡片对应一条导出样本：徽标为<strong>中文分档</strong>，"
         "旁边 <code>high_precision</code> / <code>watchlist</code> 为 JSON 中的枚举值。"
+        "列表顺序：<strong>强怀疑 → 待观察</strong>；同档内按 insight 偏序 "
+        "<strong>P0→P3</strong>、<strong>aligned→mixed→conflict</strong>，再按原行号。"
         "点击「展开字段」可查看 <strong>meta/stats 快照</strong>、各 signal 的<strong>上游证据字段</strong>，"
-        "以及 <code>query</code> / <code>response</code> 全文。<code>#编号</code> 为页内锚点，便于复制链接。</p>"
+        "以及 <code>query</code> / <code>response</code> 全文。<code>#编号</code> 为页内锚点，便于复制链接；"
+        "前文「单条 Insight 摘录」中同 <code>request_id</code> 可链回本节对应卡片。</p>"
     )
     block = (
         f"<h2 id='sec-cases'>{html.escape(title)}</h2>"
@@ -536,9 +828,12 @@ def _fetch_exec_summary_llm(
     model: str,
     api_key: str,
     api_base: str,
-    timeout_sec: int = 60,
+    timeout_sec: int = 120,
 ) -> Optional[str]:
-    """OpenAI-compatible ``/v1/chat/completions`` (DashScope 兼容模式、OpenAI 等)."""
+    """OpenAI-compatible ``/v1/chat/completions`` (DashScope 兼容模式、OpenAI 等).
+
+    读超时（含 ``The read operation timed out``）时自动重试 1 次；仍失败则返回 None 并打印 WARNING。
+    """
     url = api_base.rstrip("/") + "/chat/completions"
     system = (
         "你是数据分析顾问。只根据用户给的若干行批次汇总写报告页首短导读；"
@@ -570,11 +865,29 @@ def _fetch_exec_summary_llm(
             "Authorization": f"Bearer {api_key}",
         },
     )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout_sec) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, OSError) as e:
-        print(f"WARNING: LLM 导读请求失败: {e}", file=sys.stderr)
+    body: Optional[dict] = None
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout_sec) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+            break
+        except json.JSONDecodeError as e:
+            print(f"WARNING: LLM 导读响应非 JSON: {e}", file=sys.stderr)
+            return None
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as e:
+            if attempt == 0 and _is_llm_read_timeout(e):
+                print(
+                    f"WARNING: LLM 导读读超时（{timeout_sec}s），重试一次…",
+                    file=sys.stderr,
+                )
+                continue
+            print(
+                f"WARNING: LLM 导读请求失败: {e} "
+                f"（timeout={timeout_sec}s；可调 --llm-timeout-sec 或 BAD_CASE_REPORT_LLM_TIMEOUT_SEC）",
+                file=sys.stderr,
+            )
+            return None
+    if body is None:
         return None
     try:
         return str(body["choices"][0]["message"]["content"]).strip()
@@ -593,14 +906,72 @@ def _exec_summary_section_html(body_text: str, source_note: str) -> str:
     )
 
 
-def _insight_section_rich_html(rows: List[dict], tier: str, limit: int) -> str:
-    """较完整的单条 insight 卡片（来自 agent_insight_llm）。"""
+def _report_toc_links() -> List[Tuple[str, str]]:
+    """(href, label) for in-page navigation."""
+    return [
+        ("#sec-guide", "导读"),
+        ("#sec-counts", "各档条数"),
+        ("#sec-tiers", "分档说明"),
+        ("#sec-charts", "图表"),
+        ("#sec-insight-fields", "Insight 字段"),
+        ("#sec-insights-hp", "Insight（强怀疑）"),
+        ("#sec-insights-wl", "Insight（待观察）"),
+        ("#sec-cases", "典型样例"),
+        ("#sec-attrib", "归因表"),
+        ("#sec-cohort", "队列明细"),
+    ]
+
+
+def _report_toc_html(variant: str = "bar") -> str:
+    """Top bar (bar), sticky sidebar (side), or compact one-liner (mini) for section ends."""
+    links = _report_toc_links()
+    if variant == "side":
+        lis = "".join(
+            f'<li><a href="{html.escape(h)}">{html.escape(t)}</a></li>' for h, t in links
+        )
+        return (
+            '<nav class="report-toc report-toc--side" aria-label="页面目录">'
+            "<strong>快速跳转</strong>"
+            f"<ul>{lis}</ul></nav>"
+        )
+    if variant == "mini":
+        inner = " · ".join(
+            f'<a href="{html.escape(h)}">{html.escape(t)}</a>' for h, t in links
+        )
+        return (
+            '<nav class="report-toc report-toc--mini" aria-label="本节结束·快速跳转">'
+            f"<p class='note'><strong>快速跳转：</strong> {inner}</p></nav>"
+        )
+    inner = " · ".join(
+        f'<a href="{html.escape(h)}">{html.escape(t)}</a>' for h, t in links
+    )
+    return (
+        '<nav class="report-toc report-toc--bar" aria-label="页面内锚点">'
+        f"<p class='note'><strong>快速跳转：</strong> {inner}</p></nav>"
+    )
+
+
+def _insight_section_rich_html(
+    rows: List[dict],
+    tier: str,
+    limit: int,
+    anchor_by_rid: Dict[str, str],
+) -> str:
+    """较完整的单条 insight 卡片（来自 agent_insight_llm）。
+
+    卡片顺序：本档内按 P0→P3、aligned→mixed→conflict，再按原行号稳定排序；
+    取前 ``limit`` 条（仅统计含 headline 的样本）。
+    """
     tier_zh = _tier_zh(tier)
-    cards: List[str] = []
-    n = 0
-    for row in rows:
-        if n >= limit:
-            break
+    sec_id = (
+        "sec-insights-hp"
+        if tier == "high_precision"
+        else "sec-insights-wl"
+        if tier == "watchlist"
+        else "sec-insights"
+    )
+    candidates: List[Tuple[Tuple[int, int, int], dict]] = []
+    for i, row in enumerate(rows):
         meta = get_dj_meta(row)
         if str(meta.get("agent_bad_case_tier", "")) != tier:
             continue
@@ -608,7 +979,15 @@ def _insight_section_rich_html(rows: List[dict], tier: str, limit: int) -> str:
         hl = (ins.get("headline") or "").strip()
         if not hl:
             continue
-        n += 1
+        candidates.append((_insight_sort_tuple(row, i), row))
+    candidates.sort(key=lambda x: (x[0][0], x[0][1], x[0][2]))
+    selected = [row for _, row in candidates[:limit]]
+
+    cards: List[str] = []
+    for row in selected:
+        meta = get_dj_meta(row)
+        ins = meta.get("agent_insight_llm") or {}
+        hl = (ins.get("headline") or "").strip()
         rid = str(
             meta.get("agent_request_id") or row.get("request_id") or row.get("trace_id") or row.get("id") or ""
         ).strip()
@@ -639,9 +1018,20 @@ def _insight_section_rich_html(rows: List[dict], tier: str, limit: int) -> str:
                     f"<li><strong>{factor}</strong>（置信 {conf}）— {r1}{cite_html}</li>"
                 )
         causes_html = "<ul class='causes'>" + "".join(cause_lis) + "</ul>" if cause_lis else ""
+        drill_href = anchor_by_rid.get(rid) if rid else None
+        if drill_href:
+            to_drill = (
+                f"<a class='to-drill' href='{html.escape(drill_href, quote=True)}'>"
+                "→ 典型样例卡片</a>"
+            )
+        else:
+            to_drill = (
+                "<a class='to-drill to-drill-fallback' href='#sec-cases'>"
+                "→ 典型样例（节）</a>"
+            )
         meta_line = (
             f"<span class='ins-meta'><code>{html.escape(rid or '—')}</code> · "
-            f"{html.escape(model or '—')}</span>"
+            f"{html.escape(model or '—')} · {to_drill}</span>"
         )
         badges = []
         if pr:
@@ -666,16 +1056,37 @@ def _insight_section_rich_html(rows: List[dict], tier: str, limit: int) -> str:
         )
     if not cards:
         return (
-            f"<section class='insight-sec' id='sec-insights'><h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
+            f"<section class='insight-sec' id='{sec_id}'>"
+            f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
             "<p class='note'>本档下暂无带 <code>headline</code> 的 "
             "<code>meta.agent_insight_llm</code>（可能未跑 insight 算子，或解析失败）。</p></section>"
         )
     return (
-        f"<section class='insight-sec' id='sec-insights'><h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
-        "<p class='note'>来自 <code>agent_insight_llm_mapper</code>：摘要句、复核优先级、"
-        "成因与建议制图维度；可与上文图表对照，下文「典型样例」支持逐条展开互证。</p>"
+        f"<section class='insight-sec' id='{sec_id}'>"
+        f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
+        "<p class='note'>来自 <code>agent_insight_llm_mapper</code>；"
+        "<strong>排序</strong>与本档内偏序一致：P0→P3，同优先级下 aligned→mixed→conflict。"
+        "<a href='#sec-insight-fields'><strong>human_review_priority</strong>（P0–P3）与 "
+        "<strong>narrative_alignment</strong>（aligned / mixed / conflict）见字段说明表</a>。"
+        "摘要句、成因与制图维度可与图表、典型样例互证；"
+        "若本页已展示对应 <code>request_id</code> 的卡片，链接直达该条。</p>"
         f"<div class='insight-list'>{''.join(cards)}</div></section>"
     )
+
+
+def _insight_sections_html(
+    rows: List[dict],
+    per_tier_limit: int,
+    anchor_by_rid: Dict[str, str],
+) -> str:
+    """Render insight sections for both high_precision and watchlist tiers."""
+    blocks = [
+        _insight_section_rich_html(
+            rows, "high_precision", per_tier_limit, anchor_by_rid
+        ),
+        _insight_section_rich_html(rows, "watchlist", per_tier_limit, anchor_by_rid),
+    ]
+    return "".join(blocks)
 
 
 def _chart_tier_bar(tier_cnt: Counter, plt_mod) -> Optional[str]:
@@ -786,7 +1197,11 @@ def _html_page(
     exec_summary_html: str,
     charts_html: str,
     drilldown_html: str,
+    insight_legend_html: str,
     insight_section_html: str,
+    bilingual_header: str = "",
+    *,
+    html_lang: str = "zh-CN",
 ) -> str:
     gen_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     tier_rows = "".join(
@@ -812,9 +1227,34 @@ def _html_page(
             "</tr>"
         )
 
+    toc_bar = _report_toc_html("bar")
+    toc_side = _report_toc_html("side")
+    toc_mini = _report_toc_html("mini")
+
     css = (
         "body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',"
-        "'Noto Sans SC',system-ui,sans-serif;margin:24px;max-width:1100px;}"
+        "'Noto Sans SC',system-ui,sans-serif;margin:24px;}"
+        ".page-shell{display:flex;align-items:flex-start;gap:20px;"
+        "max-width:1320px;margin:0 auto;}"
+        ".page-main{flex:1;min-width:0;max-width:1100px;}"
+        ".report-toc--side{flex:0 0 200px;position:sticky;top:12px;"
+        "align-self:flex-start;font-size:0.86rem;border:1px solid #e8e8e8;"
+        "border-radius:10px;padding:12px 14px;background:#fafbfd;"
+        "max-height:calc(100vh - 24px);overflow:auto;line-height:1.45;}"
+        ".report-toc--side strong{display:block;margin-bottom:6px;font-size:0.9rem;}"
+        ".report-toc--side ul{list-style:none;padding:0;margin:0;}"
+        ".report-toc--side li{margin:2px 0;}"
+        ".report-toc--side a{color:#1565c0;text-decoration:none;}"
+        ".report-toc--side a:hover{text-decoration:underline;}"
+        ".report-toc--mini{margin:1rem 0 1.25rem;padding-top:8px;"
+        "border-top:1px dashed #ddd;}"
+        ".report-toc--mini .note{margin:0;font-size:0.84rem;}"
+        "a.to-drill{font-size:0.84rem;white-space:nowrap;}"
+        "a.to-drill-fallback{color:#666;}"
+        "@media(max-width:960px){"
+        ".page-shell{flex-direction:column;}"
+        ".report-toc--side{position:relative;top:0;max-height:none;width:100%;"
+        "flex:1 1 auto;}}"
         "h1{font-size:1.35rem;}.meta{color:#555;font-size:0.9rem;}"
         "table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:0.9rem;}"
         "th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;}"
@@ -852,12 +1292,21 @@ def _html_page(
         ".tier-legend li{margin:6px 0;}"
         "table.inner{font-size:0.82rem;margin:0.5rem 0;width:100%;}"
         "table.inner td:first-child{white-space:nowrap;width:38%;vertical-align:top;}"
+        ".insight-legend table.inner{table-layout:fixed;}"
+        ".insight-legend table.inner td:first-child{width:6.5em;max-width:8em;"
+        "white-space:nowrap;vertical-align:top;}"
+        ".insight-legend table.inner td:nth-child(2),.insight-legend table.inner "
+        "td:nth-child(3){width:auto;white-space:normal;word-break:break-word;}"
         ".sig-evidence-wrap{display:flex;flex-direction:column;gap:10px;margin:0.8rem 0;}"
         ".sig-evidence{border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;background:#fcfcfc;}"
         ".sig-evidence-h{margin-bottom:6px;font-size:0.88rem;}"
         ".sig-evidence .wtag{color:#555;font-size:0.8rem;margin-left:6px;}"
         ".sig-evidence .det{color:#666;font-size:0.8rem;margin-left:6px;}"
         ".snap table.inner{margin-top:4px;}"
+        ".snap-table thead th,.sig-evidence-table thead th{font-size:0.8rem;padding:5px 8px;}"
+        ".snap-table td:last-child{word-break:break-word;line-height:1.45;}"
+        ".snap-table tr.snap-ops td{font-size:0.82rem;color:#444;}"
+        ".snap-table tr.snap-ops code{font-weight:600;}"
         "h4.ev-h{margin:12px 0 6px;font-size:0.95rem;}"
         ".exec-summary-pre{margin:0.5rem 0 0;white-space:pre-wrap;word-break:"
         "break-word;line-height:1.55;font-size:0.92rem;background:#f7f9fc;border:1px solid #e2e8f0;"
@@ -894,16 +1343,6 @@ def _html_page(
         "<p class='note'>提示：<code>high_precision</code> 在本项目语义为「值得优先复核」，"
         "与「模型高精度」无关；命令行 / JSON 仍保留英文枚举，便于脚本处理。</p>"
     )
-    nav = (
-        "<p class='note'><strong>快速跳转：</strong> "
-        "<a href='#sec-guide'>导读</a> · "
-        "<a href='#sec-tiers'>分档说明</a> · "
-        "<a href='#sec-charts'>图表</a> · "
-        "<a href='#sec-insights'>Insight</a> · "
-        "<a href='#sec-cases'>典型样例</a> · "
-        "<a href='#sec-attrib'>归因表</a> · "
-        "<a href='#sec-cohort'>队列明细</a></p>"
-    )
     adv = (
         "<p>进阶说明见 <code>demos/agent/BAD_CASE_INSIGHTS.md</code>、"
         "<code>ENTITY_RELATION_TUNING.md</code>、"
@@ -911,7 +1350,7 @@ def _html_page(
     )
 
     return f"""<!DOCTYPE html>
-<html lang="zh-CN"><head>
+<html lang="{html.escape(html_lang)}"><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>{html.escape(title)}</title>
@@ -923,22 +1362,37 @@ def _html_page(
   数据文件 <code>{html.escape(input_path)}</code><br/>
   本报告载入 <strong>{n_rows}</strong> 条样本（若使用 --limit 则仅为其子集）
 </div>
-{nav}
+{bilingual_header}
+{toc_bar}
+<div class="page-shell">
+{toc_side}
+<main class="page-main">
 {exec_summary_html}
+{toc_mini}
 <h2 id='sec-counts'>各分档条数</h2>
 <table><thead><tr><th>展示名</th><th>机器枚举</th><th>条数</th></tr></thead>
 <tbody>{tier_rows}</tbody></table>
 {tier_legend}
+{toc_mini}
 <h2 id='sec-charts'>图表（整体分布）</h2>
 <p class='note'>柱或堆叠段上的<strong>数字为该组样本数</strong>；信号图为本批内出现次数。详情可在后文 Insight 与「典型样例」中<strong>逐条展开</strong>查看。</p>
 {charts_html}
+{toc_mini}
+{insight_legend_html}
+{toc_mini}
 {insight_section_html}
+{toc_mini}
 {drilldown_html}
+{toc_mini}
 <h2 id='sec-attrib'>信号归因对照表</h2>
 <p class='note'>说明各信号 <code>code</code> 与上游 <strong>meta / stats</strong> 及常见算子的对应关系，便于与「典型样例」中的证据表对照。</p>
 {attribution_table}
+{toc_mini}
 <h2 id='sec-cohort'>按模型 × 日期 × 分档 的队列明细</h2>
 <table>{thead}<tbody>{"".join(cohort_lines)}</tbody></table>
+{toc_mini}
+</main>
+</div>
 <details>
 <summary>进阶 / 调试资源</summary>
 {adv}
@@ -977,6 +1431,17 @@ def main() -> int:
         "--title",
         default="智能体交互 · Bad-case 分析报告",
         help="HTML title / H1",
+    )
+    ap.add_argument(
+        "--bilingual",
+        action="store_true",
+        help="Add a bilingual (ZH/EN) header hint block to the HTML report",
+    )
+    ap.add_argument(
+        "--report-lang",
+        choices=["auto", "zh", "en"],
+        default="auto",
+        help="报告分档等展示语言：zh|en|auto（auto 时先试 BAD_CASE_REPORT_LANG，再试 meta.agent_pipeline_output_lang）",
     )
     ap.add_argument("--limit", type=int, default=None, help="Max rows to read")
     ap.add_argument(
@@ -1030,12 +1495,27 @@ def main() -> int:
         default=os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("OPENAI_API_KEY") or "",
         help="API Key（默认读环境变量 DASHSCOPE_API_KEY 或 OPENAI_API_KEY）",
     )
+    ap.add_argument(
+        "--llm-timeout-sec",
+        type=int,
+        default=int(os.environ.get("BAD_CASE_REPORT_LLM_TIMEOUT_SEC", "120")),
+        metavar="SEC",
+        help="页首导读 HTTP 读超时秒数（默认 120 或环境变量 BAD_CASE_REPORT_LLM_TIMEOUT_SEC）",
+    )
     args = ap.parse_args()
 
     rows = load_merged_rows(args.input, args.limit)
     if not rows:
         print("ERROR: no rows loaded; check --input path.", file=sys.stderr)
         return 2
+
+    resolved_report_lang = infer_report_locale(
+        rows,
+        str(args.report_lang),
+        os.environ.get("BAD_CASE_REPORT_LANG"),
+    )
+    set_report_locale(resolved_report_lang)
+    html_page_lang = "en" if resolved_report_lang == "en" else "zh-CN"
 
     tier_cnt = _tier_counts(rows)
     high_c, med_c = _signal_counts_by_weight(rows)
@@ -1077,6 +1557,7 @@ def main() -> int:
                 model=args.llm_model,
                 api_key=key,
                 api_base=args.llm_api_base,
+                timeout_sec=max(5, int(args.llm_timeout_sec)),
             )
         else:
             print("WARNING: --llm-summary 已开启但未配置 API Key。", file=sys.stderr)
@@ -1107,7 +1588,9 @@ def main() -> int:
     if chart_sig_med:
         charts_blocks.append(
             "<h3>弱证据 / 启发式信号</h3>"
-            "<p class='note'>多为单条弱提示，须与分档与其它字段共同解读。</p>"
+            "<p class='note'>多为单条弱提示，须与分档与其它字段共同解读。"
+            "其中 <code>dialog_turn_quality_meta_low</code> 来自 §5b 多轴 1–5 质检 meta，"
+            "在归因表中列为<strong>结构化·轴分（建议重点读）</strong>，可与主证据表对照。</p>"
             f"<p class='note'><img src='{chart_sig_med}' alt='medium 信号'/></p>"
         )
     if charts_blocks:
@@ -1120,6 +1603,7 @@ def main() -> int:
     drill_html = ""
     export_rel: Optional[str] = None
     out_path = Path(args.output)
+    drill_show: List[dict] = []
     if args.drilldown_limit != 0:
         cap_export = args.drilldown_limit if args.drilldown_limit > 0 else None
         drill_all = _collect_drilldown(rows, cap_export)
@@ -1137,10 +1621,24 @@ def main() -> int:
             export_rel=export_rel,
         )
 
+    anchor_by_rid = _request_id_to_drill_anchor(drill_show)
     insight_section_html = ""
     if args.sample_headlines > 0:
-        insight_section_html = _insight_section_rich_html(
-            rows, "high_precision", args.sample_headlines
+        insight_section_html = _insight_sections_html(
+            rows, args.sample_headlines, anchor_by_rid
+        )
+
+    bilingual_header = ""
+    if args.bilingual:
+        bilingual_header = (
+            "<p class='note' lang='en'><strong>Bilingual report:</strong> "
+            "Explanatory prose is primarily Chinese for readability. "
+            "Machine enums remain English (<code>high_precision</code>, "
+            "<code>watchlist</code>, <code>none</code>, signal "
+            "<code>code</code>s, JSON keys) for scripting and handoff. "
+            "Insight badges use English tokens (<code>P0</code>–<code>P3</code>, "
+            "<code>aligned</code>/<code>mixed</code>/<code>conflict</code>); "
+            "see the <a href='#sec-insight-fields'>field semantics</a> table.</p>"
         )
 
     page = _html_page(
@@ -1153,7 +1651,10 @@ def main() -> int:
         exec_summary_html,
         charts_html,
         drill_html,
+        _insight_fields_legend_html(),
         insight_section_html,
+        bilingual_header=bilingual_header,
+        html_lang=html_page_lang,
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(page, encoding="utf-8")

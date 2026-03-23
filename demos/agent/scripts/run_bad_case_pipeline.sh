@@ -27,9 +27,11 @@ usage() {
   bash demos/agent/scripts/run_bad_case_pipeline.sh smoke
       dj-process 最小 09 配置 → 校验 → 分位数 → cohort → 切片示例 → HTML 报告（可 SKIP_AUTO_REPORT=1）
 
-  bash demos/agent/scripts/run_bad_case_pipeline.sh report [JSONL] [OUT.html]
+  bash demos/agent/scripts/run_bad_case_pipeline.sh report [选项] [JSONL] [OUT.html]
       一键：校验 + 生成自助 HTML 报告（图表+表；进阶说明折叠在页内）
       默认 JSONL: ./outputs/agent_quality/processed.jsonl
+      默认开启：--bilingual、--llm-summary（无 API Key 时导读会降级为规则摘要并打 WARNING）
+      选项：--no-bilingual | --no-llm-summary（显式关闭）
 
   bash demos/agent/scripts/run_bad_case_pipeline.sh postprocess [JSONL]
       对已导出的 jsonl 跑 verify + percentiles + cohorts + slice（深度调试用；不生成 HTML）
@@ -47,7 +49,9 @@ usage() {
   PYTHON   python 可执行文件（默认 python3）
   SMOKE_OUT / FULL_OUT / CAL_OUT  输出路径覆盖
   SKIP_AUTO_REPORT=1  smoke/full 末尾不自动生成 HTML
-  BAD_CASE_REPORT_LLM=1  report 子命令生成 HTML 时加 --llm-summary（需 DASHSCOPE_API_KEY 或 OPENAI_API_KEY）
+  BAD_CASE_REPORT_LLM=0  report / smoke / full 末尾生成 HTML 时不加 --llm-summary（默认会加）
+  BAD_CASE_REPORT_BILINGUAL=0  同上，不加 --bilingual（默认会加）
+  BAD_CASE_REPORT_LLM_TIMEOUT_SEC  导读 HTTP 读超时秒数（默认 120；亦可直接传 generate_bad_case_report.py --llm-timeout-sec）
 
 日常只看结论: demos/agent/BAD_CASE_REPORT.md
 详见: demos/agent/BAD_CASE_INSIGHTS.md 与 demos/agent/scripts/README.md
@@ -57,6 +61,8 @@ EOF
 run_report() {
   local input="${1:-$FULL_OUT}"
   local out="${2:-}"
+  local use_bilingual="${3:-1}"
+  local use_llm="${4:-1}"
   if [[ ! -f "$input" ]]; then
     echo "ERROR: $input not found" >&2
     exit 3
@@ -70,7 +76,12 @@ run_report() {
   # Avoid "${arr[@]}" on an empty array under `set -u` (some bash versions error).
   local -a _rep_args
   _rep_args=(--input "$input" --output "$out")
-  _rep_args+=(--llm-summary)
+  if [[ "$use_bilingual" == "1" ]]; then
+    _rep_args+=(--bilingual)
+  fi
+  if [[ "$use_llm" == "1" ]]; then
+    _rep_args+=(--llm-summary)
+  fi
   "$PY" demos/agent/scripts/generate_bad_case_report.py "${_rep_args[@]}"
   echo "Open in browser: $out"
 }
@@ -110,11 +121,27 @@ case "$cmd" in
     dj-process --config "$RECIPE_SMOKE"
     run_postprocess "$SMOKE_OUT"
     if [[ "${SKIP_AUTO_REPORT:-}" != "1" ]]; then
-      run_report "$SMOKE_OUT" "${SMOKE_OUT%.jsonl}_bad_case_report.html"
+      run_report "$SMOKE_OUT" "${SMOKE_OUT%.jsonl}_bad_case_report.html" \
+        "${BAD_CASE_REPORT_BILINGUAL:-1}" "${BAD_CASE_REPORT_LLM:-1}"
     fi
     ;;
   report)
-    run_report "${2:-$FULL_OUT}" "${3:-}"
+    shift
+    _rb="${BAD_CASE_REPORT_BILINGUAL:-1}"
+    _rl="${BAD_CASE_REPORT_LLM:-1}"
+    _rpos=()
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --bilingual) _rb=1; shift ;;
+        --no-bilingual) _rb=0; shift ;;
+        --llm-summary) _rl=1; shift ;;
+        --no-llm-summary) _rl=0; shift ;;
+        *) _rpos+=("$1"); shift ;;
+      esac
+    done
+    _rin="${_rpos[0]:-$FULL_OUT}"
+    _rout="${_rpos[1]:-}"
+    run_report "$_rin" "$_rout" "$_rb" "$_rl"
     ;;
   postprocess)
     run_postprocess "${2:-$SMOKE_OUT}"
@@ -153,7 +180,8 @@ EOF
       "$PY" demos/agent/scripts/verify_bad_case_export.py --input "$FULL_OUT"
     run_postprocess "$FULL_OUT"
     if [[ "${SKIP_AUTO_REPORT:-}" != "1" ]]; then
-      run_report "$FULL_OUT" "${FULL_OUT%.jsonl}_bad_case_report.html"
+      run_report "$FULL_OUT" "${FULL_OUT%.jsonl}_bad_case_report.html" \
+        "${BAD_CASE_REPORT_BILINGUAL:-1}" "${BAD_CASE_REPORT_LLM:-1}"
     fi
     ;;
   unittest)

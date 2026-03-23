@@ -5,7 +5,14 @@ from loguru import logger
 from pydantic import NonNegativeInt, PositiveInt
 
 from data_juicer.ops.base_op import OPERATORS, TAGGING_OPS, Mapper
-from data_juicer.ops.mapper.dialog_llm_input_utils import clip_query_response_pair
+from data_juicer.ops.mapper.dialog_llm_input_utils import (
+    build_dialog_turns_for_prompt,
+    clip_query_response_pair,
+)
+from data_juicer.utils.agent_output_locale import (
+    dialog_detection_output_language_note,
+    normalize_preferred_output_lang,
+)
 from data_juicer.utils.constant import Fields, MetaKeys
 from data_juicer.utils.model_utils import get_model, prepare_model
 
@@ -84,6 +91,7 @@ class DialogIntentDetectionMapper(Mapper):
         max_response_chars_for_prompt: NonNegativeInt = 0,
         model_params: Dict = {},
         sampling_params: Dict = {},
+        preferred_output_lang: str = "zh",
         **kwargs,
     ):
         """
@@ -152,6 +160,7 @@ class DialogIntentDetectionMapper(Mapper):
         self.try_num = try_num
         self.max_query_chars_for_prompt = int(max_query_chars_for_prompt)
         self.max_response_chars_for_prompt = int(max_response_chars_for_prompt)
+        self.preferred_output_lang = normalize_preferred_output_lang(preferred_output_lang)
 
     def build_input(self, history, query):
         if self.intent_candidates:
@@ -181,7 +190,7 @@ class DialogIntentDetectionMapper(Mapper):
         return analysis, labels
 
     def process_single(self, sample, rank=None):
-        meta = sample[Fields.meta]
+        meta = sample.setdefault(Fields.meta, {})
         if self.labels_key in meta and self.analysis_key in meta:
             return sample
 
@@ -191,12 +200,12 @@ class DialogIntentDetectionMapper(Mapper):
         labels_list = []
         history = []
 
-        dialog = sample[self.history_key]
-        if self.query_key in sample and sample[self.query_key]:
-            if self.response_key in sample and sample[self.response_key]:
-                dialog.append((sample[self.query_key], sample[self.response_key]))
-            else:
-                dialog.append((sample[self.query_key], ""))
+        dialog = build_dialog_turns_for_prompt(
+            sample,
+            history_key=self.history_key,
+            query_key=self.query_key,
+            response_key=self.response_key,
+        )
 
         for qa in dialog:
             q_use, r_use = clip_query_response_pair(
@@ -210,7 +219,11 @@ class DialogIntentDetectionMapper(Mapper):
             messages = [
                 {
                     "role": "system",
-                    "content": self.system_prompt,
+                    "content": self.system_prompt
+                    + dialog_detection_output_language_note(
+                        self.preferred_output_lang,
+                        "intent",
+                    ),
                 },
                 {
                     "role": "user",

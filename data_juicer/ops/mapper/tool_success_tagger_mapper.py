@@ -27,6 +27,14 @@ DEFAULT_ERROR_PATTERNS = [
     r"(?i)\bfailure\b",
     r"(?i)not\s+found",
     r"(?i)permission\s+denied",
+    # Chinese agent/tool logs (avoid bare「失败」— matches「未失败」等)
+    r"(?:执行|操作|请求|调用|接口)失败",
+    r"(?:发生|出现)错误",
+    r"错误码",
+    r"无法访问",
+    r"权限不足",
+    r"无权限",
+    r"找不到(?:文件|路径)?",
 ]
 
 

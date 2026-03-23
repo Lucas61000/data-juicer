@@ -7,6 +7,10 @@ from loguru import logger
 from pydantic import PositiveInt
 
 from data_juicer.ops.base_op import OPERATORS, Filter
+from data_juicer.utils.agent_output_locale import (
+    llm_filter_free_text_language_appendix,
+    normalize_preferred_output_lang,
+)
 from data_juicer.utils.constant import Fields, StatsKeys
 from data_juicer.utils.lazy_loader import LazyLoader
 from data_juicer.utils.model_utils import (
@@ -123,6 +127,7 @@ json
         model_params: Dict = {},
         sampling_params: Dict = {},
         dim_required_keys: Optional[List[str]] = None,
+        preferred_output_lang: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -156,7 +161,13 @@ json
         """
         super().__init__(**kwargs)
 
-        self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
+        base_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
+        if preferred_output_lang is not None and str(preferred_output_lang).strip() != "":
+            self.system_prompt = base_prompt + llm_filter_free_text_language_appendix(
+                normalize_preferred_output_lang(preferred_output_lang)
+            )
+        else:
+            self.system_prompt = base_prompt
         assert len(input_keys) == len(field_names), "The input_keys and field_names must correspond one-to-one!"
         self.input_keys = input_keys
         self.field_names = field_names

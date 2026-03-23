@@ -10,16 +10,14 @@ from loguru import logger
 from pydantic import PositiveInt
 
 from data_juicer.ops.base_op import OPERATORS, TAGGING_OPS, Mapper
+from data_juicer.utils.agent_output_locale import (
+    agent_skill_insight_system_prompt,
+    normalize_preferred_output_lang,
+)
 from data_juicer.utils.constant import Fields, MetaKeys
 from data_juicer.utils.model_utils import get_model, prepare_model
 
 OP_NAME = "agent_skill_insight_mapper"
-
-DEFAULT_SYSTEM_PROMPT = (
-    "你是一个对话能力分析助手。根据给定的工具列表和技能列表，归纳为3～5个高层能力类别。"
-    "每个类别用简短中文标签（2～6字），例如：文件与编辑、搜索与记忆、执行与调度、沟通协作、信息检索。"
-    "仅输出逗号分隔的标签，不要编号、不要解释、不要换行。"
-)
 
 
 @TAGGING_OPS.register_module(OP_NAME)
@@ -27,10 +25,11 @@ DEFAULT_SYSTEM_PROMPT = (
 class AgentSkillInsightMapper(Mapper):
     """Summarize agent_tool_types and agent_skill_types into insights via LLM.
 
-    Reads meta[agent_tool_types] and meta[agent_skill_types] (from
-    agent_dialog_normalize_mapper), calls API for 3～5 capability categories,
-    stores in meta[agent_skill_insights]. Use after normalize for better
-    skill tagging than raw regex-extracted names.
+    Reads ``meta[agent_tool_types]`` and ``meta[agent_skill_types]`` (from
+    ``agent_dialog_normalize_mapper``), calls the API for 3–5 capability
+    categories, and stores them in ``meta[agent_skill_insights]``. Run after
+    normalize for higher-level tags than raw regex-extracted names. Override
+    ``system_prompt`` for locale-specific label style.
     """
 
     def __init__(
@@ -46,13 +45,15 @@ class AgentSkillInsightMapper(Mapper):
         try_num: PositiveInt = 2,
         model_params: Dict = {},
         sampling_params: Dict = {},
+        preferred_output_lang: str = "en",
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.tool_types_key = tool_types_key
         self.skill_types_key = skill_types_key
         self.insights_key = insights_key
-        self.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
+        self.preferred_output_lang = normalize_preferred_output_lang(preferred_output_lang)
+        self.system_prompt = system_prompt or agent_skill_insight_system_prompt(self.preferred_output_lang)
         self.try_num = try_num
         self.sampling_params = sampling_params or {}
         self.model_key = prepare_model(
@@ -83,9 +84,9 @@ class AgentSkillInsightMapper(Mapper):
             meta[self.insights_key] = []
             return sample
 
-        tools_str = "、".join(str(x) for x in tools[:30])
-        skills_str = "、".join(str(x) for x in skills[:30])
-        user_content = f"工具：{tools_str}\n技能：{skills_str}"
+        tools_str = ", ".join(str(x) for x in tools[:30])
+        skills_str = ", ".join(str(x) for x in skills[:30])
+        user_content = f"Tools: {tools_str}\nSkills: {skills_str}"
 
         messages = [
             {"role": "system", "content": self.system_prompt},

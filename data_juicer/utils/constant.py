@@ -161,6 +161,21 @@ class MetaKeys(object):
     # # from agent_insight_llm_mapper — LLM synthesis for attribution / dashboards
     agent_insight_llm = "agent_insight_llm"
     agent_insight_llm_raw = "agent_insight_llm_raw"
+    # last writer (e.g. agent_insight_llm_mapper) records pipeline UI / report locale hint
+    agent_pipeline_output_lang = "agent_pipeline_output_lang"
+    # # from pii_llm_suspect_mapper — optional LLM audit for missed regex PII
+    pii_llm_suspect = "pii_llm_suspect"
+    pii_llm_suspect_raw = "pii_llm_suspect_raw"
+    # # dialog/agent turn-quality LLM mappers (see dialog_* / agent_* mapper files)
+    dialog_memory_consistency = "dialog_memory_consistency"
+    dialog_coreference = "dialog_coreference"
+    dialog_topic_shift = "dialog_topic_shift"
+    dialog_error_recovery = "dialog_error_recovery"
+    dialog_clarification_quality = "dialog_clarification_quality"
+    dialog_proactivity = "dialog_proactivity"
+    dialog_non_repetition = "dialog_non_repetition"
+    agent_trace_coherence = "agent_trace_coherence"
+    agent_tool_relevance = "agent_tool_relevance"
     # # from agent_tool_type_mapper
     primary_tool_type = "primary_tool_type"
     dominant_tool_types = "dominant_tool_types"

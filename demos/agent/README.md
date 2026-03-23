@@ -1,3 +1,15 @@
+# Agent quality & bad-case docs
+
+**English:** This folder documents a **recipe-driven** pipeline for agent logs
+(JSONL with `messages` + `choices` / `response_choices`). Core operators live
+under `data_juicer/ops/mapper/` (e.g. `agent_dialog_normalize_mapper`,
+`agent_bad_case_signal_mapper`, `dialog_*` quality mappers); default prompts
+and flattened dialog labels are **English-first** for upstream reuse—override
+`user_label` / `assistant_label` on the normalize mapper or subclass mappers
+for other locales.
+
+---
+
 # Agent 质检 / bad-case 文档索引
 
 | 需求 | 文档 |

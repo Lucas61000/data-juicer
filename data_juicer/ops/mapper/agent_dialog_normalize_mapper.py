@@ -12,9 +12,9 @@ from data_juicer.utils.constant import Fields, MetaKeys
 
 OP_NAME = "agent_dialog_normalize_mapper"
 
-# Default labels for flattened dialog (i18n / multi-platform)
-DEFAULT_USER_LABEL = "用户"
-DEFAULT_ASSISTANT_LABEL = "助手"
+# Default labels for flattened dialog (override for i18n, e.g. 用户 / 助手)
+DEFAULT_USER_LABEL = "User"
+DEFAULT_ASSISTANT_LABEL = "Assistant"
 
 
 def _coerce_content_fragment(val: Any) -> str:
@@ -363,9 +363,9 @@ def _flatten_history_to_text(
     lines = []
     for q, r in history:
         if q:
-            lines.append(f"{user_label}：{q}")
+            lines.append(f"{user_label}: {q}")
         if r:
-            lines.append(f"{assistant_label}：{r}")
+            lines.append(f"{assistant_label}: {r}")
     return "\n\n".join(lines)
 
 

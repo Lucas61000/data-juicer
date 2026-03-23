@@ -2,7 +2,9 @@ from .agent_bad_case_signal_mapper import AgentBadCaseSignalMapper
 from .agent_dialog_normalize_mapper import AgentDialogNormalizeMapper
 from .agent_insight_llm_mapper import AgentInsightLLMMapper
 from .agent_skill_insight_mapper import AgentSkillInsightMapper
+from .agent_tool_relevance_mapper import AgentToolRelevanceMapper
 from .agent_tool_type_mapper import AgentToolTypeMapper
+from .agent_trace_coherence_mapper import AgentTraceCoherenceMapper
 from .annotation.human_preference_annotation_mapper import (
     HumanPreferenceAnnotationMapper,
 )
@@ -20,10 +22,17 @@ from .clean_links_mapper import CleanLinksMapper
 from .detect_character_attributes_mapper import DetectCharacterAttributesMapper
 from .detect_character_locations_mapper import DetectCharacterLocationsMapper
 from .detect_main_character_mapper import DetectMainCharacterMapper
+from .dialog_clarification_quality_mapper import DialogClarificationQualityMapper
+from .dialog_coreference_mapper import DialogCoreferenceMapper
+from .dialog_error_recovery_mapper import DialogErrorRecoveryMapper
 from .dialog_intent_detection_mapper import DialogIntentDetectionMapper
+from .dialog_memory_consistency_mapper import DialogMemoryConsistencyMapper
+from .dialog_non_repetition_mapper import DialogNonRepetitionMapper
+from .dialog_proactivity_mapper import DialogProactivityMapper
 from .dialog_sentiment_detection_mapper import DialogSentimentDetectionMapper
 from .dialog_sentiment_intensity_mapper import DialogSentimentIntensityMapper
 from .dialog_topic_detection_mapper import DialogTopicDetectionMapper
+from .dialog_topic_shift_mapper import DialogTopicShiftMapper
 from .download_file_mapper import DownloadFileMapper
 from .expand_macro_mapper import ExpandMacroMapper
 from .extract_entity_attribute_mapper import ExtractEntityAttributeMapper
@@ -62,6 +71,7 @@ from .optimize_qa_mapper import OptimizeQAMapper
 from .optimize_query_mapper import OptimizeQueryMapper
 from .optimize_response_mapper import OptimizeResponseMapper
 from .pair_preference_mapper import PairPreferenceMapper
+from .pii_llm_suspect_mapper import PiiLlmSuspectMapper
 from .pii_redaction_mapper import PiiRedactionMapper
 from .punctuation_normalization_mapper import PunctuationNormalizationMapper
 from .python_file_mapper import PythonFileMapper
@@ -129,6 +139,8 @@ __all__ = [
     "AgentInsightLLMMapper",
     "AgentSkillInsightMapper",
     "AgentToolTypeMapper",
+    "AgentToolRelevanceMapper",
+    "AgentTraceCoherenceMapper",
     "AudioAddGaussianNoiseMapper",
     "AudioFFmpegWrappedMapper",
     "CalibrateQAMapper",
@@ -147,6 +159,13 @@ __all__ = [
     "DialogSentimentDetectionMapper",
     "DialogSentimentIntensityMapper",
     "DialogTopicDetectionMapper",
+    "DialogClarificationQualityMapper",
+    "DialogCoreferenceMapper",
+    "DialogErrorRecoveryMapper",
+    "DialogMemoryConsistencyMapper",
+    "DialogNonRepetitionMapper",
+    "DialogProactivityMapper",
+    "DialogTopicShiftMapper",
     "Difference_Area_Generator_Mapper",
     "Difference_Caption_Generator_Mapper",
     "DownloadFileMapper",
@@ -184,6 +203,7 @@ __all__ = [
     "OptimizeQueryMapper",
     "OptimizeResponseMapper",
     "PairPreferenceMapper",
+    "PiiLlmSuspectMapper",
     "PiiRedactionMapper",
     "PunctuationNormalizationMapper",
     "PythonFileMapper",

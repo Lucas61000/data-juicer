@@ -4,7 +4,48 @@
 
 from __future__ import annotations
 
-from typing import Tuple
+from typing import List, Tuple
+
+
+def build_dialog_turns_for_prompt(
+    sample: dict,
+    *,
+    history_key: str,
+    query_key: str,
+    response_key: str,
+) -> List[Tuple[str, str]]:
+    """Build (user, assistant) turns for dialog LLM mappers.
+
+    Does not mutate ``sample``. Merge rules match
+    ``dialog_quality_llm_utils._normalize_dialog_tail``: after normalize, the last
+    turn lives in both ``dialog_history[-1]`` and ``query``/``response``, so those
+    fields must not be appended again (would duplicate the final exchange; older
+    code that mutated ``dialog_history`` in place corrupted downstream rows).
+    """
+    dialog: List[Tuple[str, str]] = []
+    raw = sample.get(history_key)
+    if isinstance(raw, list):
+        for turn in raw:
+            if isinstance(turn, (list, tuple)) and len(turn) >= 2:
+                u0 = "" if turn[0] is None else str(turn[0])
+                u1 = "" if turn[1] is None else str(turn[1])
+                dialog.append((u0, u1))
+    if sample.get(query_key):
+        q = sample[query_key]
+        r = sample.get(response_key) or ""
+        qs = "" if q is None else str(q)
+        rs = "" if r is None else str(r)
+        if not dialog:
+            dialog.append((qs, rs))
+        else:
+            lu, la = dialog[-1]
+            if lu == qs and la == rs:
+                pass
+            elif lu == qs:
+                dialog[-1] = (qs, rs)
+            else:
+                dialog.append((qs, rs))
+    return dialog
 
 
 def clip_text_for_dialog_prompt(

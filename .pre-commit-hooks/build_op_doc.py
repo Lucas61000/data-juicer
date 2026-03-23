@@ -82,6 +82,7 @@ OP_EXCLUDE = {
     "__pycache__",
     # Helper module under mapper/ (not a registered OP)
     "dialog_llm_input_utils.py",
+    "dialog_quality_llm_utils.py",
 }
 
 FORMATTER_CODE_PREFIX = "data_juicer/format/"

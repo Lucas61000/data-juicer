@@ -6,6 +6,7 @@
 
 本文配合 `agent_interaction_quality_analysis.yaml`：
 
+- **LLM 输出语言**：各算子支持 kwargs **`preferred_output_lang: zh | en`**（实现见 `data_juicer/utils/agent_output_locale.py`）。全量菜谱默认 **`zh`** 以统一中文理由/说明；改英文流水线时在各 LLM 块改为 **`en`** 即可。第 10 步 insight 会将语言写入 **`meta.agent_pipeline_output_lang`**，供 `generate_bad_case_report.py --report-lang auto` 推断页面分档展示语言。
 - **第 9 步** `agent_bad_case_signal_mapper`：多源**确定性**信号 + 保守分层。  
 - **第 10 步** `agent_insight_llm_mapper`（可选）：把数值 stats 与各类 LLM 评估文本**二次综合**成可解释 JSON（便于看板与人工质检）。
 
@@ -18,7 +19,7 @@
 - 常见模式：`user` → 若干次 `(assistant + tool_calls) → tool → assistant → tool → …` → 最终 assistant 文本或下一轮 `user`。
 - **`agent_dialog_normalize_mapper`** 将 `messages` 压成 `dialog_history` / `query` / `response` / `text` 时，对**同一 user 回合内多段 assistant** 必须**拼接保留**（含 tool summary）；可选 **`history_*_max_chars`** 对 tool/助手侧做**首尾保留 + 明确的中段省略标记**写回（与仅 prompt 截断不同），并打 **`meta.agent_dialog_history_compressed`**。否则下游 **`llm_quality_score_filter` / `llm_analysis_filter`** 只看到最后一次助手片段，容易误判「没干活」或「偏题」。
 - **`tool_success_tagger_mapper`** 按 **每条 `role=tool` 消息**计数；`failed` / `No such file` 等会记 **fail**。在探索性策略里单次失败可能随后被纠正——第 9 步提供 **`min_tool_fail_count_for_signal`**（默认 1；菜谱可调到 2+）再抬 `tool_message_error_pattern`，并与 **`meta.tool_unknown_count`**（无法-regex 分类的 tool 行）一起看。
-- **Dialog 打标算子**仍用 `dialog_history` 的 (q,r) 列表与 `max_round`；历史拼接正确后，多轮语义更一致。
+- **Dialog 打标算子**（意图/情感/主题/强度）在内存里用 `build_dialog_turns_for_prompt` 合并 `dialog_history` 与 `query`/`response`，**不原地修改** `dialog_history`；末轮与 normalize 一致时**不重复追加**，避免历史被污染、API 轮次翻倍。
 
 ## 数据血缘字段（normalize 自动写入）
 
@@ -37,13 +38,14 @@
 | `tool_success_tagger_mapper` | `tool_fail_count` | `high`：`tool_message_error_pattern`（需 fail ≥ `min_tool_fail_count_for_signal`） |
 | 同上 | `tool_unknown_count` | 不参与 ratio；供排查「工具返回非典型文本/JSON」 |
 | 同上 | `tool_success_ratio` + 轮次数 | `medium`：比例过低（≥`min_tool_rounds_for_ratio_signal` 轮；分母不含 unknown） |
-| `usage_counter_mapper` | `total_tokens` 等 | 可选绝对阈值 → `medium` |
+| `usage_counter_mapper` | `total_tokens` 等 | 默认对相同 `(prompt, completion, total)` 快照去重后再汇总，避免 `response_usage` 与 `choices[].usage` 重复；可选绝对阈值 → `medium` |
 | normalize 血缘 | `agent_total_cost_time_ms` | 可选绝对阈值 → `medium` |
 | `llm_analysis_filter` | `llm_analysis_score` + `llm_analysis_record.recommendation` | discard + 低分 → `high`/`medium`（可 `*_discard_must_be_strict`） |
 | `llm_quality_score_filter` | `llm_quality_score` + `llm_quality_record` | 同上，信号码 `llm_reply_quality_eval_low` |
 | `dialog_sentiment_detection_mapper` | `dialog_sentiment_labels` | `signal_on_negative_sentiment_hint` 开启时 → `medium`（易噪，报告里归「附录」类） |
 | `perplexity_filter` + `stats.perplexity` | `stats.perplexity` | **可选**：KenLM；macOS 上 pip 常编译失败，默认菜谱可关掉 filter + `signal_on_high_perplexity: false`（见 **`KENLM_MACOS.md`**） |
 | `llm_difficulty_score_filter` + quality | difficulty + `llm_quality_score` | **默认关**；`signal_hard_query_poor_reply` → `medium` |
+| §5b 对话/轨迹质检算子 | `meta` 中各 `dialog_*`、`agent_trace_coherence`、`agent_tool_relevance`（1–5） | `signal_on_low_dialog_quality_meta`：任一条目 `score ≤ threshold` 的轴数达标 → `medium`：`dialog_turn_quality_meta_low`（读已有 meta，**无额外 LLM**） |
 | 文本 | `query` / `response` | 长 query + 极短回复 → `medium` |
 
 分层：
@@ -57,7 +59,7 @@ YAML 中请将 **`llm_analysis_discard_must_be_strict`** / **`llm_text_quality_d
 
 ## 第 10 步：`agent_insight_llm_mapper`（auto-analyst）
 
-把**一条样本**打包为 JSON（token、工具、意图/主题/情感标签、三路 LLM eval 摘要、`agent_bad_case_*`、query/response 截断预览），调用 API 模型输出**严格 JSON**：
+把**一条样本**打包为 JSON（token、工具、意图/主题/情感标签、三路 LLM eval 摘要、**`dialog_quality_llm`**（§5b 各轴 1–5 分与短 reason 摘要）、`agent_bad_case_*`、query/response 截断预览），调用 API 模型输出**严格 JSON**：
 
 - `headline`：一句话中文总览（适合卡片）  
 - `root_causes`：`factor` + `confidence` + `cited_fields`（必须来自输入 JSON 的键路径）+ `rationale_one_line`  
