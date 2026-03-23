@@ -140,6 +140,89 @@ def draw_mesh_wireframe(frame, verts_2d, faces, color, alpha=0.4, thickness=1):
 
 
 # ---------------------------------------------------------------
+# MANO joint skeleton visualization
+# ---------------------------------------------------------------
+
+# MANO 21-joint skeleton: wrist(0), index(1-4), middle(5-8),
+# ring(9-12), pinky(13-16), thumb(17-20)
+MANO_SKELETON_BONES = [
+    # Index finger
+    (0, 1), (1, 2), (2, 3), (3, 4),
+    # Middle finger
+    (0, 5), (5, 6), (6, 7), (7, 8),
+    # Ring finger
+    (0, 9), (9, 10), (10, 11), (11, 12),
+    # Pinky finger
+    (0, 13), (13, 14), (14, 15), (15, 16),
+    # Thumb
+    (0, 17), (17, 18), (18, 19), (19, 20),
+]
+
+# Per-finger colors (BGR) for distinct visualization
+FINGER_COLORS = {
+    "thumb":  (0, 255, 255),   # yellow
+    "index":  (0, 0, 255),     # red
+    "middle": (0, 255, 0),     # green
+    "ring":   (255, 165, 0),   # orange-ish
+    "pinky":  (255, 0, 255),   # magenta
+}
+
+BONE_FINGER_MAP = {
+    0: "index", 1: "index", 2: "index", 3: "index",
+    4: "middle", 5: "middle", 6: "middle", 7: "middle",
+    8: "ring", 9: "ring", 10: "ring", 11: "ring",
+    12: "pinky", 13: "pinky", 14: "pinky", 15: "pinky",
+    16: "thumb", 17: "thumb", 18: "thumb", 19: "thumb",
+}
+
+
+def draw_joints(frame, joints_2d, bone_color_override=None,
+                joint_radius=4, bone_thickness=2, alpha=0.8):
+    """Draw MANO hand joints and skeleton bones on frame.
+
+    Args:
+        frame: BGR image (modified in-place).
+        joints_2d: (J, 2) array of 2D joint positions.
+        bone_color_override: if set, use this single color for all bones
+            instead of per-finger colors.
+        joint_radius: radius of joint circles.
+        bone_thickness: line thickness for bones.
+        alpha: blending alpha for the overlay.
+    """
+    overlay = frame.copy()
+    h, w = frame.shape[:2]
+
+    # Draw bones
+    for bone_idx, (j1, j2) in enumerate(MANO_SKELETON_BONES):
+        pt1 = joints_2d[j1].astype(np.int32)
+        pt2 = joints_2d[j2].astype(np.int32)
+        # Skip if far out of frame
+        if (pt1[0] < -w or pt1[0] > 2 * w or pt1[1] < -h or pt1[1] > 2 * h
+                or pt2[0] < -w or pt2[0] > 2 * w or pt2[1] < -h
+                or pt2[1] > 2 * h):
+            continue
+        if bone_color_override is not None:
+            color = bone_color_override
+        else:
+            finger = BONE_FINGER_MAP[bone_idx]
+            color = FINGER_COLORS[finger]
+        cv2.line(overlay, tuple(pt1), tuple(pt2), color,
+                 bone_thickness, cv2.LINE_AA)
+
+    # Draw joint circles
+    for j in range(joints_2d.shape[0]):
+        pt = joints_2d[j].astype(np.int32)
+        if pt[0] < -w or pt[0] > 2 * w or pt[1] < -h or pt[1] > 2 * h:
+            continue
+        # Wrist joint is larger
+        r = joint_radius + 2 if j == 0 else joint_radius
+        cv2.circle(overlay, tuple(pt), r, (255, 255, 255), -1, cv2.LINE_AA)
+        cv2.circle(overlay, tuple(pt), r, (0, 0, 0), 1, cv2.LINE_AA)
+
+    cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
+
+# ---------------------------------------------------------------
 # Trajectory reconstruction from actions
 # ---------------------------------------------------------------
 
@@ -352,6 +435,7 @@ def main():
             "valid_ids": valid_ids,
             "wrist_2d": wrist_2d,
             "mesh_verts": mesh_verts,
+            "mesh_joints": mesh_joints,
             "mesh_faces": mesh_faces,
             "mesh_id_map": mesh_id_map,
             "frame_ids": frame_ids,
@@ -391,6 +475,14 @@ def main():
                                  colors["mesh"], alpha=0.25)
                 draw_mesh_wireframe(canvas, verts_2d, res["mesh_faces"],
                                     colors["mesh"], alpha=0.5, thickness=1)
+
+                # -- Draw hand joints and skeleton --
+                if res["mesh_joints"] is not None:
+                    joints_2d = project_points_to_2d(
+                        res["mesh_joints"][midx], fov_x, img_w, img_h)
+                    draw_joints(canvas, joints_2d,
+                                joint_radius=4, bone_thickness=2,
+                                alpha=0.85)
 
             # -- Draw wrist trajectory --
             if fid not in set(res["valid_ids"]):

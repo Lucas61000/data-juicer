@@ -106,9 +106,9 @@ if __name__ == '__main__':
                 skip_op_error=False
             ),
             batch_size=1,
-            num_gpus=0.1,
             batch_format="pyarrow",
-            compute=ActorPoolStrategy(min_size=1, max_size=2),  # adjust the scope based on available resources
+            # memory=6.9 * 1024 ** 3,  # '6.9GiB',
+            # compute=ActorPoolStrategy(min_size=1, max_size=2),  # adjust the scope based on available resources
             runtime_env=None,
         ).map_batches(
             VideoHandReconstructionHaworMapper,
@@ -122,9 +122,9 @@ if __name__ == '__main__':
                 frame_field=MetaKeys.video_frames,
             ),
             batch_size=1,
-            num_gpus=0.1,
+            # memory=9.0 * 1024 ** 3,  # '9.0GiB',
             batch_format="pyarrow",
-            compute=ActorPoolStrategy(min_size=1, max_size=2),  # adjust the scope based on available resources
+            # compute=ActorPoolStrategy(min_size=1, max_size=2),  # adjust the scope based on available resources
             runtime_env=None,
         ).map_batches(
             VideoCameraPoseMegaSaMMapper,
@@ -135,9 +135,9 @@ if __name__ == '__main__':
                 skip_op_error=False,
             ),
             batch_size=1,
-            num_gpus=0.1,
+            # memory=8.1 * 1024 ** 3,  # '8.1GiB',
             batch_format="pyarrow",
-            compute=ActorPoolStrategy(min_size=1, max_size=2),  # adjust the scope based on available resources
+            # compute=ActorPoolStrategy(min_size=1, max_size=2),  # adjust the scope based on available resources
             runtime_env={"conda": "mega-sam"},
         ).map_batches(
             action_op,

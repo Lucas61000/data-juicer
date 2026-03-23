@@ -1,4 +1,5 @@
 import numpy as np
+from loguru import logger
 
 from data_juicer.utils.constant import CameraCalibrationKeys, Fields, MetaKeys
 from data_juicer.utils.lazy_loader import LazyLoader
@@ -33,6 +34,7 @@ class VideoCameraCalibrationMogeMapper(Mapper):
         output_points: bool = True,
         output_depth: bool = True,
         output_mask: bool = True,
+        frame_batch_size: int = 8,
         *args,
         **kwargs,
     ):
@@ -51,6 +53,9 @@ class VideoCameraCalibrationMogeMapper(Mapper):
             For MoGe-2, the point map is in metric scale.
         :param output_depth: Determines whether to output depth maps.
         :param output_mask: Determines whether to output a binary mask for valid pixels.
+        :param frame_batch_size: Number of frames to batch together for GPU
+            inference. Larger values improve throughput but require more VRAM.
+            Default: 8.
         :param args: extra args
         :param kwargs: extra args
         """
@@ -65,6 +70,7 @@ class VideoCameraCalibrationMogeMapper(Mapper):
         self.output_intrinsics = output_intrinsics
         self.output_hfov = output_hfov
         self.output_vfov = output_vfov
+        self.frame_batch_size = frame_batch_size
         assert (
             self.output_points
             or self.output_depth
@@ -103,6 +109,131 @@ class VideoCameraCalibrationMogeMapper(Mapper):
 
         return False
 
+    def _decode_frame(self, frame, device):
+        """Decode a single frame to a (3, H, W) float32 tensor and return (tensor, H, W)."""
+        if isinstance(frame, bytes):
+            image_array = np.frombuffer(frame, dtype=np.uint8)
+            image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        else:
+            image = cv2.imread(frame)
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        h, w = image.shape[:2]
+        tensor = torch.tensor(image / 255, dtype=torch.float32, device=device).permute(2, 0, 1)
+        return tensor, h, w
+
+    def _process_video_frames_batched(self, frames, model, device, tag_dict):
+        """Process all frames of one video using batched MoGe inference.
+
+        MoGe v2 infer() natively supports (B, 3, H, W) batch input.
+        Same-resolution frames (within a single clip) are stacked and
+        inferred together for significantly better GPU utilization.
+        """
+        need_K = self.output_intrinsics and CameraCalibrationKeys.intrinsics not in tag_dict
+        need_hfov = self.output_hfov and CameraCalibrationKeys.hfov not in tag_dict
+        need_vfov = self.output_vfov and CameraCalibrationKeys.vfov not in tag_dict
+        need_points = self.output_points and CameraCalibrationKeys.points not in tag_dict
+        need_depth = self.output_depth and CameraCalibrationKeys.depth not in tag_dict
+        need_mask = self.output_mask and CameraCalibrationKeys.mask not in tag_dict
+        need_intrinsics_related = need_K or need_hfov or need_vfov
+
+        # Step 1: Decode all frames and record their dimensions
+        tensors = []
+        heights = []
+        widths = []
+        for frame in frames:
+            t, h, w = self._decode_frame(frame, device)
+            tensors.append(t)
+            heights.append(h)
+            widths.append(w)
+
+        num_frames = len(tensors)
+        if num_frames == 0:
+            return
+
+        # Step 2: Check if all frames share the same resolution (typical for a single clip)
+        all_same_size = all(h == heights[0] and w == widths[0] for h, w in zip(heights, widths))
+
+        final_k_list = []
+        final_hfov_list = []
+        final_vfov_list = []
+        final_points_list = []
+        final_depth_list = []
+        final_mask_list = []
+
+        if all_same_size:
+            # Batched inference path: stack frames and process in chunks
+            height, width = heights[0], widths[0]
+            for batch_start in range(0, num_frames, self.frame_batch_size):
+                batch_end = min(batch_start + self.frame_batch_size, num_frames)
+                batch_tensor = torch.stack(tensors[batch_start:batch_end], dim=0)  # (B, 3, H, W)
+
+                output = model.infer(batch_tensor)
+
+                batch_len = batch_end - batch_start
+                for i in range(batch_len):
+                    if need_intrinsics_related:
+                        intrinsics = output["intrinsics"][i].cpu().tolist()
+                        if need_K:
+                            final_k_list.append(
+                                [
+                                    [intrinsics[0][0] * width, 0, intrinsics[0][2] * width],
+                                    [0, intrinsics[1][1] * height, intrinsics[1][2] * height],
+                                    [0, 0, 1],
+                                ]
+                            )
+                        if need_hfov:
+                            final_hfov_list.append(2 * np.arctan(1 / 2 / intrinsics[0][0]))
+                        if need_vfov:
+                            final_vfov_list.append(2 * np.arctan(1 / 2 / intrinsics[1][1]))
+                    if need_points:
+                        final_points_list.append(output["points"][i].cpu().tolist())
+                    if need_depth:
+                        final_depth_list.append(output["depth"][i].cpu().tolist())
+                    if need_mask:
+                        final_mask_list.append(output["mask"][i].cpu().tolist())
+        else:
+            # Fallback: per-frame inference when frames have different sizes
+            logger.debug("Frames have mixed resolutions, falling back to per-frame inference.")
+            for i in range(num_frames):
+                output = model.infer(tensors[i])
+                height, width = heights[i], widths[i]
+
+                if need_intrinsics_related:
+                    intrinsics = output["intrinsics"].cpu().tolist()
+                    if need_K:
+                        final_k_list.append(
+                            [
+                                [intrinsics[0][0] * width, 0, intrinsics[0][2] * width],
+                                [0, intrinsics[1][1] * height, intrinsics[1][2] * height],
+                                [0, 0, 1],
+                            ]
+                        )
+                    if need_hfov:
+                        final_hfov_list.append(2 * np.arctan(1 / 2 / intrinsics[0][0]))
+                    if need_vfov:
+                        final_vfov_list.append(2 * np.arctan(1 / 2 / intrinsics[1][1]))
+                if need_points:
+                    final_points_list.append(output["points"].cpu().tolist())
+                if need_depth:
+                    final_depth_list.append(output["depth"].cpu().tolist())
+                if need_mask:
+                    final_mask_list.append(output["mask"].cpu().tolist())
+
+        # Step 3: Write results to tag_dict
+        if need_K:
+            tag_dict[CameraCalibrationKeys.intrinsics] = final_k_list
+        if need_hfov:
+            tag_dict[CameraCalibrationKeys.hfov] = final_hfov_list
+        if need_vfov:
+            tag_dict[CameraCalibrationKeys.vfov] = final_vfov_list
+        if need_points:
+            tag_dict[CameraCalibrationKeys.points] = final_points_list
+        if need_depth:
+            tag_dict[CameraCalibrationKeys.depth] = final_depth_list
+        if need_mask:
+            tag_dict[CameraCalibrationKeys.mask] = final_mask_list
+
     def process_single(self, sample=None, rank=None):
         # there is no video in this sample
         if self.video_key not in sample or not sample[self.video_key]:
@@ -136,76 +267,7 @@ class VideoCameraCalibrationMogeMapper(Mapper):
             device = "cuda" if self.use_cuda() else "cpu"
 
         for video_idx in range(num_videos):
-            (final_k_list, final_hfov_list, final_vfov_list, final_points_list, final_depth_list, final_mask_list) = (
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-            )
-
             tag_dict = tags_list[video_idx]
-
-            need_K = self.output_intrinsics and CameraCalibrationKeys.intrinsics not in tag_dict
-            need_hfov = self.output_hfov and CameraCalibrationKeys.hfov not in tag_dict
-            need_vfov = self.output_vfov and CameraCalibrationKeys.vfov not in tag_dict
-            need_points = self.output_points and CameraCalibrationKeys.points not in tag_dict
-            need_depth = self.output_depth and CameraCalibrationKeys.depth not in tag_dict
-            need_mask = self.output_mask and CameraCalibrationKeys.mask not in tag_dict
-            need_intrinsics_related = need_K or need_hfov or need_vfov
-
-            for i, frame in enumerate(videos_frames[video_idx]):
-                if isinstance(frame, bytes):  # rgb bytes from data-juicer video decoder
-                    image_array = np.frombuffer(frame, dtype=np.uint8)
-                    input_image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-                else:
-                    input_image = cv2.cvtColor(cv2.imread(frame), cv2.COLOR_BGR2RGB)
-
-                height, width, channels = input_image.shape
-                input_image = torch.tensor(input_image / 255, dtype=torch.float32, device=device).permute(2, 0, 1)
-
-                output = model.infer(input_image)
-
-                if need_intrinsics_related:
-                    intrinsics = output["intrinsics"].cpu().tolist()
-                    temp_k = [
-                        [intrinsics[0][0] * width, 0, intrinsics[0][2] * width],
-                        [0, intrinsics[1][1] * height, intrinsics[1][2] * height],
-                        [0, 0, 1],
-                    ]
-                    if need_K:
-                        final_k_list.append(temp_k)
-                    if need_hfov:
-                        temp_hfov = 2 * np.arctan(1 / 2 / intrinsics[0][0])  # rad
-                        final_hfov_list.append(temp_hfov)
-                    if need_vfov:
-                        temp_vfov = 2 * np.arctan(1 / 2 / intrinsics[1][1])
-                        final_vfov_list.append(temp_vfov)
-
-                if need_points:
-                    points = output["points"].cpu().tolist()
-                    final_points_list.append(points)
-
-                if need_depth:
-                    depth = output["depth"].cpu().tolist()
-                    final_depth_list.append(depth)
-
-                if need_mask:
-                    mask = output["mask"].cpu().tolist()
-                    final_mask_list.append(mask)
-
-            if need_K:
-                tag_dict[CameraCalibrationKeys.intrinsics] = final_k_list
-            if need_hfov:
-                tag_dict[CameraCalibrationKeys.hfov] = final_hfov_list
-            if need_vfov:
-                tag_dict[CameraCalibrationKeys.vfov] = final_vfov_list
-            if need_points:
-                tag_dict[CameraCalibrationKeys.points] = final_points_list
-            if need_depth:
-                tag_dict[CameraCalibrationKeys.depth] = final_depth_list
-            if need_mask:
-                tag_dict[CameraCalibrationKeys.mask] = final_mask_list
+            self._process_video_frames_batched(videos_frames[video_idx], model, device, tag_dict)
 
         return sample

@@ -134,49 +134,47 @@ class VideoHandReconstructionHaworMapper(Mapper):
         boxes_ = []
         tracks = {}
 
-        for t, img_cv2 in enumerate(imgfiles):
+        with torch.no_grad(), torch.amp.autocast("cuda"):
+            for t, img_cv2 in enumerate(imgfiles):
+                results = hand_det_model.track(img_cv2, conf=thresh, persist=True, verbose=False)
 
-            with torch.no_grad():
-                with torch.amp.autocast("cuda"):
-                    results = hand_det_model.track(img_cv2, conf=thresh, persist=True, verbose=False)
+                boxes = results[0].boxes.xyxy.cpu().numpy()
+                confs = results[0].boxes.conf.cpu().numpy()
+                handedness = results[0].boxes.cls.cpu().numpy()
+                if results[0].boxes.id is not None:
+                    track_id = results[0].boxes.id.cpu().numpy()
+                else:
+                    track_id = [-1] * len(boxes)
 
-                    boxes = results[0].boxes.xyxy.cpu().numpy()
-                    confs = results[0].boxes.conf.cpu().numpy()
-                    handedness = results[0].boxes.cls.cpu().numpy()
-                    if not results[0].boxes.id is None:
-                        track_id = results[0].boxes.id.cpu().numpy()
-                    else:
-                        track_id = [-1] * len(boxes)
+                boxes = np.hstack([boxes, confs[:, None]])
 
-                    boxes = np.hstack([boxes, confs[:, None]])
+                find_right = False
+                find_left = False
 
-                    find_right = False
-                    find_left = False
-
-                    for idx, box in enumerate(boxes):
-                        if track_id[idx] == -1:
-                            if handedness[[idx]] > 0:
-                                id = int(10000)
-                            else:
-                                id = int(5000)
+                for idx, box in enumerate(boxes):
+                    if track_id[idx] == -1:
+                        if handedness[[idx]] > 0:
+                            id = int(10000)
                         else:
-                            id = track_id[idx]
-                        subj = dict()
-                        subj["frame"] = t
-                        subj["det"] = True
-                        subj["det_box"] = boxes[[idx]]
-                        subj["det_handedness"] = handedness[[idx]]
+                            id = int(5000)
+                    else:
+                        id = track_id[idx]
+                    subj = dict()
+                    subj["frame"] = t
+                    subj["det"] = True
+                    subj["det_box"] = boxes[[idx]]
+                    subj["det_handedness"] = handedness[[idx]]
 
-                        if (not find_right and handedness[[idx]] > 0) or (not find_left and handedness[[idx]] == 0):
-                            if id in tracks:
-                                tracks[id].append(subj)
-                            else:
-                                tracks[id] = [subj]
+                    if (not find_right and handedness[[idx]] > 0) or (not find_left and handedness[[idx]] == 0):
+                        if id in tracks:
+                            tracks[id].append(subj)
+                        else:
+                            tracks[id] = [subj]
 
-                            if handedness[[idx]] > 0:
-                                find_right = True
-                            elif handedness[[idx]] == 0:
-                                find_left = True
+                        if handedness[[idx]] > 0:
+                            find_right = True
+                        elif handedness[[idx]] == 0:
+                            find_left = True
 
         return boxes_, tracks
 
@@ -186,18 +184,19 @@ class VideoHandReconstructionHaworMapper(Mapper):
         tracks: dict,
         model,
         img_focal: float,
-        img_paths: list,
+        frame_file_paths: list,
         single_image: bool = False,
     ) -> dict:
         """
         Performs HAWOR 3D hand reconstruction on detected and tracked hand regions.
 
         Args:
-            imgfiles (list): List of image frames.
+            imgfiles (list): List of decoded image frames (numpy arrays).
             tracks (dict): Dictionary mapping track ID to a list of detection objects.
             model (HAWOR): The initialized HAWOR model.
             img_focal (float): Camera focal length.
-            img_paths (list): List of images paths.
+            frame_file_paths (list): List of file paths readable by HaWoR
+                (pre-materialized on disk if input was bytes).
             single_image (bool): Flag for single-image processing mode.
 
         Returns:
@@ -265,27 +264,13 @@ class VideoHandReconstructionHaworMapper(Mapper):
                 continue
 
             for frame_ck, boxes_ck in zip(frame_chunks, boxes_chunks):
-                img_ck = [img_paths[i] for i in frame_ck]
+                img_ck = [frame_file_paths[i] for i in frame_ck]
                 if is_right[0] > 0:
                     do_flip = False
                 else:
                     do_flip = True
 
-                if isinstance(img_ck[0], bytes):
-                    with tempfile.TemporaryDirectory() as temp_dir:
-                        file_paths = []
-                        for i, img_bytes in enumerate(img_ck):
-                            file_path = os.path.join(temp_dir, f"image_{i}.jpg")
-                            with open(file_path, "wb") as f:
-                                f.write(img_bytes)
-                            file_paths.append(file_path)
-                        results = model.inference(
-                            file_paths, boxes_ck, img_focal=img_focal, img_center=img_center, do_flip=do_flip
-                        )
-                else:
-                    results = model.inference(
-                        img_ck, boxes_ck, img_focal=img_focal, img_center=img_center, do_flip=do_flip
-                    )
+                results = model.inference(img_ck, boxes_ck, img_focal=img_focal, img_center=img_center, do_flip=do_flip)
 
                 data_out = {
                     "init_root_orient": results["pred_rotmat"][None, :, 0],  # (B, T, 3, 3)
@@ -306,18 +291,23 @@ class VideoHandReconstructionHaworMapper(Mapper):
                     init_hand_pose[..., 1] *= -1
                     init_hand_pose[..., 2] *= -1
 
+                T = data_out["init_betas"].shape[1]
+                betas_all = data_out["init_betas"][0, :T].cpu().numpy()  # (T, 10)
+                orient_all = init_root[0, :T].cpu().numpy()  # (T, 3)
+                hand_pose_all = init_hand_pose[0, :T].reshape(T, -1).cpu().numpy()  # (T, 45)
+                transl_all = data_out["init_trans"][0, :T].cpu().numpy()  # (T, 3)
+
                 s_frame = frame_ck[0]
                 e_frame = frame_ck[-1]
 
                 for frame_id in range(s_frame, e_frame + 1):
                     fi = frame_id - s_frame
-                    result = {}
-                    result["betas"] = data_out["init_betas"][0, fi].cpu().numpy()  # (10,)
-                    # Store axis-angle: (3,) for global_orient, (45,) for hand_pose
-                    result["global_orient"] = init_root[0, fi].cpu().numpy()  # (3,)
-                    result["hand_pose"] = init_hand_pose[0, fi].reshape(-1).cpu().numpy()  # (45,)
-                    # Store original HaWoR translation (directly usable with run_mano/run_mano_left)
-                    result["transl"] = data_out["init_trans"][0, fi].cpu().numpy()  # (3,)
+                    result = {
+                        "betas": betas_all[fi],
+                        "global_orient": orient_all[fi],
+                        "hand_pose": hand_pose_all[fi],
+                        "transl": transl_all[fi],
+                    }
 
                     if idx == 0:
                         left_results[frame_id] = result
@@ -327,6 +317,44 @@ class VideoHandReconstructionHaworMapper(Mapper):
         reformat_results = {"left": left_results, "right": right_results}
 
         return reformat_results
+
+    @staticmethod
+    def _decode_frames(raw_frames):
+        """Decode raw frames (bytes or paths) to numpy arrays.
+
+        Returns:
+            images: list of decoded BGR numpy arrays
+        """
+        images = []
+        for frame in raw_frames:
+            if isinstance(frame, bytes):
+                image_array = np.frombuffer(frame, dtype=np.uint8)
+                image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+            else:
+                image = cv2.imread(frame)
+
+            images.append(image)
+        return images
+
+    @staticmethod
+    def _materialize_bytes_to_files(raw_frames, temp_dir):
+        """Write byte-frames to disk once, return file paths.
+
+        If frames are already file paths, returns them directly.
+        This avoids repeated per-chunk temp dir creation and disk I/O.
+        """
+        if not raw_frames:
+            return []
+        if not isinstance(raw_frames[0], bytes):
+            return raw_frames
+
+        file_paths = []
+        for i, frame_bytes in enumerate(raw_frames):
+            file_path = os.path.join(temp_dir, f"frame_{i}.jpg")
+            with open(file_path, "wb") as f:
+                f.write(frame_bytes)
+            file_paths.append(file_path)
+        return file_paths
 
     def process_single(self, sample=None, rank=None):
 
@@ -349,27 +377,18 @@ class VideoHandReconstructionHaworMapper(Mapper):
             cur_camera_calibration = sample[Fields.meta][self.camera_calibration_field][video_idx]
             all_fov_x = cur_camera_calibration.get(CameraCalibrationKeys.hfov, None)
 
-            # If horizontal FoV is not directly available, try to compute it from intrinsics
+            # If horizontal FoV is not directly available, compute from intrinsics
             if all_fov_x is None:
                 intrinsics = cur_camera_calibration.get(CameraCalibrationKeys.intrinsics, None)
                 if intrinsics is not None:
-                    all_fov_x = []
-                    for i in intrinsics:
-                        all_fov_x.append(2 * np.arctan(1 / 2 / intrinsics[0][0]))
+                    all_fov_x = [2 * np.arctan(1 / 2 / k[0][0]) for k in intrinsics]
                 else:
                     raise ValueError(
                         f"The sample must include an '{CameraCalibrationKeys.hfov}' field or an '{CameraCalibrationKeys.intrinsics}' field in the camera calibration info to store the horizontal FoV for hand reconstruction."
                     )
 
-            images = []
             frames = videos_frames[video_idx]
-            for i, frame in enumerate(frames):
-                if isinstance(frame, bytes):
-                    image_array = np.frombuffer(frame, dtype=np.uint8)
-                    image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-                else:
-                    image = cv2.imread(frame)
-                images.append(image)
+            images = self._decode_frames(frames)
 
             N = len(images)
             H, W = images[0].shape[:2]
@@ -380,13 +399,19 @@ class VideoHandReconstructionHaworMapper(Mapper):
 
             _, tracks = self.detect_track(images, hand_det_model, thresh=self.thresh)
 
-            recon_results = self.hawor_motion_estimation(
-                images, tracks, hawor_model, img_focal, single_image=(N == 1), img_paths=frames
-            )
+            with tempfile.TemporaryDirectory() as temp_dir:
+                frame_file_paths = self._materialize_bytes_to_files(frames, temp_dir)
+
+                recon_results = self.hawor_motion_estimation(
+                    images,
+                    tracks,
+                    hawor_model,
+                    img_focal,
+                    frame_file_paths=frame_file_paths,
+                    single_image=(N == 1),
+                )
 
             # Collect per-hand results in structured format
-            # Parameters are stored in HaWoR's native axis-angle format,
-            # directly usable with run_mano (right) / run_mano_left (left).
             hand_output = {}
             for hand_type in ["left", "right"]:
                 frame_ids = []

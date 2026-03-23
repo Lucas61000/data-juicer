@@ -172,14 +172,20 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             subprocess.run(["pip", "uninstall", "droid_backends", "-y"])
             subprocess.run(["python", "setup.py", "install"], cwd=os.path.join(megasam_repo_path, "base"))
 
-    def image_stream(self, frames, depth_list, intrinsics_list):
+    def _preprocess_stream(self, frames, depth_list, intrinsics_list):
+        """Pre-process all frames once and cache the results.
 
-        for t, (image, depth, intrinsics) in enumerate(zip(frames, depth_list, intrinsics_list)):
-            if isinstance(image, bytes):
-                image_array = np.frombuffer(image, dtype=np.uint8)
+        Returns a list of (t, image, depth, intrinsics, mask) tuples.
+        Avoids the cost of repeated image decoding / resize when
+        image_stream is consumed multiple times (tracking + terminate).
+        """
+        cached = []
+        for t, (raw_image, raw_depth, raw_intr) in enumerate(zip(frames, depth_list, intrinsics_list)):
+            if isinstance(raw_image, bytes):
+                image_array = np.frombuffer(raw_image, dtype=np.uint8)
                 image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
             else:
-                image = cv2.imread(image)
+                image = cv2.imread(raw_image)
             h0, w0, _ = image.shape
             h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
             w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
@@ -189,17 +195,24 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             image = torch.as_tensor(image).permute(2, 0, 1)
             image = image[None]
 
-            depth = torch.as_tensor(to_standard_list(depth))
+            depth = torch.as_tensor(to_standard_list(raw_depth))
             depth = torch.nn.functional.interpolate(depth[None, None], (h1, w1), mode="nearest-exact").squeeze()
             depth = depth[: h1 - h1 % 8, : w1 - w1 % 8]
 
             mask = torch.ones_like(depth)
 
-            intrinsics = torch.as_tensor([intrinsics[0][0], intrinsics[1][1], intrinsics[0][2], intrinsics[1][2]])
+            intrinsics = torch.as_tensor([raw_intr[0][0], raw_intr[1][1], raw_intr[0][2], raw_intr[1][2]])
             intrinsics[0::2] *= w1 / w0
             intrinsics[1::2] *= h1 / h0
 
-            yield t, image, depth, intrinsics, mask
+            cached.append((t, image, depth, intrinsics, mask))
+        return cached
+
+    @staticmethod
+    def _iter_cached(cached):
+        """Yield from a cached preprocessed list (same interface as image_stream)."""
+        for item in cached:
+            yield item
 
     def process_single(self, sample=None, rank=None):
         # check if it's generated already
@@ -233,28 +246,32 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
 
             intrinsics_list = intrinsics.tolist()
 
+            # Pre-process all frames once (avoids double decode + resize)
+            cached_stream = self._preprocess_stream(frames, depth_list, intrinsics_list)
+
             valid_image_list = []
             valid_depth_list = []
             valid_intrinsics_list = []
             valid_mask_list = []
 
-            for t, image, depth, intrinsics, mask in self.image_stream(frames, depth_list, intrinsics_list):
+            for t, image, depth, intr, mask in cached_stream:
 
                 valid_image_list.append(image[0])
                 valid_depth_list.append(depth)
                 valid_mask_list.append(mask)
-                valid_intrinsics_list.append(intrinsics)
+                valid_intrinsics_list.append(intr)
 
                 if t == 0:
                     args = droid_args(image_size=[image.shape[2], image.shape[3]])
                     droid = self.Droid(args)
 
-                droid.track(t, image, depth, intrinsics=intrinsics, mask=mask)
+                droid.track(t, image, depth, intrinsics=intr, mask=mask)
 
-            droid.track_final(t, image, depth, intrinsics=intrinsics, mask=mask)
+            droid.track_final(t, image, depth, intrinsics=intr, mask=mask)
 
+            # Reuse cached stream for terminate (no re-decode)
             traj_est, depth_est, motion_prob = droid.terminate(
-                self.image_stream(frames, depth_list, intrinsics_list),
+                self._iter_cached(cached_stream),
                 _opt_intr=True,
                 full_ba=True,
             )
