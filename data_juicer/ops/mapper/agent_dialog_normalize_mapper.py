@@ -404,11 +404,11 @@ class AgentDialogNormalizeMapper(Mapper):
         assistant_label: str = DEFAULT_ASSISTANT_LABEL,
         copy_lineage_fields: bool = True,
         copy_request_id: bool = True,
-        request_id_keys: Tuple[str, ...] = (
+        request_id_keys: List[str] = [
             "request_id",
             "trace_id",
             "id",
-        ),
+        ],
         history_tool_result_max_chars: int = 10_000,
         history_max_assistant_trace_chars: int = 0,
         history_max_user_chars: int = 0,

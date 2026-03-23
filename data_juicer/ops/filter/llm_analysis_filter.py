@@ -266,8 +266,6 @@ json
             data = json.loads(json_str)
         except (json.JSONDecodeError, TypeError):
             return 0, None, None
-        if "flags" in data:
-            data["flags"] = np.array(data["flags"], dtype=np.str_)
         # Model outputs sometimes use "review" vs ["review"], breaking dataset shard alignment
         data["recommendation"] = self._normalize_recommendation_to_str_list(data.get("recommendation"))
         tags = data.get("tags", None)
