@@ -134,7 +134,9 @@ class VideoHandActionComputeMapper(Mapper):
     def _get_hand_data(self, hand_recon, hand_type):
         """Extract frame-indexed hand data for the specified hand type."""
         # Support both new structured format and legacy flat format
-        hand = hand_recon[hand_type]
+        hand = hand_recon.get(hand_type, {}) if isinstance(hand_recon, dict) else {}
+        if not hand:
+            return [], [], [], []
         frame_ids = hand.get("frame_ids", [])
         transl_list = hand.get("transl", [])
         orient_list = hand.get("global_orient", [])
@@ -226,12 +228,43 @@ class VideoHandActionComputeMapper(Mapper):
 
         return actions
 
+    @staticmethod
+    def _transform_joints_cam_to_world(joints_cam, cam_c2w_all, frame_ids):
+        """Transform MANO 21-joint positions from camera space to world space.
+
+        Args:
+            joints_cam: numpy array (T_all, 21, 3) or None — all valid frames'
+                joints in camera space (from HaWoR).
+            cam_c2w_all: numpy array (N, 4, 4) — camera-to-world transforms.
+            frame_ids: list of frame indices that have valid hand data.
+
+        Returns:
+            joints_world: list of (21, 3) arrays for valid frames, or None.
+        """
+        if joints_cam is None:
+            return None
+
+        joints_cam = np.asarray(joints_cam, dtype=np.float64)
+        joints_world_list = []
+
+        for i, fid in enumerate(frame_ids):
+            if fid >= len(cam_c2w_all) or i >= len(joints_cam):
+                continue
+            R_c2w = cam_c2w_all[fid, :3, :3]  # (3, 3)
+            t_c2w = cam_c2w_all[fid, :3, 3]  # (3,)
+            # joints_cam[i]: (21, 3) in camera space
+            # world = R @ cam + t  (applied per joint)
+            j_world = (R_c2w @ joints_cam[i].T).T + t_c2w  # (21, 3)
+            joints_world_list.append(j_world.tolist())
+
+        return joints_world_list
+
     def _compute_hand_actions(self, hand_recon, cam_c2w_all, hand_type, video_idx):
         """Compute states and actions for a single hand in a single video.
 
         Returns:
             dict with 'states', 'actions', 'valid_frame_ids', 'hand_type',
-            or None if insufficient data.
+            'joints_cam', 'joints_world', or None if insufficient data.
         """
         frame_ids, transl_list, orient_list, hp_list = self._get_hand_data(hand_recon, hand_type)
 
@@ -256,11 +289,28 @@ class VideoHandActionComputeMapper(Mapper):
         states = np.stack(states, axis=0)  # (T, 8)
         actions = self._compute_actions(states)  # (T, 7)
 
+        # Transform MANO joints from camera space to world space
+        hand_data = hand_recon[hand_type]
+        joints_cam = hand_data.get("joints_cam", None)
+        joints_world = self._transform_joints_cam_to_world(joints_cam, cam_c2w_all, frame_ids)
+
+        # Also pass through joints_cam for valid frames only
+        joints_cam_valid = None
+        if joints_cam is not None:
+            joints_cam = np.asarray(joints_cam, dtype=np.float64)
+            joints_cam_valid = [
+                joints_cam[i].tolist()
+                for i, fid in enumerate(frame_ids)
+                if fid < len(cam_c2w_all) and i < len(joints_cam)
+            ]
+
         return {
             "states": states.tolist(),
             "actions": actions.tolist(),
             "valid_frame_ids": valid_frame_ids,
             "hand_type": hand_type,
+            "joints_cam": joints_cam_valid,  # (T, 21, 3) camera space
+            "joints_world": joints_world,  # (T, 21, 3) world space
         }
 
     def process_single(self, sample=None, rank=None):
@@ -291,14 +341,31 @@ class VideoHandActionComputeMapper(Mapper):
 
         all_video_results = []
 
-        for video_idx in range(len(hand_recon_list)):
+        if len(hand_recon_list) != len(camera_pose_list):
+            logger.warning(
+                f"hand_recon ({len(hand_recon_list)}) and camera_pose "
+                f"({len(camera_pose_list)}) list length mismatch. "
+                f"Processing min of both."
+            )
+
+        for video_idx in range(min(len(hand_recon_list), len(camera_pose_list))):
             hand_recon = hand_recon_list[video_idx]
             camera_pose = camera_pose_list[video_idx]
 
-            cam_c2w_all = camera_pose.get(CameraCalibrationKeys.cam_c2w, None)
+            cam_c2w_all = camera_pose.get(CameraCalibrationKeys.cam_c2w, None) if camera_pose else None
             if cam_c2w_all is None:
                 logger.warning(f"Video {video_idx}: missing cam_c2w, skipping.")
-                empty = {ht: {"states": [], "actions": [], "valid_frame_ids": [], "hand_type": ht} for ht in hand_types}
+                empty = {
+                    ht: {
+                        "states": [],
+                        "actions": [],
+                        "valid_frame_ids": [],
+                        "hand_type": ht,
+                        "joints_cam": [],
+                        "joints_world": [],
+                    }
+                    for ht in hand_types
+                }
                 all_video_results.append(empty)
                 continue
 
@@ -313,6 +380,8 @@ class VideoHandActionComputeMapper(Mapper):
                         "actions": [],
                         "valid_frame_ids": [],
                         "hand_type": ht,
+                        "joints_cam": [],
+                        "joints_world": [],
                     }
                 else:
                     video_result[ht] = result

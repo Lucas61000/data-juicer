@@ -179,6 +179,8 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
         Avoids the cost of repeated image decoding / resize when
         image_stream is consumed multiple times (tracking + terminate).
         """
+        from loguru import logger as _logger
+
         cached = []
         for t, (raw_image, raw_depth, raw_intr) in enumerate(zip(frames, depth_list, intrinsics_list)):
             if isinstance(raw_image, bytes):
@@ -186,6 +188,9 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
                 image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
             else:
                 image = cv2.imread(raw_image)
+            if image is None:
+                _logger.warning(f"MegaSaM: frame {t} decode failed, skipping.")
+                continue
             h0, w0, _ = image.shape
             h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
             w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
@@ -234,8 +239,23 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
 
         sample[Fields.meta][self.tag_field_name] = []
 
+        # DROID SLAM requires at least this many frames for warmup
+        MIN_FRAMES_FOR_SLAM = 8
+
         for video_idx in range(len(videos_frames)):
             frames = videos_frames[video_idx]
+
+            if len(frames) < MIN_FRAMES_FOR_SLAM:
+                from loguru import logger as _logger
+
+                _logger.warning(
+                    f"Video {video_idx}: only {len(frames)} frames, "
+                    f"need >= {MIN_FRAMES_FOR_SLAM} for SLAM. "
+                    f"Producing empty camera pose."
+                )
+                sample[Fields.meta][self.tag_field_name].append({})
+                continue
+
             cur_video_calibration = sample[Fields.meta][self.camera_calibration_field][video_idx]
             depth_list = cur_video_calibration[CameraCalibrationKeys.depth]
             intrinsics = cur_video_calibration[CameraCalibrationKeys.intrinsics]

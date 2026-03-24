@@ -400,6 +400,17 @@ def main():
             hand_pose = hawor.get(f"{prefix}hand_pose_list", [])
             hand_betas = hawor.get(f"{prefix}beta_list", [])
 
+        # Read pipeline's joints_cam from action_tags (21 MANO joints)
+        joints_cam_raw = hand_action.get("joints_cam", None)
+        if joints_cam_raw is not None and len(joints_cam_raw) > 0:
+            joints_cam = np.array(joints_cam_raw, dtype=np.float64)
+            joints_cam_id_map = {fid: i for i, fid in enumerate(valid_ids)}
+            print(f"    joints_cam (from action_tags): {joints_cam.shape}")
+        else:
+            joints_cam = None
+            joints_cam_id_map = {}
+
+        # Backup mesh_joints, used when joints_cam is not provided in the data.
         if len(frame_ids) >= 2:
             mesh_verts, mesh_joints, mesh_faces = compute_hand_mesh(
                 hand_transl, hand_orient, hand_pose, hand_betas,
@@ -422,7 +433,15 @@ def main():
         for t in range(T):
             fid = valid_ids[t]
             pos_cam = world_to_camera(states[t, :3], cam_c2w_all[fid])
-            if mesh_joints is not None and fid in mesh_id_map:
+            if joints_cam is not None and fid in joints_cam_id_map:
+                jidx = joints_cam_id_map[fid]
+                wrist_cam = joints_cam[jidx, 0, :]
+                # Find matching hawor transl for this frame
+                if fid in mesh_id_map:
+                    midx = mesh_id_map[fid]
+                    pos_cam = pos_cam + (wrist_cam - np.asarray(hand_transl[midx]))
+            # Backup mesh_joints, used when joints_cam is not provided in the data.
+            elif mesh_joints is not None and fid in mesh_id_map:
                 midx = mesh_id_map[fid]
                 wrist_cam = mesh_joints[midx, 0, :]
                 pos_cam = pos_cam + (wrist_cam - np.asarray(hand_transl[midx]))
@@ -439,6 +458,8 @@ def main():
             "mesh_faces": mesh_faces,
             "mesh_id_map": mesh_id_map,
             "frame_ids": frame_ids,
+            "joints_cam": joints_cam,
+            "joints_cam_id_map": joints_cam_id_map,
         }
 
     if not hand_results:
@@ -476,13 +497,21 @@ def main():
                 draw_mesh_wireframe(canvas, verts_2d, res["mesh_faces"],
                                     colors["mesh"], alpha=0.5, thickness=1)
 
-                # -- Draw hand joints and skeleton --
-                if res["mesh_joints"] is not None:
-                    joints_2d = project_points_to_2d(
-                        res["mesh_joints"][midx], fov_x, img_w, img_h)
-                    draw_joints(canvas, joints_2d,
-                                joint_radius=4, bone_thickness=2,
-                                alpha=0.85)
+            # -- Draw 21 MANO joints from pipeline's joints_cam --
+            if res["joints_cam"] is not None and fid in res["joints_cam_id_map"]:
+                jidx = res["joints_cam_id_map"][fid]
+                joints_2d = project_points_to_2d(
+                    res["joints_cam"][jidx], fov_x, img_w, img_h)
+                draw_joints(canvas, joints_2d,
+                            joint_radius=4, bone_thickness=2,
+                            alpha=0.85)
+            # Backup mesh_joints, used when joints_cam is not provided in the data.
+            elif res["mesh_joints"] is not None:
+                joints_2d = project_points_to_2d(
+                    res["mesh_joints"][midx], fov_x, img_w, img_h)
+                draw_joints(canvas, joints_2d,
+                            joint_radius=4, bone_thickness=2,
+                            alpha=0.85)
 
             # -- Draw wrist trajectory --
             if fid not in set(res["valid_ids"]):

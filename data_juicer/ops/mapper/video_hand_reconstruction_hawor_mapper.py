@@ -216,7 +216,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
             valid = np.array([t["det"] for t in trk])
             is_right = np.concatenate([t["det_handedness"] for t in trk])[valid]
 
-            if is_right.sum() / len(is_right) < 0.5:
+            if len(is_right) == 0 or is_right.sum() / len(is_right) < 0.5:
                 left_trk.extend(trk)
             else:
                 right_trk.extend(trk)
@@ -253,7 +253,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
             is_right = np.concatenate([t["det_handedness"] for t in trk])[valid]
             frame = np.array([t["frame"] for t in trk])[valid]
 
-            if is_right.sum() / len(is_right) < 0.5:
+            if len(is_right) == 0 or is_right.sum() / len(is_right) < 0.5:
                 is_right = np.zeros((len(boxes), 1))
             else:
                 is_right = np.ones((len(boxes), 1))
@@ -319,20 +319,70 @@ class VideoHandReconstructionHaworMapper(Mapper):
         return reformat_results
 
     @staticmethod
+    def _compute_mano_joints(mano_model, global_orient_list, hand_pose_list,
+                             betas_list, transl_list):
+        """Compute MANO 21-joint positions in camera space via forward kinematics.
+
+        Args:
+            mano_model: MANO model (right or left hand), on GPU.
+            global_orient_list: List of (3,) axis-angle per frame.
+            hand_pose_list: List of (45,) axis-angle per frame.
+            betas_list: List of (10,) shape params per frame.
+            transl_list: List of (3,) translation per frame.
+
+        Returns:
+            numpy array of shape (T, 21, 3) — 21 joint positions in camera space.
+        """
+        import torch as _torch
+        from hawor.utils.geometry import aa_to_rotmat
+
+        T = len(global_orient_list)
+        device = next(mano_model.parameters()).device
+
+        # Stack into tensors: (T, ...)
+        orient_aa = _torch.tensor(global_orient_list, dtype=_torch.float32)   # (T, 3)
+        hand_aa = _torch.tensor(hand_pose_list, dtype=_torch.float32)         # (T, 45)
+        betas = _torch.tensor(betas_list, dtype=_torch.float32)               # (T, 10)
+        transl = _torch.tensor(transl_list, dtype=_torch.float32)             # (T, 3)
+
+        # Convert axis-angle to rotation matrices
+        orient_rotmat = aa_to_rotmat(orient_aa).view(T, 1, 3, 3)             # (T, 1, 3, 3)
+        hand_rotmat = aa_to_rotmat(hand_aa.reshape(T * 15, 3)).view(T, 15, 3, 3)  # (T, 15, 3, 3)
+
+        # MANO forward pass on GPU
+        with _torch.no_grad():
+            mano_out = mano_model(
+                global_orient=orient_rotmat.to(device),
+                hand_pose=hand_rotmat.to(device),
+                betas=betas.to(device),
+                transl=transl.to(device),
+                pose2rot=False,
+            )
+
+        # mano_out.joints: (T, 21, 3) in camera space
+        joints_cam = mano_out.joints.cpu().numpy()  # (T, 21, 3)
+        return joints_cam
+
+    @staticmethod
     def _decode_frames(raw_frames):
         """Decode raw frames (bytes or paths) to numpy arrays.
 
         Returns:
-            images: list of decoded BGR numpy arrays
+            images: list of decoded BGR numpy arrays (None entries skipped)
         """
+        from loguru import logger as _logger
+
         images = []
-        for frame in raw_frames:
+        for i, frame in enumerate(raw_frames):
             if isinstance(frame, bytes):
                 image_array = np.frombuffer(frame, dtype=np.uint8)
                 image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
             else:
                 image = cv2.imread(frame)
 
+            if image is None:
+                _logger.warning(f"Frame {i} decode failed, skipping.")
+                continue
             images.append(image)
         return images
 
@@ -366,7 +416,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
         if self.video_key not in sample or not sample[self.video_key]:
             return sample
 
-        hawor_model, model_cfg, _, _ = get_model(self.model_key, rank, self.use_cuda())
+        hawor_model, model_cfg, mano_right, mano_left = get_model(self.model_key, rank, self.use_cuda())
         hand_det_model = get_model(self.det_model_key, rank, self.use_cuda())
 
         videos_frames = sample[self.frame_field]
@@ -391,6 +441,20 @@ class VideoHandReconstructionHaworMapper(Mapper):
             images = self._decode_frames(frames)
 
             N = len(images)
+            if N == 0:
+                from loguru import logger as _logger
+                _logger.warning(f"Video {video_idx}: all frames decode failed, "
+                                "producing empty hand output.")
+                empty_hand = {
+                    "frame_ids": [], "global_orient": [],
+                    "hand_pose": [], "betas": [], "transl": [],
+                    "joints_cam": None,
+                }
+                sample[Fields.meta][self.tag_field_name].append({
+                    "fov_x": 0.0, "img_focal": 0.0,
+                    "left": dict(empty_hand), "right": dict(empty_hand),
+                })
+                continue
             H, W = images[0].shape[:2]
 
             # Use median FoV across all frames
@@ -430,12 +494,27 @@ class VideoHandReconstructionHaworMapper(Mapper):
                     betas_list.append(result["betas"].tolist())  # (10,)
                     transl_list.append(result["transl"].tolist())  # (3,)
 
+                # Compute MANO 21-joint positions in camera space
+                joints_cam = None
+                T_valid = len(frame_ids)
+                if T_valid > 0:
+                    mano_model = mano_left if hand_type == "left" else mano_right
+                    if mano_model is not None:
+                        joints_cam = self._compute_mano_joints(
+                            mano_model,
+                            global_orient_list,
+                            hand_pose_list,
+                            betas_list,
+                            transl_list,
+                        )  # (T, 21, 3) numpy
+
                 hand_output[hand_type] = {
                     "frame_ids": frame_ids,
                     "global_orient": global_orient_list,
                     "hand_pose": hand_pose_list,
                     "betas": betas_list,
                     "transl": transl_list,
+                    "joints_cam": joints_cam,  # (T, 21, 3) or None
                 }
 
             sample[Fields.meta][self.tag_field_name].append(
