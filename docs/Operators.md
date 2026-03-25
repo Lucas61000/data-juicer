@@ -42,12 +42,12 @@ Data-Juicer 中的算子分为以下 8 种类型。
 | Type 类型 | Number 数量 | Description 描述 |
 |------|:------:|-------------|
 | [aggregator](#aggregator) | 4 | Aggregate for batched samples, such as summary or conclusion. 对批量样本进行汇总，如得出总结或结论。 |
-| [deduplicator](#deduplicator) | 10 | Detects and removes duplicate samples. 识别、删除重复样本。 |
+| [deduplicator](#deduplicator) | 9 | Detects and removes duplicate samples. 识别、删除重复样本。 |
 | [filter](#filter) | 56 | Filters out low-quality samples. 过滤低质量样本。 |
 | [formatter](#formatter) | 8 | Discovers, loads, and canonicalizes source data. 发现、加载、规范化原始数据。 |
 | [grouper](#grouper) | 3 | Group samples to batched samples. 将样本分组，每一组组成一个批量样本。 |
-| [mapper](#mapper) | 124 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
-| [pipeline](#pipeline) | 3 | Applies dataset-level processing; both input and output are datasets. 执行数据集级别的操作，输入和输出均为完整数据集。 |
+| [mapper](#mapper) | 123 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
+| [pipeline](#pipeline) | 2 | Applies dataset-level processing; both input and output are datasets. 执行数据集级别的操作，输入和输出均为完整数据集。 |
 | [selector](#selector) | 5 | Selects top samples based on ranking. 基于排序选取高质量样本。 |
 
 All the specific operators are listed below, each featured with several capability tags. 
@@ -87,7 +87,6 @@ All the specific operators are listed below, each featured with several capabili
 | document_minhash_deduplicator | 🔤Text 💻CPU 🟢Stable | Deduplicates samples at the document level using MinHash LSH. 使用MinHash LSH在文档级别删除重复样本。 | [info](operators/deduplicator/document_minhash_deduplicator.md) | - |
 | document_simhash_deduplicator | 🔤Text 💻CPU 🟢Stable | Deduplicates samples at the document level using SimHash. 使用SimHash在文档级别删除重复的样本。 | [info](operators/deduplicator/document_simhash_deduplicator.md) | - |
 | image_deduplicator | 🏞Image 💻CPU 🟢Stable | Deduplicates samples at the document level by exact matching of images. 通过图像的精确匹配在文档级别删除重复的样本。 | [info](operators/deduplicator/image_deduplicator.md) | - |
-| ray_basic_deduplicator | 💻CPU 🔴Alpha | Backend for deduplicator. deduplicator的后端。 | - | - |
 | ray_bts_minhash_deduplicator | 🔤Text 💻CPU 🟡Beta | A distributed implementation of Union-Find with load balancing. 具有负载平衡的Union-Find的分布式实现。 | [info](operators/deduplicator/ray_bts_minhash_deduplicator.md) | - |
 | ray_document_deduplicator | 🔤Text 💻CPU 🟡Beta | Deduplicates samples at the document level using exact matching in Ray distributed mode. 在Ray分布式模式下使用精确匹配在文档级别删除重复的样本。 | [info](operators/deduplicator/ray_document_deduplicator.md) | - |
 | ray_image_deduplicator | 🏞Image 💻CPU 🟡Beta | Deduplicates samples at the document level using exact matching of images in Ray distributed mode. 在光线分布模式下使用图像的精确匹配在文档级别删除重复样本。 | [info](operators/deduplicator/ray_image_deduplicator.md) | - |
@@ -208,7 +207,6 @@ All the specific operators are listed below, each featured with several capabili
 | dialog_memory_consistency_mapper | 💻CPU 🔴Alpha | Whether the final assistant turn respects prior user constraints and facts. 最终助理转弯是否尊重先前的用户约束和事实。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
 | dialog_non_repetition_mapper | 💻CPU 🔴Alpha | New information vs prior assistant turns in the same prompt window. 新信息与先前助手在同一个提示窗口中打开。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
 | dialog_proactivity_mapper | 💻CPU 🔴Alpha | Balance helpful initiative against rambling or filler. 平衡有益的主动性和漫不经心或填充。 | - | [OpenJudge multi-turn](https://agentscope-ai.github.io/OpenJudge/built_in_graders/multi_turn/) |
-| dialog_quality_llm_base | 💻CPU 🔗API 🔴Alpha | One API call → meta[META_KEY] with score (1–5) and reason. 一个API调用 → meta[META_KEY]，得分 (1-5) 和原因。 | - | - |
 | dialog_sentiment_detection_mapper | 💻CPU 🔗API 🟢Stable | Generates sentiment labels and analysis for user queries in a dialog. 在对话框中为用户查询生成情绪标签和分析。 | [info](operators/mapper/dialog_sentiment_detection_mapper.md) | - |
 | dialog_sentiment_intensity_mapper | 💻CPU 🔗API 🟢Stable | Mapper to predict user's sentiment intensity in a dialog, ranging from -5 to 5. Mapper预测用户在对话框中的情绪强度，范围从-5到5。 | [info](operators/mapper/dialog_sentiment_intensity_mapper.md) | - |
 | dialog_topic_detection_mapper | 💻CPU 🔗API 🟢Stable | Generates user's topic labels and analysis in a dialog. 在对话框中生成用户的主题标签和分析。 | [info](operators/mapper/dialog_topic_detection_mapper.md) | - |
@@ -310,7 +308,6 @@ All the specific operators are listed below, each featured with several capabili
 | Operator 算子 | Tags 标签 | Description 描述 | Details 详情 | Reference 参考 |
 |----------|------|-------------|-------------|-------------|
 | llm_inference_with_ray_vllm_pipeline | 🚀GPU 🟡Beta | Pipeline to generate response using vLLM engine on Ray. 使用Ray上的vLLM引擎生成响应的管道。 | - | - |
-| ray_vllm_pipeline | 🚀GPU 🟡Beta | Pipeline for Ray vLLM engine. Ray vLLM引擎的管道。 | - | - |
 | vlm_inference_with_ray_vllm_pipeline | 🏞Image 🚀GPU 🟡Beta | Pipeline to generate response using vLLM engine on Ray. 使用Ray上的vLLM引擎生成响应的管道。 | - | - |
 
 ## selector <a name="selector"/>
