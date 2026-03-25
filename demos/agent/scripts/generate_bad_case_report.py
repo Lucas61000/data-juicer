@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""HTML 报告：分档统计、信号图、队列表、典型样例（可展开）、可选 LLM 页首导读。
+"""HTML 报告：分档统计、信号图、队列表、case study 样例（可展开）、可选 LLM 页首导读。
 
 - 图表使用中文字体配置，避免中文显示为方框。
-- 典型样例默认页内最多 50 条，全量写入同目录 ``*_drilldown_full.jsonl``。
+- Case study 默认页内最多 50 条，全量写入同目录 ``*_drilldown_full.jsonl``。
 - ``--llm-summary``：调用 OpenAI 兼容接口（默认读 ``DASHSCOPE_API_KEY`` / ``OPENAI_API_KEY``）。
 - 导读 HTTP 读超时默认 120s，可用 ``--llm-timeout-sec`` 或环境变量 ``BAD_CASE_REPORT_LLM_TIMEOUT_SEC``；超时自动重试 1 次。
 
@@ -22,6 +22,7 @@ import html
 import io
 import json
 import os
+import re
 import socket
 import sys
 import urllib.error
@@ -29,7 +30,7 @@ import urllib.request
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import DefaultDict, Dict, List, Optional, Tuple
+from typing import DefaultDict, Dict, FrozenSet, List, Optional, Set, Tuple
 
 # HTML 分档展示语言（main 中根据 --report-lang / 环境变量 / meta 设定）
 _REPORT_LOCALE = "zh"
@@ -394,6 +395,32 @@ def _signal_counts_by_weight(rows: List[dict]) -> Tuple[Counter, Counter]:
     return high_c, med_c
 
 
+# --- 报告「双视角」信号分桶（Insight 卡片与图表区共用；交叉类出现在两视角）---
+_PURE_BASE_MODEL_SIGNALS: FrozenSet[str] = frozenset(
+    {
+        "llm_agent_analysis_eval_low",
+        "llm_reply_quality_eval_low",
+        "suspect_empty_or_trivial_final_response",
+        "hard_query_low_reply_quality_conjunction",
+        "high_perplexity",
+    }
+)
+_PURE_AGENT_STACK_SIGNALS: FrozenSet[str] = frozenset(
+    {
+        "tool_message_error_pattern",
+        "low_tool_success_ratio",
+        "high_token_usage",
+        "high_latency_ms",
+    }
+)
+_CROSS_READ_SIGNALS: FrozenSet[str] = frozenset(
+    {
+        "dialog_turn_quality_meta_low",
+        "negative_sentiment_label_hint",
+    }
+)
+
+
 _SIGNAL_ROLE_ORDER = {"primary": 0, "structured": 1, "appendix": 2}
 _SIGNAL_ROLE_LABEL_ZH = {
     "primary": "主证据",
@@ -436,8 +463,9 @@ def _attribution_table_html() -> str:
     return f"<table>{thead}<tbody>{''.join(parts)}</tbody></table>{foot}"
 
 
-def _insight_fields_legend_html() -> str:
+def _insight_fields_legend_html(*, html_lang: str = "zh-CN") -> str:
     """Semantics for badges / JSON fields emitted by agent_insight_llm_mapper."""
+    en = str(html_lang).lower().startswith("en")
     rows_pr = [
         (
             "P0",
@@ -475,7 +503,7 @@ def _insight_fields_legend_html() -> str:
         (
             "conflict",
             "数字与文字判断明显矛盾，或 insight 与 bad-case 信号解读冲突；"
-            "建议打开「典型样例」核对原始 meta/stats。",
+            "建议结合下文 case study 核对原始 meta/stats。",
             "Clear tension between numbers and text; drill into raw meta/stats.",
         ),
     ]
@@ -499,9 +527,12 @@ def _insight_fields_legend_html() -> str:
         "<thead><tr><th>取值</th><th>中文说明</th>"
         "<th lang='en'>English</th></tr></thead>"
     )
-    return (
-        "<section class='insight-legend' id='sec-insight-fields'>"
-        "<h2>Insight 字段说明（<code>meta.agent_insight_llm</code>）</h2>"
+    fold_sum = (
+        "Insight badge / narrative semantics — click to collapse"
+        if en
+        else "Insight 徽标与 narrative 字段（可收起）"
+    )
+    fold_body = (
         "<p class='note' lang='en'>Tokens below are produced as English enums in JSON; "
         "cards show the same strings as pink/blue badges.</p>"
         "<h3><code>human_review_priority</code>（卡片粉色徽标）</h3>"
@@ -511,6 +542,103 @@ def _insight_fields_legend_html() -> str:
         "<code>conflict</code>（与 <code>agent_insight_llm_mapper</code> 的 schema 一致；"
         "若模型输出其它字符串，以 JSON 原文为准）。</p>"
         f"<table class='inner'>{th3}<tbody>{al_body}</tbody></table>"
+    )
+    return (
+        "<section class='insight-legend' id='sec-insight-fields'>"
+        "<details class='report-fold insight-fold' open>"
+        f"<summary>{html.escape(fold_sum)}</summary>"
+        f"<div class='report-fold-body'>{fold_body}</div>"
+        "</details></section>"
+    )
+
+
+def _reading_scenarios_html(*, html_lang: str = "zh-CN") -> str:
+    """Two audience tracks: base-model tuning vs agent/tools/product tuning."""
+    en = str(html_lang).lower().startswith("en")
+    if en:
+        return (
+            "<section class='reading-scenarios' id='sec-audience'>"
+            "<h2>Reading perspectives</h2>"
+            "<p class='note'>One report, two common <em>reading weights</em>—not orthogonal silos: "
+            "native agentic runs mix model quality and tooling. Use the "
+            "<a href='#sec-charts'>Charts &amp; lens tabs</a> to re-order attention on the "
+            "<strong>same batch</strong>; see also "
+            "<a href='#sec-signal-cluster'>signal clustering</a>.</p>"
+            "<div class='audience-grid'>"
+            "<div class='audience-card'>"
+            "<h3>2.1 Base-model performance</h3>"
+            "<ul>"
+            "<li><a href='#sec-cohort'>Model × date × tier table</a>; "
+            "<a href='#sec-charts'>Charts</a> (shared stacked tier) + "
+            "<strong>Lens A</strong> tab for signal bars</li>"
+            "<li><code>stats.llm_analysis_score</code>, <code>llm_quality_score</code>, "
+            "<code>llm_difficulty_score</code> (see snapshot + signal evidence)</li>"
+            "<li>§5b axes in meta (<code>dialog_*</code>, <code>agent_trace_coherence</code>): "
+            "<a href='#sec-insight-fields'>Insight fields</a>, "
+            "signal <code>dialog_turn_quality_meta_low</code></li>"
+            "<li><a href='#sec-insights-hp'>Insight cards (high suspicion)</a> · "
+            "<a href='#sec-insights-wl'>watchlist</a> — headline / P0–P3 vs scores</li>"
+            "<li><a href='#sec-cases'>Case studies</a>: empty or truncated <code>response</code>, "
+            "LLM eval rationales</li>"
+            "</ul>"
+            "</div>"
+            "<div class='audience-card'>"
+            "<h3>2.2 Agent stack, tools, product</h3>"
+            "<ul>"
+            "<li>Tools: <code>meta.tool_*</code>, signals "
+            "<code>tool_message_error_pattern</code>, <code>low_tool_success_ratio</code> — "
+            "prefer <strong>Lens B</strong> under <a href='#sec-charts'>Charts &amp; tabs</a></li>"
+            "<li>Skills / usage / latency: <code>agent_skill_insights</code>, "
+            "<code>total_tokens</code>, <code>agent_total_cost_time_ms</code></li>"
+            "<li>Trace fit: <code>agent_trace_coherence</code>, "
+            "<code>agent_tool_relevance</code> (and tool-type meta)</li>"
+            "<li>PII / redaction: check <code>pii_*</code> mappers and root "
+            "<code>query</code>/<code>response</code> in exported JSON.</li>"
+            "<li><a href='#sec-cases'>Case studies</a>: tool traces and per-signal evidence tables</li>"
+            "</ul>"
+            "</div>"
+            "</div>"
+            "</section>"
+        )
+    return (
+        "<section class='reading-scenarios' id='sec-audience'>"
+        "<h2>分场景阅读指引</h2>"
+        "<p class='note'>两类读法对应<strong>先读什么、多信哪类证据</strong>，不是两套互斥数据；"
+        "原生 Agent 场景里基模与链路往往一起出问题。"
+        "<a href='#sec-charts'>图表区</a>的两个视角 Tab 与 <a href='#sec-signal-cluster'>信号聚类表</a>"
+        "帮你先看批次全貌再下钻单条。</p>"
+        "<div class='audience-grid'>"
+        "<div class='audience-card'>"
+        "<h3>2.1 关心基模（生成质量 / 指令遵循 / 难度）</h3>"
+        "<ul>"
+        "<li><a href='#sec-cohort'>按模型 × 日期 × 分档 队列明细</a>；"
+        "<a href='#sec-charts'>图表区</a> 内共用堆叠分档图，并打开 <strong>视角 A</strong> Tab 看偏基模/末轮系信号柱图</li>"
+        "<li><code>stats.llm_analysis_score</code>、<code>llm_quality_score</code>、"
+        "<code>llm_difficulty_score</code>（快照表与各信号证据小表）</li>"
+        "<li>§5b 末轮/轨迹 LLM 轴分（<code>meta.dialog_*</code>、<code>agent_trace_coherence</code> 等）与 "
+        "信号 <code>dialog_turn_quality_meta_low</code>；对照 "
+        "<a href='#sec-insight-fields'>Insight 字段说明</a></li>"
+        "<li><a href='#sec-insights-hp'>单条 Insight（强怀疑）</a> · "
+        "<a href='#sec-insights-wl'>（待观察）</a>： headline、P0–P3 与分数量化是否一致</li>"
+        "<li><a href='#sec-cases'>Case study</a>：空/极短回复、<code>llm_*_record</code> 里的 discard 与 rationale</li>"
+        "</ul>"
+        "</div>"
+        "<div class='audience-card'>"
+        "<h3>2.2 关心 Agent 链路 / 工具 / 产品与数据出口</h3>"
+        "<ul>"
+        "<li>工具链：<code>meta.tool_success_count</code> / <code>tool_fail_count</code> / "
+        "<code>tool_success_ratio</code>；信号 <code>tool_message_error_pattern</code>（high）、"
+        "<code>low_tool_success_ratio</code>（medium）— 图表区优先看 <strong>视角 B</strong> Tab</li>"
+        "<li>能力归纳与用量：<code>meta.agent_skill_insights</code>、<code>total_tokens</code>、"
+        "<code>agent_total_cost_time_ms</code>（latency 等信号若菜谱开启）</li>"
+        "<li>轨迹与工具相关性：<code>agent_trace_coherence</code>、<code>agent_tool_relevance</code> "
+        "及工具类型相关 meta</li>"
+        "<li>脱敏与合规：在导出 JSON 里核对 <code>pii_*</code> 与根字段 "
+        "<code>query</code>/<code>response</code> 是否一致。</li>"
+        "<li><a href='#sec-cases'>Case study</a>：各信号 ↔ 上游字段，以及 <code>messages</code> 工具轨迹</li>"
+        "</ul>"
+        "</div>"
+        "</div>"
         "</section>"
     )
 
@@ -556,8 +684,95 @@ def _insight_sort_tuple(row: dict, row_index: int) -> Tuple[int, int, int]:
     return (pr, ar, row_index)
 
 
+# Redaction placeholders (pii_llm_suspect / pii_redaction mappers).
+_PII_INSIGHT_PLACEHOLDERS: Tuple[str, ...] = (
+    "[LLM_PII_SUSPECT_REDACTED]",
+    "[PATH_REDACTED]",
+    "[EMAIL_REDACTED]",
+    "[ID_REDACTED]",
+    "[PHONE_REDACTED]",
+    "[ID_CARD_REDACTED]",
+    "[CHANNEL_ID_REDACTED]",
+)
+
+
+def _row_text_has_pii_redaction_placeholder(row: dict) -> bool:
+    parts: List[str] = []
+    for k in ("query", "response", "text"):
+        v = row.get(k)
+        if isinstance(v, str):
+            parts.append(v)
+    msgs = row.get("messages")
+    if isinstance(msgs, str):
+        parts.append(msgs)
+    elif isinstance(msgs, (list, dict)):
+        try:
+            parts.append(json.dumps(msgs, ensure_ascii=False))
+        except TypeError:
+            parts.append(str(msgs))
+    blob = "\n".join(parts)
+    return any(ph in blob for ph in _PII_INSIGHT_PLACEHOLDERS)
+
+
+def _pii_llm_suspect_meta_flags_row(meta: dict) -> bool:
+    rec = meta.get("pii_llm_suspect")
+    if not isinstance(rec, dict):
+        return False
+    if rec.get("error"):
+        return True
+    suspected = rec.get("suspected")
+    if isinstance(suspected, list) and len(suspected) > 0:
+        return True
+    if rec.get("likely_clean") is False:
+        return True
+    if rec.get("redaction_applied") is True:
+        return True
+    return False
+
+
+def _insight_llm_text_suggests_pii(ins: dict) -> bool:
+    chunks: List[str] = []
+    h = ins.get("headline")
+    if isinstance(h, str) and h.strip():
+        chunks.append(h)
+    for c in ins.get("root_causes") or []:
+        if isinstance(c, dict):
+            for k in ("factor", "rationale_one_line"):
+                v = c.get(k)
+                if isinstance(v, str) and v.strip():
+                    chunks.append(v)
+    if not chunks:
+        return False
+    blob = "\n".join(chunks)
+    if re.search(r"\bpii\b", blob, re.IGNORECASE):
+        return True
+    for needle in ("脱敏", "敏感信息", "个人隐私", "残留敏感", "疑似隐私"):
+        if needle in blob:
+            return True
+    blob_l = blob.lower()
+    for needle in ("redaction", "redacted"):
+        if needle in blob_l:
+            return True
+    return False
+
+
+def _exclude_insight_card_for_pii_row(row: dict, ins: dict) -> bool:
+    """Omit from per-tier insight cards; drilldown / JSONL unchanged."""
+    meta = get_dj_meta(row)
+    if _pii_llm_suspect_meta_flags_row(meta):
+        return True
+    if _row_text_has_pii_redaction_placeholder(row):
+        return True
+    if isinstance(ins, dict) and _insight_llm_text_suggests_pii(ins):
+        return True
+    return False
+
+
 def _iter_bad_case_drill_rows(rows: List[dict]):
-    """Yield high_precision then watchlist; within each tier sort by P0→P3, aligned→conflict, then row index."""
+    """Yield high_precision rows, then watchlist.
+
+    Within each tier: P0→P3, aligned→conflict, then stable row order.
+    """
     tier_rank = {"high_precision": 0, "watchlist": 1}
     scored: List[Tuple[int, int, int, int, dict]] = []
     for i, row in enumerate(rows):
@@ -573,7 +788,10 @@ def _iter_bad_case_drill_rows(rows: List[dict]):
 
 
 def _request_id_to_drill_anchor(drill: List[dict]) -> Dict[str, str]:
-    """Map request_id → fragment id for in-page drill cards (first occurrence wins)."""
+    """Map request_id → fragment id for in-page drill cards.
+
+    First occurrence wins.
+    """
     out: Dict[str, str] = {}
     for i, d in enumerate(drill):
         rid = str(d.get("request_id") or "").strip()
@@ -666,8 +884,8 @@ def _drilldown_section_html(
     total_count: int,
     export_rel: Optional[str] = None,
 ) -> str:
-    """典型案例清单：页内仅展示前几条，全量可另存 jsonl。"""
-    title = "典型案例（强怀疑 / 待观察，可展开详情）"
+    """Case study 清单：页内仅展示前几条，全量可另存 jsonl。"""
+    title = "Case study（强怀疑 / 待观察，可展开详情）"
     if not drill and total_count == 0:
         return (
             f"<h2 id='sec-cases'>{html.escape(title)}</h2>"
@@ -736,13 +954,10 @@ def _drilldown_section_html(
             "</div></div></div>"
         )
     intro = (
-        "<p class='note'>每条卡片对应一条导出样本：徽标为<strong>中文分档</strong>，"
-        "旁边 <code>high_precision</code> / <code>watchlist</code> 为 JSON 中的枚举值。"
-        "列表顺序：<strong>强怀疑 → 待观察</strong>；同档内按 insight 偏序 "
-        "<strong>P0→P3</strong>、<strong>aligned→mixed→conflict</strong>，再按原行号。"
-        "点击「展开字段」可查看 <strong>meta/stats 快照</strong>、各 signal 的<strong>上游证据字段</strong>，"
-        "以及 <code>query</code> / <code>response</code> 全文。<code>#编号</code> 为页内锚点，便于复制链接；"
-        "前文「单条 Insight 摘录」中同 <code>request_id</code> 可链回本节对应卡片。</p>"
+        "<p class='note'>顺序：<strong>强怀疑→待观察</strong>；档内 P0→P3、aligned→conflict。"
+        "点「展开字段」查看 meta/stats 快照、各信号证据及全文 query/response；"
+        "<code>#编号</code> 可分享锚点。"
+        "与上文 Insight 的 <code>request_id</code> 一一对应。</p>"
     )
     block = (
         f"<h2 id='sec-cases'>{html.escape(title)}</h2>"
@@ -906,25 +1121,45 @@ def _exec_summary_section_html(body_text: str, source_note: str) -> str:
     )
 
 
-def _report_toc_links() -> List[Tuple[str, str]]:
+def _report_toc_links(html_lang: str = "zh-CN") -> List[Tuple[str, str]]:
     """(href, label) for in-page navigation."""
+    en = str(html_lang).lower().startswith("en")
+    if en:
+        return [
+            ("#sec-guide", "Guide"),
+            ("#sec-audience", "Perspectives"),
+            ("#sec-counts", "Counts by tier"),
+            ("#sec-tiers", "Tier semantics"),
+            ("#sec-charts", "Charts & tabs"),
+            ("#sec-macro-dist", "Tags & tools"),
+            ("#sec-signal-cluster", "Signal clustering"),
+            ("#sec-insight-fields", "Insight fields"),
+            ("#sec-insights-hp", "Insight (high suspicion)"),
+            ("#sec-insights-wl", "Insight (watchlist)"),
+            ("#sec-cases", "Case study"),
+            ("#sec-attrib", "Signal attribution"),
+            ("#sec-cohort", "Cohort table"),
+        ]
     return [
         ("#sec-guide", "导读"),
+        ("#sec-audience", "分场景阅读"),
         ("#sec-counts", "各档条数"),
         ("#sec-tiers", "分档说明"),
-        ("#sec-charts", "图表"),
+        ("#sec-charts", "图表与 Tab"),
+        ("#sec-macro-dist", "标签/工具分布"),
+        ("#sec-signal-cluster", "信号聚类"),
         ("#sec-insight-fields", "Insight 字段"),
         ("#sec-insights-hp", "Insight（强怀疑）"),
         ("#sec-insights-wl", "Insight（待观察）"),
-        ("#sec-cases", "典型样例"),
+        ("#sec-cases", "Case study"),
         ("#sec-attrib", "归因表"),
         ("#sec-cohort", "队列明细"),
     ]
 
 
-def _report_toc_html(variant: str = "bar") -> str:
+def _report_toc_html(variant: str = "bar", *, html_lang: str = "zh-CN") -> str:
     """Top bar (bar), sticky sidebar (side), or compact one-liner (mini) for section ends."""
-    links = _report_toc_links()
+    links = _report_toc_links(html_lang)
     if variant == "side":
         lis = "".join(
             f'<li><a href="{html.escape(h)}">{html.escape(t)}</a></li>' for h, t in links
@@ -951,17 +1186,123 @@ def _report_toc_html(variant: str = "bar") -> str:
     )
 
 
+def _row_signal_code_weights(meta: dict) -> List[Tuple[str, str]]:
+    out: List[Tuple[str, str]] = []
+    for s in meta.get("agent_bad_case_signals") or []:
+        if isinstance(s, dict) and s.get("code"):
+            w = str(s.get("weight") or "").strip()
+            out.append((str(s["code"]), w or "—"))
+    return out
+
+
+def _insight_card_lens_html(meta: dict, *, html_lang: str) -> str:
+    """Per-row dual lens: which hooks to read first for base-turn vs tools/stack."""
+    en = str(html_lang).lower().startswith("en")
+    entries = _row_signal_code_weights(meta)
+    codes_a = _PURE_BASE_MODEL_SIGNALS | _CROSS_READ_SIGNALS
+    codes_b = _PURE_AGENT_STACK_SIGNALS | _CROSS_READ_SIGNALS
+
+    if not entries:
+        if en:
+            inner = (
+                "No <code>agent_bad_case_signals</code> on this row — see the case-study section for snapshots."
+            )
+        else:
+            inner = html.escape(
+                "本行未挂 bad-case 信号；可到下文章节「case study」看快照与证据。"
+            )
+        return f"<div class='ins-lenses'><p class='note ins-lens-empty'>{inner}</p></div>"
+
+    def _fmt_items(items: List[Tuple[str, str]]) -> str:
+        lis = []
+        for c, w in items:
+            cx = ""
+            if c in _CROSS_READ_SIGNALS:
+                cx = (
+                    f" <span class='lens-cross'>({'cross' if en else '交叉'})</span>"
+                )
+            wt = html.escape(w)
+            lis.append(f"<li><code>{html.escape(c)}</code> · {wt}{cx}</li>")
+        return "<ul class='lens-sig'>" + "".join(lis) + "</ul>"
+
+    def _pick(codeset: Set[str]) -> List[Tuple[str, str]]:
+        return [(c, w) for c, w in entries if c in codeset]
+
+    a_items = _pick(codes_a)
+    b_items = _pick(codes_b)
+    other = [(c, w) for c, w in entries if c not in codes_a and c not in codes_b]
+
+    title_a = "Lens A · base / final turn" if en else "视角 A · 基模与末轮"
+    title_b = "Lens B · tools / stack cost" if en else "视角 B · 工具与链路"
+    hint_a = (
+        "Start from LLM scores, discard rationales, §5b turn axes; cross-tagged rows also need a tools check."
+        if en
+        else "先盯 LLM 分、discard、末轮多轴；标「交叉」时请对照工具/用量是否拖累末轮。"
+    )
+    hint_b = (
+        "Start from tool pattern, success ratio, tokens/latency; cross-tagged rows feed back to turn quality."
+        if en
+        else "先盯工具成败、token、时延；「交叉」类需回头看重生成与末轮打分。"
+    )
+    miss_a = (
+        "No A-lens-typical codes — still scan drilldown / Lens B."
+        if en
+        else "未挂视角 A 典型信号（可对照视角 B 或下文 case study）。"
+    )
+    miss_b = (
+        "No B-lens-typical codes — still scan drilldown / Lens A."
+        if en
+        else "未挂视角 B 典型信号（可对照视角 A 或 case study 里的 tool meta）。"
+    )
+
+    def _col(title: str, hint: str, items: List[Tuple[str, str]], miss: str) -> str:
+        body = _fmt_items(items) if items else f"<p class='lens-miss'>{html.escape(miss)}</p>"
+        return (
+            "<div class='ins-lens'>"
+            f"<strong>{html.escape(title)}</strong>"
+            f"<p class='lens-hint'>{html.escape(hint)}</p>"
+            f"{body}"
+            "</div>"
+        )
+
+    head = "Dual-lens hints (same bucketing as charts above)" if en else "双视角（与上方图表、聚类表同一套信号分桶）"
+    other_html = ""
+    if other:
+        bits = []
+        for c, w in other:
+            bits.append(f"<code>{html.escape(c)}</code> · {html.escape(w)}")
+        ot = "Other (see attribution):" if en else "其它信号（见归因表）："
+        other_html = (
+            f"<p class='note lens-other'><strong>{html.escape(ot)}</strong> "
+            f"{' · '.join(bits)}</p>"
+        )
+
+    return (
+        "<div class='ins-lenses'>"
+        f"<div class='ins-lenses-head'>{html.escape(head)}</div>"
+        "<div class='ins-lenses-grid'>"
+        f"{_col(title_a, hint_a, a_items, miss_a)}"
+        f"{_col(title_b, hint_b, b_items, miss_b)}"
+        "</div>"
+        f"{other_html}"
+        "</div>"
+    )
+
+
 def _insight_section_rich_html(
     rows: List[dict],
     tier: str,
     limit: int,
     anchor_by_rid: Dict[str, str],
+    *,
+    html_lang: str = "zh-CN",
 ) -> str:
     """较完整的单条 insight 卡片（来自 agent_insight_llm）。
 
     卡片顺序：本档内按 P0→P3、aligned→mixed→conflict，再按原行号稳定排序；
     取前 ``limit`` 条（仅统计含 headline 的样本）。
     """
+    en = str(html_lang).lower().startswith("en")
     tier_zh = _tier_zh(tier)
     sec_id = (
         "sec-insights-hp"
@@ -971,13 +1312,19 @@ def _insight_section_rich_html(
         else "sec-insights"
     )
     candidates: List[Tuple[Tuple[int, int, int], dict]] = []
+    insight_omitted_pii = 0
     for i, row in enumerate(rows):
         meta = get_dj_meta(row)
         if str(meta.get("agent_bad_case_tier", "")) != tier:
             continue
         ins = meta.get("agent_insight_llm") or {}
+        if not isinstance(ins, dict):
+            ins = {}
         hl = (ins.get("headline") or "").strip()
         if not hl:
+            continue
+        if _exclude_insight_card_for_pii_row(row, ins):
+            insight_omitted_pii += 1
             continue
         candidates.append((_insight_sort_tuple(row, i), row))
     candidates.sort(key=lambda x: (x[0][0], x[0][1], x[0][2]))
@@ -1013,21 +1360,38 @@ def _insight_section_rich_html(
                 if not isinstance(cited, list):
                     cited = [str(cited)]
                 cf = html.escape(", ".join(str(x) for x in cited[:8]))
-                cite_html = f' <span class="cite">依据字段: {cf}</span>' if cf else ""
-                cause_lis.append(
-                    f"<li><strong>{factor}</strong>（置信 {conf}）— {r1}{cite_html}</li>"
-                )
+                if cf:
+                    cite_html = (
+                        f' <span class="cite">Fields: {cf}</span>'
+                        if en
+                        else f' <span class="cite">依据字段: {cf}</span>'
+                    )
+                else:
+                    cite_html = ""
+                if en:
+                    cause_lis.append(
+                        f"<li><strong>{factor}</strong> (conf {conf}) — {r1}{cite_html}</li>"
+                    )
+                else:
+                    cause_lis.append(
+                        f"<li><strong>{factor}</strong>（置信 {conf}）— {r1}{cite_html}</li>"
+                    )
         causes_html = "<ul class='causes'>" + "".join(cause_lis) + "</ul>" if cause_lis else ""
         drill_href = anchor_by_rid.get(rid) if rid else None
         if drill_href:
+            ttxt = (
+                "→ Case study for this row (snapshots &amp; fields)"
+                if en
+                else "→ 本条 case study（快照与字段）"
+            )
             to_drill = (
                 f"<a class='to-drill' href='{html.escape(drill_href, quote=True)}'>"
-                "→ 典型样例卡片</a>"
+                f"{ttxt}</a>"
             )
         else:
+            ttxt = "→ Case study section" if en else "→ case study 章节"
             to_drill = (
-                "<a class='to-drill to-drill-fallback' href='#sec-cases'>"
-                "→ 典型样例（节）</a>"
+                f"<a class='to-drill to-drill-fallback' href='#sec-cases'>{ttxt}</a>"
             )
         meta_line = (
             f"<span class='ins-meta'><code>{html.escape(rid or '—')}</code> · "
@@ -1040,36 +1404,87 @@ def _insight_section_rich_html(
             badges.append(f"<span class='ins-badge al'>{html.escape(align)}</span>")
         badge_html = " ".join(badges)
         audit_html = (
-            f"<p class='ins-audit'>{html.escape(audit)}</p>" if audit else ""
-        )
-        facets_html = (
-            f"<p class='ins-facets'><strong>建议制图维度</strong>：{html.escape(facets_s)}</p>"
-            if facets_s
+            f"<p class='ins-audit'><strong>{'Audit notes' if en else '审阅备注'}</strong>："
+            f"{html.escape(audit)}</p>"
+            if audit
             else ""
         )
+        facets_fold = ""
+        if facets_s:
+            sumy = "建议制图维度（可展开）" if not en else "Viz facet suggestions (expand)"
+            facets_body = f"<p class='ins-facets'>{html.escape(facets_s)}</p>"
+            facets_fold = (
+                f"<details class='insight-extra'><summary>{html.escape(sumy)}</summary>"
+                f"<div class='insight-extra-body'>{facets_body}</div></details>"
+            )
         cards.append(
             "<div class='insight-card'>"
             f"<div class='insight-h'>{html.escape(hl)} {badge_html}</div>"
             f"{meta_line}"
-            f"{causes_html}{facets_html}{audit_html}"
+            f"{causes_html}"
+            f"{_insight_card_lens_html(meta, html_lang=html_lang)}"
+            f"{audit_html}"
+            f"{facets_fold}"
             "</div>"
         )
     if not cards:
+        if insight_omitted_pii > 0:
+            omit_msg = (
+                (
+                    f"{insight_omitted_pii} headline(s) omitted here: "
+                    "PII audit / redaction placeholders or related wording; "
+                    "full rows remain in export and case study."
+                )
+                if en
+                else (
+                    f"本档有 {insight_omitted_pii} 条带 headline 的样本因涉及 "
+                    "PII 审计、脱敏占位或相关措辞，未在本节展示（完整内容仍在导出与 "
+                    "case study）。"
+                )
+            )
+            return (
+                f"<section class='insight-sec' id='{sec_id}'>"
+                f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
+                f"<p class='note'>{html.escape(omit_msg)}</p></section>"
+            )
         return (
             f"<section class='insight-sec' id='{sec_id}'>"
             f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
             "<p class='note'>本档下暂无带 <code>headline</code> 的 "
             "<code>meta.agent_insight_llm</code>（可能未跑 insight 算子，或解析失败）。</p></section>"
         )
+    intro = (
+        "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
+        "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
+        "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
+        "<a href='#sec-insight-fields'>Badge semantics</a>.</p>"
+        if en
+        else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
+        "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
+        "<a href='#sec-charts'>图表</a>、"
+        "<a href='#sec-signal-cluster'>聚类表</a>一致。"
+        "<a href='#sec-insight-fields'>徽标含义</a>。</p>"
+    )
+    pii_omit_note = ""
+    if insight_omitted_pii > 0:
+        om = (
+            (
+                f"<strong>{insight_omitted_pii}</strong> other headline(s) "
+                "in this tier hidden here (PII audit / redaction cues); "
+                "see export and case study."
+            )
+            if en
+            else (
+                f"另有 <strong>{insight_omitted_pii}</strong> 条本档 headline "
+                "因 PII 审计或脱敏相关已从本节略去；详见导出与 case study。"
+            )
+        )
+        pii_omit_note = f"<p class='note insight-pii-omit'>{om}</p>"
     return (
         f"<section class='insight-sec' id='{sec_id}'>"
         f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
-        "<p class='note'>来自 <code>agent_insight_llm_mapper</code>；"
-        "<strong>排序</strong>与本档内偏序一致：P0→P3，同优先级下 aligned→mixed→conflict。"
-        "<a href='#sec-insight-fields'><strong>human_review_priority</strong>（P0–P3）与 "
-        "<strong>narrative_alignment</strong>（aligned / mixed / conflict）见字段说明表</a>。"
-        "摘要句、成因与制图维度可与图表、典型样例互证；"
-        "若本页已展示对应 <code>request_id</code> 的卡片，链接直达该条。</p>"
+        f"{intro}"
+        f"{pii_omit_note}"
         f"<div class='insight-list'>{''.join(cards)}</div></section>"
     )
 
@@ -1078,15 +1493,329 @@ def _insight_sections_html(
     rows: List[dict],
     per_tier_limit: int,
     anchor_by_rid: Dict[str, str],
+    *,
+    html_lang: str = "zh-CN",
 ) -> str:
     """Render insight sections for both high_precision and watchlist tiers."""
     blocks = [
         _insight_section_rich_html(
-            rows, "high_precision", per_tier_limit, anchor_by_rid
+            rows,
+            "high_precision",
+            per_tier_limit,
+            anchor_by_rid,
+            html_lang=html_lang,
         ),
-        _insight_section_rich_html(rows, "watchlist", per_tier_limit, anchor_by_rid),
+        _insight_section_rich_html(
+            rows,
+            "watchlist",
+            per_tier_limit,
+            anchor_by_rid,
+            html_lang=html_lang,
+        ),
     ]
     return "".join(blocks)
+
+
+def _signal_counter_subset(c: Counter, codes: Set[str]) -> Counter:
+    return Counter({k: int(v) for k, v in c.items() if k in codes and int(v) > 0})
+
+
+def _reading_lens_cell(code: str, *, en: bool) -> str:
+    if code in _CROSS_READ_SIGNALS:
+        text = (
+            "Cross-read: base + agent"
+            if en
+            else "交叉（基模与 Agent 链并读，权重自调）"
+        )
+    elif code in _PURE_BASE_MODEL_SIGNALS:
+        text = "Base-model · turn quality first" if en else "偏基模/综合评估/末轮"
+    elif code in _PURE_AGENT_STACK_SIGNALS:
+        text = "Agent · tools · budget first" if en else "偏 Agent/工具/用量时延"
+    else:
+        text = "Other / pipeline-defined" if en else "其它（以归因表为准）"
+    return text
+
+
+def _signal_cluster_table_html(
+    high_c: Counter,
+    med_c: Counter,
+    *,
+    html_lang: str,
+) -> str:
+    en = str(html_lang).lower().startswith("en")
+    keys = sorted(set(high_c.keys()) | set(med_c.keys()), key=lambda k: (-(high_c[k] + med_c[k]), k))
+    if not keys:
+        return (
+            "<p class='note'>"
+            + ("No signals in this batch." if en else "本批未写入 bad-case 信号。")
+            + "</p>"
+        )
+    th_sig = "Signal <code>code</code>" if en else "信号 <code>code</code>"
+    th_hi = "high" if en else "high 权重"
+    th_med = "medium" if en else "medium"
+    th_tot = "Total" if en else "合计"
+    th_lens = "Reading emphasis" if en else "解读侧重（非正交）"
+    rows_html = []
+    for code in keys:
+        hi = int(high_c.get(code, 0))
+        md = int(med_c.get(code, 0))
+        tot = hi + md
+        rows_html.append(
+            "<tr>"
+            f"<td><code>{html.escape(code)}</code></td>"
+            f"<td>{hi}</td><td>{md}</td><td>{tot}</td>"
+            f"<td>{html.escape(_reading_lens_cell(code, en=en))}</td>"
+            "</tr>"
+        )
+    cap_note = (
+        "<p class='note'>"
+        + (
+            html.escape(
+                "Per-sample occurrence counts; emphasis = reading order, not silos (base vs agent overlap)."
+            )
+            if en
+            else (
+                "计数为样本上信号出现次数；「解读侧重」=阅读顺序，两类视角<strong>非正交</strong>，"
+                "交叉类会出现在两个 Tab 中。"
+            )
+        )
+        + "</p>"
+    )
+    return (
+        cap_note
+        + "<table class='signal-cluster'><thead><tr>"
+        f"<th>{th_sig}</th><th>{th_hi}</th><th>{th_med}</th><th>{th_tot}</th><th>{th_lens}</th>"
+        "</tr></thead><tbody>"
+        f"{''.join(rows_html)}</tbody></table>"
+    )
+
+
+def _build_charts_section_html(
+    *,
+    chart_tier: Optional[str],
+    chart_model: Optional[str],
+    high_c: Counter,
+    med_c: Counter,
+    chart_full_high: Optional[str],
+    chart_full_med: Optional[str],
+    plt_mod,
+    no_charts: bool,
+    html_lang: str,
+    macro_distribution_html: str = "",
+) -> str:
+    """Shared overview + macro tag distributions + signal cluster + tabbed lens charts."""
+    en = str(html_lang).lower().startswith("en")
+    cluster = _signal_cluster_table_html(high_c, med_c, html_lang=html_lang)
+
+    codes_a = _PURE_BASE_MODEL_SIGNALS | _CROSS_READ_SIGNALS
+    codes_b = _PURE_AGENT_STACK_SIGNALS | _CROSS_READ_SIGNALS
+    hi_a = _signal_counter_subset(high_c, codes_a)
+    hi_b = _signal_counter_subset(high_c, codes_b)
+    md_a = _signal_counter_subset(med_c, codes_a)
+    md_b = _signal_counter_subset(med_c, codes_b)
+
+    chart_base_h = chart_base_m = chart_agent_h = chart_agent_m = None
+    if plt_mod is not None and not no_charts:
+        if hi_a:
+            chart_base_h = _chart_signals(
+                hi_a,
+                plt_mod,
+                (
+                    "Lens A — high (base / turn / LLM eval)"
+                    if en
+                    else "视角 A — high 主证据（偏基模·末轮·综合评估）"
+                ),
+                "#c0392b",
+            )
+        if md_a:
+            chart_base_m = _chart_signals(
+                md_a,
+                plt_mod,
+                (
+                    "Lens A — medium (same filter)"
+                    if en
+                    else "视角 A — medium（同视角筛选；含交叉类）"
+                ),
+                "#2980b9",
+            )
+        if hi_b:
+            chart_agent_h = _chart_signals(
+                hi_b,
+                plt_mod,
+                (
+                    "Lens B — high (tools / usage / latency)"
+                    if en
+                    else "视角 B — high 主证据（偏工具·成功率·用量时延）"
+                ),
+                "#c0392b",
+            )
+        if md_b:
+            chart_agent_m = _chart_signals(
+                md_b,
+                plt_mod,
+                (
+                    "Lens B — medium (same filter)"
+                    if en
+                    else "视角 B — medium（同视角筛选；含交叉类）"
+                ),
+                "#2980b9",
+            )
+
+    def _img_block(title_h3: str, uri: Optional[str], alt: str) -> str:
+        if not uri:
+            return ""
+        return (
+            f"<h4 class='chart-sub'>{html.escape(title_h3)}</h4>"
+            f"<p class='note'><img src='{uri}' alt='{html.escape(alt)}'/></p>"
+        )
+
+    overview_parts: List[str] = []
+    if chart_tier:
+        overview_parts.append(
+            "<h3>"
+            + ("Tier distribution" if en else "各分档条数（批次总览·共用）")
+            + "</h3>"
+            f"<p class='note'><img src='{chart_tier}' alt='tier'/></p>"
+        )
+    if chart_model:
+        overview_parts.append(
+            "<h3>"
+            + ("Stacked by request_model" if en else "按请求模型堆叠（批次总览·共用）")
+            + "</h3>"
+            f"<p class='note'><img src='{chart_model}' alt='model'/></p>"
+        )
+    overview_html = "\n".join(overview_parts) if overview_parts else (
+        f"<p class='note'>{'No tier/model charts.' if en else '无分档/模型图。'}</p>"
+        if not no_charts
+        else ""
+    )
+
+    def _panel_lens_a() -> str:
+        parts = [
+            "<p class='note'><strong>"
+            + (
+                "Focus: LLM scores, discard, §5b turn axes; cross-tagged signals also in Tab B."
+                if en
+                else "优先看：LLM 分、discard、末轮多轴；「交叉」信号请与 Tab B 对照。"
+            )
+            + "</strong></p>"
+        ]
+        parts.append(
+            _img_block(
+                "high" if en else "high 主证据",
+                chart_base_h,
+                "lens-a-high",
+            )
+        )
+        parts.append(
+            _img_block(
+                "medium" if en else "medium 弱证据",
+                chart_base_m,
+                "lens-a-med",
+            )
+        )
+        if not chart_base_h and not chart_base_m:
+            parts.append(
+                "<p class='note'>"
+                + (
+                    "No high/medium signals in this lens for this batch."
+                    if en
+                    else "本批在视角 A 过滤下暂无 high/medium 信号柱图。"
+                )
+                + "</p>"
+            )
+        return "\n".join(parts)
+
+    def _panel_lens_b() -> str:
+        parts = [
+            "<p class='note'><strong>"
+            + (
+                "Focus: tools, success ratio, tokens/latency; cross-check turn scores (agentic coupling)."
+                if en
+                else "优先看：工具、成功率、token/时延；末轮分与链路常耦合，两 Tab 连着读。"
+            )
+            + "</strong></p>"
+        ]
+        parts.append(
+            _img_block("high" if en else "high 主证据", chart_agent_h, "lens-b-high")
+        )
+        parts.append(
+            _img_block("medium" if en else "medium 弱证据", chart_agent_m, "lens-b-med")
+        )
+        if not chart_agent_h and not chart_agent_m:
+            parts.append(
+                "<p class='note'>"
+                + (
+                    "No high/medium signals in this lens for this batch."
+                    if en
+                    else "本批在视角 B 过滤下暂无 high/medium 信号柱图。"
+                )
+                + "</p>"
+            )
+        return "\n".join(parts)
+
+    details_inner = ""
+    if chart_full_high or chart_full_med:
+        d_h = (
+            f"<h4>{'All high signals (unfiltered)' if en else '全量 high（未按视角过滤）'}</h4>"
+            f"<p class='note'><img src='{chart_full_high}' alt='all high'/></p>"
+            if chart_full_high
+            else ""
+        )
+        d_m = (
+            f"<h4>{'All medium signals (unfiltered)' if en else '全量 medium（未按视角过滤）'}</h4>"
+            f"<p class='note'><img src='{chart_full_med}' alt='all med'/></p>"
+            if chart_full_med
+            else ""
+        )
+        details_inner = (
+            f"<details class='charts-global'><summary>"
+            f"{html.escape('Global signal charts (unfiltered)' if en else '全局信号图（未按视角过滤，供对照）')}"
+            f"</summary>{d_h}{d_m}</details>"
+        )
+
+    h2 = "Charts & signal lenses (tabs)" if en else "图表与双视角 Tab"
+    merged_lead_en = (
+        "Same batch: tier/model charts → "
+        "<a href='#sec-macro-dist'>tools &amp; semantic tags</a> → "
+        "<a href='#sec-signal-cluster'>clustering</a> → two tabs that <em>re-weight</em> reads. "
+        "Stacks = sample counts; signal bars = in-batch occurrences. "
+        "Per row: Insight cards and case-study section below."
+    )
+    merged_lead_zh = (
+        "阅读顺序：分档/模型总览 → <a href='#sec-macro-dist'>工具与语义标签</a> → "
+        "<a href='#sec-signal-cluster'>信号聚类</a> → 两个 Tab 切换视角。"
+        "堆叠与分档柱为<strong>样本数</strong>；信号柱为<strong>出现次数</strong>。"
+        "单条核对请看 Insight 卡片与下文的 case study。"
+    )
+    if no_charts or plt_mod is None:
+        merged_lead_en += " No raster charts (use table + tab text)."
+        merged_lead_zh += " 未生成柱图时仅表与 Tab 文字。"
+
+    merged_intro = "<p class='note'>" + (merged_lead_en if en else merged_lead_zh) + "</p>"
+
+    tab_a = "Lens A — base / turn quality first" if en else "视角 A — 更关注基模与末轮质量"
+    tab_b = "Lens B — agent / tools first" if en else "视角 B — 更关注 Agent 链路与工具"
+
+    return f"""<section class='charts-section' id='sec-charts'>
+<h2>{html.escape(h2)}</h2>
+{merged_intro}
+{overview_html}
+{macro_distribution_html}
+<h3 id='sec-signal-cluster'>{'Signal clustering' if en else '信号聚类与解读侧重'}</h3>
+{cluster}
+<div class='scenario-tabs' role='tablist' aria-label="{html.escape('Chart lenses' if en else '图表视角')}">
+<button type='button' class='scenario-tab active' role='tab' aria-selected='true' aria-controls='panel-lens-a' id='tab-lens-a' data-panel='panel-lens-a'>{html.escape(tab_a)}</button>
+<button type='button' class='scenario-tab' role='tab' aria-selected='false' aria-controls='panel-lens-b' id='tab-lens-b' data-panel='panel-lens-b'>{html.escape(tab_b)}</button>
+</div>
+<div id='panel-lens-a' class='scenario-panel active' role='tabpanel' aria-labelledby='tab-lens-a'>
+{_panel_lens_a()}
+</div>
+<div id='panel-lens-b' class='scenario-panel' role='tabpanel' aria-labelledby='tab-lens-b' hidden>
+{_panel_lens_b()}
+</div>
+{details_inner}
+</section>"""
 
 
 def _chart_tier_bar(tier_cnt: Counter, plt_mod) -> Optional[str]:
@@ -1187,6 +1916,299 @@ def _chart_by_model(model_tier: Dict[str, Counter], plt_mod) -> Optional[str]:
     return _fig_to_data_uri(fig, plt_mod)
 
 
+def _labels_from_meta_list(meta: dict, key: str) -> List[str]:
+    raw = meta.get(key)
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list):
+        return []
+    out: List[str] = []
+    for x in raw:
+        s = str(x).strip()
+        if s:
+            out.append(s)
+    return out
+
+
+def _counter_add_row_unique_labels(c: Counter, labels: List[str]) -> None:
+    for lab in dict.fromkeys(labels):
+        c[lab] += 1
+
+
+def _compute_macro_tag_counters(rows: List[dict]) -> Dict[str, Counter]:
+    """Aggregate tag counts per sample row.
+
+    primary_tool_type: at most +1 per row. List-like meta: +1 per distinct
+    label within the row.
+    """
+    tool_primary: Counter = Counter()
+    tool_all: Counter = Counter()
+    skill_insight: Counter = Counter()
+    skill_type: Counter = Counter()
+    intent: Counter = Counter()
+    topic: Counter = Counter()
+    sentiment: Counter = Counter()
+    for row in rows:
+        meta = get_dj_meta(row)
+        pt = meta.get("primary_tool_type")
+        if pt is not None:
+            s = str(pt).strip()
+            if s:
+                tool_primary[s] += 1
+        _counter_add_row_unique_labels(
+            tool_all, _labels_from_meta_list(meta, "agent_tool_types")
+        )
+        _counter_add_row_unique_labels(
+            skill_insight,
+            _labels_from_meta_list(meta, "agent_skill_insights"),
+        )
+        _counter_add_row_unique_labels(
+            skill_type,
+            _labels_from_meta_list(meta, "agent_skill_types"),
+        )
+        _counter_add_row_unique_labels(
+            intent,
+            _labels_from_meta_list(meta, "dialog_intent_labels"),
+        )
+        _counter_add_row_unique_labels(
+            topic,
+            _labels_from_meta_list(meta, "dialog_topic_labels"),
+        )
+        _counter_add_row_unique_labels(
+            sentiment,
+            _labels_from_meta_list(meta, "dialog_sentiment_labels"),
+        )
+    return {
+        "tool_primary": tool_primary,
+        "tool_all": tool_all,
+        "skill_insight": skill_insight,
+        "skill_type": skill_type,
+        "intent": intent,
+        "topic": topic,
+        "sentiment": sentiment,
+    }
+
+
+def _chart_macro_bar(
+    cnt: Counter,
+    plt_mod,
+    title: str,
+    color: str,
+    xlabel: str,
+    top_n: int = 18,
+) -> Optional[str]:
+    if plt_mod is None or not cnt:
+        return None
+    items = cnt.most_common(top_n)
+    labels = [x[0] for x in items]
+    vals = [x[1] for x in items]
+    fig, ax = plt_mod.subplots(figsize=(7.2, max(2.8, 0.32 * len(labels))))
+    labels_r = labels[::-1]
+    vals_r = vals[::-1]
+    bars = ax.barh(labels_r, vals_r, color=color)
+    try:
+        ax.bar_label(
+            bars,
+            labels=[str(int(v)) for v in vals_r],
+            padding=2,
+            fontsize=8,
+        )
+    except AttributeError:
+        pass
+    ax.set_title(title, fontsize=10)
+    ax.set_xlabel(xlabel)
+    fig.tight_layout()
+    return _fig_to_data_uri(fig, plt_mod)
+
+
+def _wordcloud_font_path() -> Optional[str]:
+    for p in (
+        "/System/Library/Fonts/PingFang.ttc",
+        "/System/Library/Fonts/Hiragino Sans GB.ttc",
+        "/System/Library/Fonts/STHeiti Light.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    ):
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def _wordcloud_from_counter(
+    cnt: Counter,
+    plt_mod,
+    suptitle: str,
+) -> Optional[str]:
+    try:
+        from wordcloud import WordCloud
+    except ImportError:  # pragma: no cover
+        return None
+    if plt_mod is None or not cnt:
+        return None
+    freq = {str(k): int(v) for k, v in cnt.most_common(250) if str(k).strip()}
+    if not freq:
+        return None
+    fp = _wordcloud_font_path()
+    try:
+        wc = WordCloud(
+            width=920,
+            height=380,
+            background_color="white",
+            font_path=fp,
+            max_words=90,
+            colormap="viridis",
+            relative_scaling=0.35,
+            prefer_horizontal=0.85,
+        ).generate_from_frequencies(freq)
+    except (ValueError, OSError):
+        return None
+    fig, ax = plt_mod.subplots(figsize=(9.2, 3.9))
+    ax.imshow(wc, interpolation="bilinear")
+    ax.axis("off")
+    fig.suptitle(suptitle, fontsize=10)
+    fig.tight_layout()
+    return _fig_to_data_uri(fig, plt_mod)
+
+
+def _macro_inner_table_html(cnt: Counter, *, en: bool, top: int = 15) -> str:
+    if not cnt:
+        return ""
+    th = "Label" if en else "标签"
+    thc = "Rows" if en else "样本数"
+    rows_html = []
+    for lab, n in cnt.most_common(top):
+        rows_html.append(
+            "<tr>"
+            f"<td>{html.escape(str(lab))}</td>"
+            f"<td>{int(n)}</td>"
+            "</tr>"
+        )
+    thead = f"<thead><tr><th>{th}</th><th>{thc}</th></tr></thead>"
+    return (
+        f"<table class='macro-mini'>{thead}"
+        f"<tbody>{''.join(rows_html)}</tbody></table>"
+    )
+
+
+def _build_macro_distribution_section(
+    rows: List[dict],
+    plt_mod,
+    no_charts: bool,
+    html_lang: str,
+) -> str:
+    en = str(html_lang).lower().startswith("en")
+    counters = _compute_macro_tag_counters(rows)
+    if not any(counters[k] for k in counters):
+        empty = (
+            "No tool/skill/intent/topic/sentiment tags in meta for this batch."
+        )
+        if not en:
+            empty = (
+                "本批 meta 中未找到工具/技能/意图/主题/情绪等标签（可能未跑对应 mapper）。"
+            )
+        h3t = "Tag overview" if en else "宏观：工具与语义标签分布"
+        return (
+            f"<h3 id='sec-macro-dist'>{html.escape(h3t)}</h3>"
+            f"<p class='note'>{html.escape(empty)}</p>"
+        )
+
+    intro_en = (
+        "Counts are <strong>per sample</strong>: a row adds +1 to each "
+        "<em>distinct</em> label in that row (lists). Primary tool is one "
+        "value per row. Word clouds use the same frequencies."
+    )
+    intro_zh = (
+        "计数按<strong>样本</strong>：列表字段中同一行每种标签只计 1 次；"
+        "<code>primary_tool_type</code> 每行最多 1 个主类。"
+        "词云与柱状图同源频次。"
+    )
+    intro = intro_en if en else intro_zh
+    specs = [
+        (
+            "tool_primary",
+            "Primary tool (meta.primary_tool_type)",
+            "主工具类型（meta.primary_tool_type）",
+            "#2b6cb0",
+        ),
+        (
+            "tool_all",
+            "Tool names (meta.agent_tool_types, row-unique)",
+            "工具出现（meta.agent_tool_types，每行去重）",
+            "#3182ce",
+        ),
+        (
+            "skill_insight",
+            "Skill insights (meta.agent_skill_insights)",
+            "能力归纳（meta.agent_skill_insights）",
+            "#38a169",
+        ),
+        (
+            "skill_type",
+            "Skill types (meta.agent_skill_types)",
+            "技能类型（meta.agent_skill_types）",
+            "#48bb78",
+        ),
+        (
+            "intent",
+            "Intent labels (meta.dialog_intent_labels)",
+            "意图（meta.dialog_intent_labels）",
+            "#805ad5",
+        ),
+        (
+            "topic",
+            "Topic labels (meta.dialog_topic_labels)",
+            "主题（meta.dialog_topic_labels）",
+            "#6b46c1",
+        ),
+        (
+            "sentiment",
+            "Sentiment labels (meta.dialog_sentiment_labels)",
+            "情绪（meta.dialog_sentiment_labels）",
+            "#c05621",
+        ),
+    ]
+    xlabel = "Rows (with label)" if en else "含该标签的样本数"
+    h3m = "Tag & tool overview" if en else "宏观：工具与语义标签分布"
+    parts: List[str] = [
+        f"<h3 id='sec-macro-dist'>{html.escape(h3m)}</h3>"
+        f"<p class='note'>{intro}</p>",
+    ]
+    for key, title_en, title_zh, color in specs:
+        cnt = counters.get(key) or Counter()
+        if not cnt:
+            continue
+        title = title_en if en else title_zh
+        parts.append("<div class='macro-dim'>")
+        parts.append(f"<h4>{html.escape(title)}</h4>")
+        if no_charts or plt_mod is None:
+            parts.append(_macro_inner_table_html(cnt, en=en))
+        else:
+            bar_uri = _chart_macro_bar(cnt, plt_mod, title, color, xlabel)
+            if bar_uri:
+                alt_b = html.escape(f"{key}-bar")
+                parts.append(
+                    f"<p class='note macro-bar'>"
+                    f"<img src='{bar_uri}' alt='{alt_b}'/></p>"
+                )
+            wc_uri = _wordcloud_from_counter(cnt, plt_mod, title)
+            if wc_uri:
+                sum_wc = "Word cloud" if en else "词云（与柱状图同源计数）"
+                alt_w = html.escape(f"{key}-wc")
+                parts.append(
+                    f"<details class='macro-wc'>"
+                    f"<summary>{html.escape(sum_wc)}</summary>"
+                    f"<p class='note'><img src='{wc_uri}' alt='{alt_w}'/></p>"
+                    "</details>"
+                )
+            if not bar_uri and not wc_uri:
+                parts.append(_macro_inner_table_html(cnt, en=en))
+        parts.append("</div>")
+    return "\n".join(parts)
+
+
 def _html_page(
     title: str,
     input_path: str,
@@ -1195,10 +2217,11 @@ def _html_page(
     cohort_rows: List[dict],
     attribution_table: str,
     exec_summary_html: str,
-    charts_html: str,
+    charts_section_html: str,
     drilldown_html: str,
     insight_legend_html: str,
     insight_section_html: str,
+    reading_scenarios_html: str,
     bilingual_header: str = "",
     *,
     html_lang: str = "zh-CN",
@@ -1227,9 +2250,9 @@ def _html_page(
             "</tr>"
         )
 
-    toc_bar = _report_toc_html("bar")
-    toc_side = _report_toc_html("side")
-    toc_mini = _report_toc_html("mini")
+    toc_bar = _report_toc_html("bar", html_lang=html_lang)
+    toc_side = _report_toc_html("side", html_lang=html_lang)
+    toc_mini = _report_toc_html("mini", html_lang=html_lang)
 
     css = (
         "body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',"
@@ -1261,6 +2284,8 @@ def _html_page(
         "th{background:#f4f4f4;}img{max-width:100%;height:auto;}"
         "ul{line-height:1.5;}.model{color:#555;font-size:0.85rem;}"
         "details{margin-top:2rem;padding:12px;background:#fafafa;border:1px solid #eee;}"
+        "details.report-fold{margin-top:0.75rem;padding:8px 12px;background:#fafbfc;"
+        "border:1px solid #e5e7eb;border-radius:8px;}"
         "summary{cursor:pointer;font-weight:600;}"
         ".note{color:#666;font-size:0.88rem;}"
         ".drill-list{display:flex;flex-direction:column;gap:10px;margin:1rem 0;}"
@@ -1324,24 +2349,79 @@ def _html_page(
         ".cite{color:#666;font-size:0.82rem;}"
         ".ins-facets,.ins-audit{font-size:0.86rem;margin:8px 0 0;color:#444;}"
         "section.insight-sec{margin-top:2rem;}"
+        "section.reading-scenarios{margin-top:1.25rem;}"
+        ".audience-grid{display:grid;gap:14px;margin:0.75rem 0;}"
+        "@media(min-width:820px){.audience-grid{grid-template-columns:1fr 1fr;}}"
+        ".audience-card{border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;"
+        "background:#f8fafc;}"
+        ".audience-card h3{margin:0 0 8px;font-size:0.98rem;color:#1a365d;}"
+        ".audience-card ul{margin:0;padding-left:1.1rem;font-size:0.88rem;line-height:1.55;}"
+        ".report-footnote{border-left:3px solid #64b5f6;padding:8px 12px;margin:10px 0 0;"
+        "background:#f5f9ff;border-radius:0 6px 6px 0;}"
+        ".charts-section{margin-top:1rem;}"
+        ".charts-section>.note a{color:#1565c0;}"
+        ".signal-cluster{font-size:0.86rem;}"
+        ".signal-cluster code{font-size:0.82rem;word-break:break-word;}"
+        ".scenario-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px;"
+        "border-bottom:1px solid #e0e0e0;}"
+        ".scenario-tab{font-size:0.88rem;padding:8px 14px;border:1px solid transparent;"
+        "border-bottom:none;border-radius:8px 8px 0 0;background:#f5f5f5;cursor:pointer;color:#333;}"
+        ".scenario-tab:hover{background:#eee;}"
+        ".scenario-tab.active{background:#fff;border-color:#e0e0e0;border-bottom:1px solid #fff;"
+        "margin-bottom:-1px;font-weight:600;color:#1565c0;}"
+        ".scenario-panel{display:none;margin-top:8px;padding-top:4px;}"
+        ".scenario-panel.active{display:block;}"
+        ".chart-sub{margin:10px 0 4px;font-size:0.95rem;}"
+        ".charts-global{margin-top:1rem;}"
+        ".macro-dim{margin:14px 0;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;"
+        "background:#fafcfe;}"
+        ".macro-dim h4{margin:0 0 8px;font-size:0.95rem;color:#2d3748;}"
+        ".macro-bar img{max-width:100%;}"
+        ".macro-mini{font-size:0.84rem;width:100%;max-width:520px;}"
+        ".macro-mini th,.macro-mini td{border:1px solid #e2e8f0;padding:4px 8px;text-align:left;}"
+        ".macro-mini th{background:#edf2f7;}"
+        ".macro-wc{margin-top:6px;border:1px solid #eee;border-radius:6px;padding:6px 10px;"
+        "background:#fff;}"
+        ".macro-wc summary{cursor:pointer;font-weight:600;font-size:0.88rem;}"
+        ".report-fold>summary{cursor:pointer;font-weight:600;font-size:0.95rem;list-style:none;}"
+        ".report-fold>summary::-webkit-details-marker{display:none;}"
+        ".report-fold-body{margin-top:8px;}"
+        ".tier-fold ul.tier-legend{margin:0.4rem 0;padding-left:1.15rem;}"
+        ".insight-fold{margin:1rem 0;}"
+        ".ins-lenses{margin-top:10px;padding-top:8px;border-top:1px dashed #e0e0e0;}"
+        ".ins-lenses-head{font-size:0.8rem;color:#555;margin-bottom:6px;}"
+        ".ins-lenses-grid{display:grid;gap:10px;}"
+        "@media(min-width:720px){.ins-lenses-grid{grid-template-columns:1fr 1fr;}}"
+        ".ins-lens{font-size:0.84rem;border:1px solid #e8eef5;border-radius:8px;"
+        "padding:8px 10px;background:#fafcff;line-height:1.45;}"
+        ".ins-lens strong{display:block;font-size:0.88rem;margin-bottom:4px;color:#1a237e;}"
+        ".ins-lens .lens-hint{margin:0 0 6px;color:#555;font-size:0.82rem;}"
+        ".ins-lens .lens-sig{margin:0;padding-left:1rem;font-size:0.82rem;}"
+        ".ins-lens .lens-miss{margin:0;font-size:0.82rem;color:#777;}"
+        ".ins-lens .lens-cross{color:#6a1b9a;font-size:0.78rem;}"
+        ".lens-other{font-size:0.82rem;margin:8px 0 0;}"
+        ".insight-extra{margin-top:8px;border:1px solid #eee;border-radius:8px;padding:6px 10px;"
+        "background:#fbfbfb;font-size:0.86rem;}"
+        ".insight-extra summary{cursor:pointer;font-weight:600;}"
+        ".insight-extra-body{margin-top:6px;}"
     )
     thead = (
         "<thead><tr><th>请求模型</th><th>日期桶 (pt)</th>"
         "<th>分档（中文 / 枚举）</th><th>条数</th><th>常见信号代码</th></tr></thead>"
     )
     tier_legend = (
-        "<h2 id='sec-tiers'>如何理解「分档」</h2>"
+        "<details class='report-fold tier-fold' id='sec-tiers'>"
+        "<summary>分档含义：high_precision / watchlist / none（点击展开）</summary>"
+        "<div class='report-fold-body'>"
         "<ul class='tier-legend'>"
-        "<li><strong>强怀疑（主证据）</strong> — JSON 中机器值为 <code>high_precision</code>："
-        "通常对应较强的结构化证据（如多项 LLM 评估偏低）。"
-        "若菜谱里打开 <code>high_precision_on_tool_fail_alone</code>，"
-        "也可能仅凭多次 tool 失败模式进入此档，解读时请结合业务。</li>"
-        "<li><strong>待观察（弱证据）</strong> — <code>watchlist</code>："
-        "多为启发式或单一弱信号，<strong>不宜</strong>直接等同「劣质样本」，适合抽样核对。</li>"
-        "<li><strong>未标记</strong> — <code>none</code>：未命中当前分层规则。</li>"
+        "<li><strong>强怀疑</strong> — <code>high_precision</code>："
+        "多为主证据；若开启 <code>high_precision_on_tool_fail_alone</code> 也可能仅凭 tool 失败进入。</li>"
+        "<li><strong>待观察</strong> — <code>watchlist</code>："
+        "弱/启发式提示，不宜直接等同劣质样本。</li>"
+        "<li><strong>未标记</strong> — <code>none</code>。</li>"
         "</ul>"
-        "<p class='note'>提示：<code>high_precision</code> 在本项目语义为「值得优先复核」，"
-        "与「模型高精度」无关；命令行 / JSON 仍保留英文枚举，便于脚本处理。</p>"
+        "<p class='note'><code>high_precision</code> 在此指「优先复核」，与模型精度无关。</p>"
+        "</div></details>"
     )
     adv = (
         "<p>进阶说明见 <code>demos/agent/BAD_CASE_INSIGHTS.md</code>、"
@@ -1368,26 +2448,18 @@ def _html_page(
 {toc_side}
 <main class="page-main">
 {exec_summary_html}
-{toc_mini}
+{reading_scenarios_html}
 <h2 id='sec-counts'>各分档条数</h2>
 <table><thead><tr><th>展示名</th><th>机器枚举</th><th>条数</th></tr></thead>
 <tbody>{tier_rows}</tbody></table>
 {tier_legend}
-{toc_mini}
-<h2 id='sec-charts'>图表（整体分布）</h2>
-<p class='note'>柱或堆叠段上的<strong>数字为该组样本数</strong>；信号图为本批内出现次数。详情可在后文 Insight 与「典型样例」中<strong>逐条展开</strong>查看。</p>
-{charts_html}
-{toc_mini}
+{charts_section_html}
 {insight_legend_html}
-{toc_mini}
 {insight_section_html}
-{toc_mini}
 {drilldown_html}
-{toc_mini}
 <h2 id='sec-attrib'>信号归因对照表</h2>
-<p class='note'>说明各信号 <code>code</code> 与上游 <strong>meta / stats</strong> 及常见算子的对应关系，便于与「典型样例」中的证据表对照。</p>
+<p class='note'>信号 <code>code</code> 与上游 meta / stats / 算子的对应关系；可与 case study 中的证据表对照。</p>
 {attribution_table}
-{toc_mini}
 <h2 id='sec-cohort'>按模型 × 日期 × 分档 的队列明细</h2>
 <table>{thead}<tbody>{"".join(cohort_lines)}</tbody></table>
 {toc_mini}
@@ -1415,6 +2487,28 @@ def _html_page(
         btn.textContent = "展开字段";
         btn.setAttribute("aria-expanded", "false");
       }}
+    }});
+  }});
+  document.querySelectorAll('.scenario-tabs').forEach(function (tablist) {{
+    var tabs = tablist.querySelectorAll('.scenario-tab');
+    tabs.forEach(function (tab) {{
+      tab.addEventListener('click', function () {{
+        var pid = tab.getAttribute('data-panel');
+        if (!pid) return;
+        tabs.forEach(function (t) {{
+          var on = t === tab;
+          t.classList.toggle('active', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+        }});
+        var host = tablist.parentElement;
+        if (!host) return;
+        host.querySelectorAll('.scenario-panel').forEach(function (pnl) {{
+          var show = pnl.id === pid;
+          pnl.classList.toggle('active', show);
+          if (show) pnl.removeAttribute('hidden');
+          else pnl.setAttribute('hidden', '');
+        }});
+      }});
     }});
   }});
 }})();
@@ -1459,7 +2553,7 @@ def main() -> int:
         "--drilldown-limit",
         type=int,
         default=-1,
-        help="0=关闭「典型样例」整节；>0=仅导出/保留前 N 条（截断全量清单）；默认 -1=不截断导出",
+        help="0=关闭 case study 整节；>0=仅导出/保留前 N 条（截断全量清单）；默认 -1=不截断导出",
     )
     ap.add_argument(
         "--drilldown-display-max",
@@ -1569,36 +2663,21 @@ def main() -> int:
     )
     exec_summary_html = _exec_summary_section_html(body_summary, summary_note)
 
-    charts_blocks: List[str] = []
-    if chart_tier:
-        charts_blocks.append(
-            "<h3>各分档条数</h3>"
-            f"<p class='note'><img src='{chart_tier}' alt='tier 分布'/></p>"
-        )
-    if chart_model:
-        charts_blocks.append(
-            "<h3>按请求模型堆叠</h3>"
-            f"<p class='note'><img src='{chart_model}' alt='按模型'/></p>"
-        )
-    if chart_sig_high:
-        charts_blocks.append(
-            "<h3>主证据信号 Top</h3>"
-            f"<p class='note'><img src='{chart_sig_high}' alt='high 信号'/></p>"
-        )
-    if chart_sig_med:
-        charts_blocks.append(
-            "<h3>弱证据 / 启发式信号</h3>"
-            "<p class='note'>多为单条弱提示，须与分档与其它字段共同解读。"
-            "其中 <code>dialog_turn_quality_meta_low</code> 来自 §5b 多轴 1–5 质检 meta，"
-            "在归因表中列为<strong>结构化·轴分（建议重点读）</strong>，可与主证据表对照。</p>"
-            f"<p class='note'><img src='{chart_sig_med}' alt='medium 信号'/></p>"
-        )
-    if charts_blocks:
-        charts_html = "\n".join(charts_blocks)
-    elif args.no_charts or plt_mod is None:
-        charts_html = "<p class='note'>未生成图表（已加 --no-charts 或未安装 matplotlib）。</p>"
-    else:
-        charts_html = "<p class='note'>本批暂无可用绘图数据。</p>"
+    macro_html = _build_macro_distribution_section(
+        rows, plt_mod, args.no_charts, html_page_lang
+    )
+    charts_section_html = _build_charts_section_html(
+        chart_tier=chart_tier,
+        chart_model=chart_model,
+        high_c=high_c,
+        med_c=med_c,
+        chart_full_high=chart_sig_high,
+        chart_full_med=chart_sig_med,
+        plt_mod=plt_mod,
+        no_charts=args.no_charts,
+        html_lang=html_page_lang,
+        macro_distribution_html=macro_html,
+    )
 
     drill_html = ""
     export_rel: Optional[str] = None
@@ -1625,7 +2704,10 @@ def main() -> int:
     insight_section_html = ""
     if args.sample_headlines > 0:
         insight_section_html = _insight_sections_html(
-            rows, args.sample_headlines, anchor_by_rid
+            rows,
+            args.sample_headlines,
+            anchor_by_rid,
+            html_lang=html_page_lang,
         )
 
     bilingual_header = ""
@@ -1649,10 +2731,11 @@ def main() -> int:
         cohort,
         att_html,
         exec_summary_html,
-        charts_html,
+        charts_section_html,
         drill_html,
-        _insight_fields_legend_html(),
+        _insight_fields_legend_html(html_lang=html_page_lang),
         insight_section_html,
+        _reading_scenarios_html(html_lang=html_page_lang),
         bilingual_header=bilingual_header,
         html_lang=html_page_lang,
     )

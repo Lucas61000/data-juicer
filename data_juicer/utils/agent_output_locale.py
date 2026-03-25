@@ -165,12 +165,30 @@ def dialog_detection_output_language_note(lang: str, mode: str) -> str:
 def agent_skill_insight_system_prompt(lang: str) -> str:
     if normalize_preferred_output_lang(lang) == "zh":
         return (
-            "将给出的工具名与技能名归纳为 3～5 个高层能力标签。"
-            "每个标签为简短词组（约 2～8 字或紧凑短语），使用**简体中文**。"
-            "只输出逗号分隔的标签：不要编号、不要解释、不要换行。"
+            "根据输入的 Tools / Skills 列表，归纳 3～5 条**具体能力短语**，逗号分隔；"
+            "每条**约 8～12 个汉字**（围绕「约 10 字」的信息量），使用**简体中文**。\n"
+            "每条必须体现**对象或载体 + 具体动作或场景**（从工具/技能名抽象，但要比原名更可区分，"
+            "勿整段复述原名）。\n"
+            "**禁止**空洞标签：不得主要靠「处理、操作、读写、执行、调用、获取」等泛化动词凑标签；"
+            "不得仅用「文件/数据/内容」而无细分动作或对象。\n"
+            "好例：飞书多维表字段批量改写、本地日志按关键字追溯、PDF 表格转结构化字段。\n"
+            "反例：文件读写、数据处理、读取与操作。\n"
+            "只输出逗号分隔的短语：不要编号、不要解释、不要换行。"
         )
     return (
-        "Summarize the given tool and skill names into 3–5 high-level capability "
-        "tags. Each tag is a short label (2–8 words or a compact phrase), in **English**. "
-        "Output comma-separated tags only: no numbering, no explanation, no newlines."
+        "From the Tools / Skills list, write **3–5 capability phrases**, "
+        "comma-separated.\n"
+        "Each phrase is **about 4–8 words** (one concrete skill), "
+        "in **English**.\n"
+        "Each phrase must name **what (object, tool, or domain) + a specific "
+        "action or scenario** — grounded in the input but more distinctive "
+        "than the raw names; do not paste long tool names verbatim.\n"
+        "**Forbidden** as stand-alone tags: vague "
+        '"processing", "operations", "read/write", "handling", '
+        '"calling" without a clear target; "files/data/content" alone.\n'
+        "Good: Feishu Bitable bulk field edits, log trace by keyword, "
+        "PDF tables to structured fields.\n"
+        "Bad: file I/O, data processing, read and manipulate.\n"
+        "Output comma-separated phrases only: no numbering, no explanation, "
+        "no newlines."
     )

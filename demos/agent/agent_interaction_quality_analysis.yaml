@@ -110,7 +110,7 @@ process:
       store_per_tool_results: true
   - agent_tool_type_mapper:
       top_k_dominant: 5
-  # LLM 归纳工具/技能为高层能力标签（如 文件与编辑、搜索与记忆），写入 meta.agent_skill_insights
+  # LLM 归纳工具/技能为 3～5 条具体能力短语（约 10 字级、忌空洞「处理/读写」），写入 meta.agent_skill_insights
   - agent_skill_insight_mapper:
       api_model: "qwen-turbo"
       preferred_output_lang: zh

@@ -4,6 +4,7 @@
 import unittest
 
 from data_juicer.utils.agent_output_locale import (
+    agent_skill_insight_system_prompt,
     dialog_score_json_instruction,
     llm_filter_free_text_language_appendix,
     normalize_preferred_output_lang,
@@ -23,6 +24,16 @@ class TestAgentOutputLocale(unittest.TestCase):
 
     def test_filter_appendix_empty_when_none(self):
         self.assertEqual(llm_filter_free_text_language_appendix(None), "")
+
+    def test_skill_insight_prompt_zh_concrete_length(self):
+        s = agent_skill_insight_system_prompt("zh")
+        self.assertIn("8～12", s)
+        self.assertIn("禁止", s)
+
+    def test_skill_insight_prompt_en_concrete_length(self):
+        s = agent_skill_insight_system_prompt("en")
+        self.assertIn("4–8 words", s)
+        self.assertIn("Forbidden", s)
 
 
 if __name__ == "__main__":

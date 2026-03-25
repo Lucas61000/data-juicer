@@ -108,3 +108,5 @@ jq -c '."__dj__meta__".agent_insight_llm.headline, ."__dj__meta__".agent_bad_cas
 - `extract_entity_attribute_mapper`、`relation_identity_mapper`（字段空泛 / `role_relation` 等见 **`ENTITY_RELATION_TUNING.md`**）
 
 若需 **按 session 聚合** 再判坏，请在数据中带 `session_id` 并在分析脚本中 groupby；当前算子为**逐条样本**。
+
+**维护 / 合入上游**：pre-commit、`docs/Operators.md`、归因表与单测清单见 [`README.md`](README.md) 中的 **「合入 main 前（维护者速查）」**。

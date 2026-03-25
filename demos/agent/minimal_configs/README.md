@@ -56,7 +56,7 @@ bash demos/agent/scripts/run_bad_case_pipeline.sh smoke
 - **09**：在 **04+05** 基础上增加 `copy_lineage_fields` 与 `agent_bad_case_signal_mapper`，并关闭依赖 LLM 评估的 `signal_on_llm_*`，用于本地验证 `meta.agent_bad_case_tier` / `agent_bad_case_signals`。
 - **06**：dialog_intent/topic/sentiment 等 mapper 会对多轮标签做**去重**（保持顺序），避免重复意图标签。
 - **07**：extract_entity_attribute 需配置 `query_entities`、`query_attributes`；relation_identity 需配置 `source_entity`、`target_entity`，否则实体/关系多为空。当前 07 已配「用户/助手/任务」与「目标/行为」、「用户→助手」关系。
-- **agent_skill_insights**：完整 recipe 中在 agent_tool_type_mapper 后增加 `agent_skill_insight_mapper`，用 LLM 将 agent_tool_types + agent_skill_types 归纳为 3～5 个高层能力标签（如 文件与编辑、搜索与记忆），写入 `meta.agent_skill_insights`，比仅用正则的 skill_types 更有洞察。
+- **agent_skill_insights**：完整 recipe 中在 agent_tool_type_mapper 后增加 `agent_skill_insight_mapper`，用 LLM 将 agent_tool_types + agent_skill_types 归纳为 3～5 条**具体**能力短语（中文约 10 字/条、带对象与动作；避免「文件读写、处理、操作」式空洞标签），写入 `meta.agent_skill_insights`，比仅用正则的 skill_types 更有区分度。
 
 ## 建议调试顺序
 

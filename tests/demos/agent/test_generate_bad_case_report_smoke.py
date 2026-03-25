@@ -1,0 +1,128 @@
+"""Smoke test for generate_bad_case_report (no charts, no LLM)."""
+
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+_REPO = Path(__file__).resolve().parents[3]
+_SCRIPT = _REPO / "demos" / "agent" / "scripts" / "generate_bad_case_report.py"
+
+
+class TestGenerateBadCaseReportSmoke(unittest.TestCase):
+    def test_report_minimal_jsonl_no_charts(self) -> None:
+        row = {
+            "query": "hello",
+            "response": "world",
+            "__dj__meta__": {
+                "agent_bad_case_tier": "none",
+                "agent_request_model": "test-model",
+                "agent_pt": "20250101",
+            },
+            "__dj__stats__": {},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tdir = Path(tmp)
+            inp = tdir / "one.jsonl"
+            out = tdir / "out.html"
+            line = json.dumps(row, ensure_ascii=False) + "\n"
+            inp.write_text(line, encoding="utf-8")
+            cmd = [
+                sys.executable,
+                str(_SCRIPT),
+                "--input",
+                str(inp),
+                "--output",
+                str(out),
+                "--no-charts",
+                "--sample-headlines",
+                "0",
+                "--drilldown-limit",
+                "0",
+                "--no-drilldown-export",
+            ]
+            env = dict(**os.environ)
+            env.pop("BAD_CASE_REPORT_LLM", None)
+            proc = subprocess.run(
+                cmd,
+                cwd=str(_REPO),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+            html = out.read_text(encoding="utf-8")
+            self.assertIn("<!DOCTYPE html>", html)
+            self.assertIn("sec-charts", html)
+
+    def test_insight_section_omits_pii_related_headlines(self) -> None:
+        rows = [
+            {
+                "query": "q1",
+                "response": "r1",
+                "__dj__meta__": {
+                    "agent_bad_case_tier": "high_precision",
+                    "agent_request_id": "rid-1",
+                    "agent_insight_llm": {"headline": "VISIBLE_HEADLINE"},
+                },
+                "__dj__stats__": {},
+            },
+            {
+                "query": "q2",
+                "response": "r2",
+                "__dj__meta__": {
+                    "agent_bad_case_tier": "high_precision",
+                    "agent_request_id": "rid-2",
+                    "agent_insight_llm": {"headline": "HIDDEN_HEADLINE"},
+                    "pii_llm_suspect": {
+                        "suspected": [{"field": "query", "category": "t", "evidence": "x"}],
+                    },
+                },
+                "__dj__stats__": {},
+            },
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            tdir = Path(tmp)
+            inp = tdir / "two.jsonl"
+            out = tdir / "out.html"
+            inp.write_text(
+                "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
+                encoding="utf-8",
+            )
+            cmd = [
+                sys.executable,
+                str(_SCRIPT),
+                "--input",
+                str(inp),
+                "--output",
+                str(out),
+                "--no-charts",
+                "--sample-headlines",
+                "10",
+                "--drilldown-limit",
+                "0",
+                "--no-drilldown-export",
+            ]
+            env = dict(**os.environ)
+            env.pop("BAD_CASE_REPORT_LLM", None)
+            proc = subprocess.run(
+                cmd,
+                cwd=str(_REPO),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+            html = out.read_text(encoding="utf-8")
+            self.assertIn("VISIBLE_HEADLINE", html)
+            self.assertNotIn("HIDDEN_HEADLINE", html)
+            self.assertIn("insight-pii-omit", html)
+
+
+if __name__ == "__main__":
+    unittest.main()

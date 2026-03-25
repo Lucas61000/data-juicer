@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # LLM-based summarization of agent_tool_types + agent_skill_types into
-# high-level capability insights (agent_skill_insights).
+# short concrete capability phrases (agent_skill_insights).
 
 from typing import Dict, Optional
 
@@ -26,9 +26,10 @@ class AgentSkillInsightMapper(Mapper):
     """Summarize agent_tool_types and agent_skill_types into insights via LLM.
 
     Reads ``meta[agent_tool_types]`` and ``meta[agent_skill_types]`` (from
-    ``agent_dialog_normalize_mapper``), calls the API for 3–5 capability
-    categories, and stores them in ``meta[agent_skill_insights]``. Run after
-    normalize for higher-level tags than raw regex-extracted names. Override
+    ``agent_dialog_normalize_mapper``), calls the API for 3–5 **concrete**
+    capability phrases (about 10 Chinese characters or ~4–8 English words
+    each; avoid vague 'read/write / processing'), and stores them in
+    ``meta[agent_skill_insights]``. Run after normalize. Override
     ``system_prompt`` for locale-specific label style.
     """
 
@@ -52,8 +53,12 @@ class AgentSkillInsightMapper(Mapper):
         self.tool_types_key = tool_types_key
         self.skill_types_key = skill_types_key
         self.insights_key = insights_key
-        self.preferred_output_lang = normalize_preferred_output_lang(preferred_output_lang)
-        self.system_prompt = system_prompt or agent_skill_insight_system_prompt(self.preferred_output_lang)
+        self.preferred_output_lang = normalize_preferred_output_lang(
+            preferred_output_lang,
+        )
+        self.system_prompt = system_prompt or agent_skill_insight_system_prompt(
+            self.preferred_output_lang,
+        )
         self.try_num = try_num
         self.sampling_params = sampling_params or {}
         self.model_key = prepare_model(
