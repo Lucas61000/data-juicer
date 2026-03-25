@@ -114,7 +114,6 @@ process:
   - agent_skill_insight_mapper:
       api_model: "qwen-turbo"
       preferred_output_lang: zh
-      num_proc: 1
 
   # ----- 5b. 对话末轮 / 轨迹 LLM 质检 -----
   # 放在 tool 标签之后，便于 agent_tool_relevance_mapper 读 meta.agent_tool_types。

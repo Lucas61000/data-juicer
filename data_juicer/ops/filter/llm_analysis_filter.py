@@ -212,6 +212,9 @@ json
                 **model_params,
             )
 
+            # api model. Change the accelerator to cpu
+            self._accelerator = "cpu"
+
     def build_input(self, sample):
         if not set(self.input_keys) <= set(sample.keys()):
             logger.warning(f"Not all input keys {self.input_keys} are in the sample!")

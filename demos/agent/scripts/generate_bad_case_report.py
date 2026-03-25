@@ -1069,16 +1069,19 @@ def _fetch_exec_summary_llm(
         ],
         "temperature": 0.2,
         "max_tokens": 768,
+        "chat_template_kwargs": {"enable_thinking": False},
     }
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req_headers = {
+        "Content-Type": "application/json",
+    }
+    if api_key:
+        req_headers["Authorization"] = f"Bearer {api_key}"
     req = urllib.request.Request(
         url,
         data=data,
         method="POST",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
+        headers=req_headers,
     )
     body: Optional[dict] = None
     for attempt in range(2):
@@ -2645,16 +2648,16 @@ def main() -> int:
     llm_summary: Optional[str] = None
     if args.llm_summary:
         key = (args.llm_api_key or "").strip()
-        if key:
-            llm_summary = _fetch_exec_summary_llm(
-                digest_llm,
-                model=args.llm_model,
-                api_key=key,
-                api_base=args.llm_api_base,
-                timeout_sec=max(5, int(args.llm_timeout_sec)),
-            )
-        else:
+        if not key:
             print("WARNING: --llm-summary 已开启但未配置 API Key。", file=sys.stderr)
+        llm_summary = _fetch_exec_summary_llm(
+            digest_llm,
+            model=args.llm_model,
+            api_key=key,
+            api_base=args.llm_api_base,
+            timeout_sec=max(5, int(args.llm_timeout_sec)),
+        )
+
     body_summary = llm_summary or rule_summary
     summary_note = (
         "以下由大模型根据上方同批次聚合摘要生成，数字请务必与下方表格交叉核对。"
