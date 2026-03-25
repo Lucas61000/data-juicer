@@ -319,8 +319,7 @@ class VideoHandReconstructionHaworMapper(Mapper):
         return reformat_results
 
     @staticmethod
-    def _compute_mano_joints(mano_model, global_orient_list, hand_pose_list,
-                             betas_list, transl_list):
+    def _compute_mano_joints(mano_model, global_orient_list, hand_pose_list, betas_list, transl_list):
         """Compute MANO 21-joint positions in camera space via forward kinematics.
 
         Args:
@@ -340,13 +339,13 @@ class VideoHandReconstructionHaworMapper(Mapper):
         device = next(mano_model.parameters()).device
 
         # Stack into tensors: (T, ...)
-        orient_aa = _torch.tensor(global_orient_list, dtype=_torch.float32)   # (T, 3)
-        hand_aa = _torch.tensor(hand_pose_list, dtype=_torch.float32)         # (T, 45)
-        betas = _torch.tensor(betas_list, dtype=_torch.float32)               # (T, 10)
-        transl = _torch.tensor(transl_list, dtype=_torch.float32)             # (T, 3)
+        orient_aa = _torch.tensor(global_orient_list, dtype=_torch.float32)  # (T, 3)
+        hand_aa = _torch.tensor(hand_pose_list, dtype=_torch.float32)  # (T, 45)
+        betas = _torch.tensor(betas_list, dtype=_torch.float32)  # (T, 10)
+        transl = _torch.tensor(transl_list, dtype=_torch.float32)  # (T, 3)
 
         # Convert axis-angle to rotation matrices
-        orient_rotmat = aa_to_rotmat(orient_aa).view(T, 1, 3, 3)             # (T, 1, 3, 3)
+        orient_rotmat = aa_to_rotmat(orient_aa).view(T, 1, 3, 3)  # (T, 1, 3, 3)
         hand_rotmat = aa_to_rotmat(hand_aa.reshape(T * 15, 3)).view(T, 15, 3, 3)  # (T, 15, 3, 3)
 
         # MANO forward pass on GPU
@@ -443,17 +442,24 @@ class VideoHandReconstructionHaworMapper(Mapper):
             N = len(images)
             if N == 0:
                 from loguru import logger as _logger
-                _logger.warning(f"Video {video_idx}: all frames decode failed, "
-                                "producing empty hand output.")
+
+                _logger.warning(f"Video {video_idx}: all frames decode failed, " "producing empty hand output.")
                 empty_hand = {
-                    "frame_ids": [], "global_orient": [],
-                    "hand_pose": [], "betas": [], "transl": [],
+                    "frame_ids": [],
+                    "global_orient": [],
+                    "hand_pose": [],
+                    "betas": [],
+                    "transl": [],
                     "joints_cam": None,
                 }
-                sample[Fields.meta][self.tag_field_name].append({
-                    "fov_x": 0.0, "img_focal": 0.0,
-                    "left": dict(empty_hand), "right": dict(empty_hand),
-                })
+                sample[Fields.meta][self.tag_field_name].append(
+                    {
+                        "fov_x": 0.0,
+                        "img_focal": 0.0,
+                        "left": dict(empty_hand),
+                        "right": dict(empty_hand),
+                    }
+                )
                 continue
             H, W = images[0].shape[:2]
 

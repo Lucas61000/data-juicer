@@ -81,45 +81,6 @@ class ExportToLeRobotMapper(Mapper):
         os.makedirs(self.staging_meta_dir, exist_ok=True)
         os.makedirs(self.meta_dir, exist_ok=True)
 
-        self._write_modality_json()
-
-    def _write_modality_json(self):
-        """Write modality.json following StarVLA LIBERO convention."""
-        modality = {
-            "state": {
-                "x": {"start": 0, "end": 1},
-                "y": {"start": 1, "end": 2},
-                "z": {"start": 2, "end": 3},
-                "roll": {"start": 3, "end": 4},
-                "pitch": {"start": 4, "end": 5},
-                "yaw": {"start": 5, "end": 6},
-                "pad": {"start": 6, "end": 7},
-                "gripper": {"start": 7, "end": 8},
-            },
-            "action": {
-                "x": {"start": 0, "end": 1},
-                "y": {"start": 1, "end": 2},
-                "z": {"start": 2, "end": 3},
-                "roll": {"start": 3, "end": 4},
-                "pitch": {"start": 4, "end": 5},
-                "yaw": {"start": 5, "end": 6},
-                "gripper": {"start": 6, "end": 7},
-            },
-            "video": {
-                "primary_image": {
-                    "original_key": "observation.images.image",
-                },
-            },
-            "annotation": {
-                "human.action.task_description": {
-                    "original_key": "task_index",
-                },
-            },
-        }
-        path = os.path.join(self.meta_dir, "modality.json")
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(modality, f, indent=4)
-
     def _stage_video(self, video_source, ep_uuid):
         """Copy or write video to staging with UUID name.
 
@@ -262,6 +223,44 @@ class ExportToLeRobotMapper(Mapper):
         return sample
 
     @staticmethod
+    def _write_modality_json(meta_dir):
+        """Write modality.json following StarVLA LIBERO convention."""
+        modality = {
+            "state": {
+                "x": {"start": 0, "end": 1},
+                "y": {"start": 1, "end": 2},
+                "z": {"start": 2, "end": 3},
+                "roll": {"start": 3, "end": 4},
+                "pitch": {"start": 4, "end": 5},
+                "yaw": {"start": 5, "end": 6},
+                "pad": {"start": 6, "end": 7},
+                "gripper": {"start": 7, "end": 8},
+            },
+            "action": {
+                "x": {"start": 0, "end": 1},
+                "y": {"start": 1, "end": 2},
+                "z": {"start": 2, "end": 3},
+                "roll": {"start": 3, "end": 4},
+                "pitch": {"start": 4, "end": 5},
+                "yaw": {"start": 5, "end": 6},
+                "gripper": {"start": 6, "end": 7},
+            },
+            "video": {
+                "primary_image": {
+                    "original_key": "observation.images.image",
+                },
+            },
+            "annotation": {
+                "human.action.task_description": {
+                    "original_key": "task_index",
+                },
+            },
+        }
+        path = os.path.join(meta_dir, "modality.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(modality, f, indent=4)
+
+    @staticmethod
     def _probe_video_resolution(video_base_dir):
         """Probe the first video file to get resolution and codec info."""
         if not os.path.exists(video_base_dir):
@@ -363,6 +362,8 @@ class ExportToLeRobotMapper(Mapper):
         staging_video = os.path.join(staging_dir, "videos")
         staging_meta = os.path.join(staging_dir, "meta")
         meta_dir = os.path.join(output_dir, "meta")
+
+        ExportToLeRobotMapper._write_modality_json(meta_dir)
 
         # 1. Collect all episode metadata fragments
         episodes = []

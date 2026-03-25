@@ -9,6 +9,7 @@ from data_juicer.core.data import NestedDataset as Dataset
 from data_juicer.ops.base_op import Fields
 from data_juicer.ops.mapper.video_split_by_duration_mapper import \
     VideoSplitByDurationMapper
+from data_juicer.utils.file_utils import add_suffix_to_filename
 from data_juicer.utils.mm_utils import SpecialTokens, load_file_byte
 from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
@@ -340,6 +341,228 @@ class VideoSplitByDurationMapperTest(DataJuicerTestCaseBase):
                 self.assertTrue(os.path.exists(clip_path))
             self.assertEqual(len(res[save_field]), tgt['split_frames_num'])
             self.assertTrue(all(isinstance(v, bytes) for v in res[save_field]))
+
+
+    # ─── overlap_duration tests ───────────────────────────────────
+
+    def test_overlap_basic(self):
+        """split=10, overlap=5 → step=5.
+        video1(11.76s): [0-10],[5-11.76] → 2 clips
+        video2(23.17s): [0-10],[5-15],[10-20],[15-23.17] → 4 clips
+        video3(49.58s): 9 clips
+        """
+        ds_list = [{
+            'text': f'{SpecialTokens.video} vid1.',
+            'videos': [self.vid1_path]
+        }, {
+            'text': f'{SpecialTokens.video} vid2.{SpecialTokens.eoc}',
+            'videos': [self.vid2_path]
+        }, {
+            'text': f'{SpecialTokens.video} vid3.{SpecialTokens.eoc}',
+            'videos': [self.vid3_path]
+        }]
+        tgt_list = [{
+            'text': f'{SpecialTokens.video}{SpecialTokens.video} vid1.{SpecialTokens.eoc}',
+            'split_frames_num': [2]
+        }, {
+            'text': f'{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video} vid2.{SpecialTokens.eoc}',
+            'split_frames_num': [4]
+        }, {
+            'text': f'{"".join([SpecialTokens.video] * 9)} vid3.{SpecialTokens.eoc}',
+            'split_frames_num': [9]
+        }]
+        op = VideoSplitByDurationMapper(
+            split_duration=10,
+            overlap_duration=5,
+            keep_original_sample=False)
+        self._run_video_split_by_duration_mapper(op, ds_list, tgt_list)
+
+    def test_overlap_more_clips_than_no_overlap(self):
+        """Overlap produces more clips than no-overlap for the same video.
+        video2(23.17s):
+          no-overlap split=10: [0-10],[10-20],[20-23.17] → 3 clips
+          overlap=5  split=10: [0-10],[5-15],[10-20],[15-23.17] → 4 clips
+        """
+        ds_list = [{
+            'text': f'{SpecialTokens.video} vid2.{SpecialTokens.eoc}',
+            'videos': [self.vid2_path]
+        }]
+        op_no_overlap = VideoSplitByDurationMapper(
+            split_duration=10,
+            overlap_duration=0,
+            keep_original_sample=False)
+        op_overlap = VideoSplitByDurationMapper(
+            split_duration=10,
+            overlap_duration=5,
+            keep_original_sample=False)
+
+        dataset_no = Dataset.from_list(ds_list)
+        dataset_no = dataset_no.map(op_no_overlap.process, num_proc=1)
+        no_clips = len(dataset_no.to_list()[0]['videos'])
+
+        dataset_ov = Dataset.from_list(ds_list)
+        dataset_ov = dataset_ov.map(op_overlap.process, num_proc=1)
+        ov_clips = len(dataset_ov.to_list()[0]['videos'])
+
+        self.assertEqual(no_clips, 3)
+        self.assertEqual(ov_clips, 4)
+        self.assertGreater(ov_clips, no_clips)
+
+    def test_overlap_short_video_no_split(self):
+        """Video shorter than split_duration → return original, overlap irrelevant.
+        video1(11.76s) with split=20, overlap=5: no split.
+        """
+        ds_list = [{
+            'text': f'{SpecialTokens.video} vid1.',
+            'videos': [self.vid1_path]
+        }]
+        op = VideoSplitByDurationMapper(
+            split_duration=20,
+            overlap_duration=5,
+            keep_original_sample=False)
+        dataset = Dataset.from_list(ds_list)
+        dataset = dataset.map(op.process, num_proc=1)
+        res = dataset.to_list()[0]
+        # Original path returned as-is
+        self.assertEqual(res['videos'], [self.vid1_path])
+
+    def test_overlap_with_min_last_split_duration(self):
+        """split=10, overlap=5, min_last=10 → drop short last segments.
+        video1(11.76s): [0-10], then start=5 remaining=6.76<10 → 1 clip
+        video2(23.17s): [0-10],[5-15],[10-20], then start=15 remaining=8.17<10 → 3 clips
+        video3(49.58s): 8 clips, then start=40 remaining=9.58<10 → 8 clips
+        """
+        ds_list = [{
+            'text': f'{SpecialTokens.video} vid1.',
+            'videos': [self.vid1_path]
+        }, {
+            'text': f'{SpecialTokens.video} vid2.{SpecialTokens.eoc}',
+            'videos': [self.vid2_path]
+        }, {
+            'text': f'{SpecialTokens.video} vid3.{SpecialTokens.eoc}',
+            'videos': [self.vid3_path]
+        }]
+        tgt_list = [{
+            'text': f'{SpecialTokens.video} vid1.{SpecialTokens.eoc}',
+            'split_frames_num': [1]
+        }, {
+            'text': f'{SpecialTokens.video}{SpecialTokens.video}{SpecialTokens.video} vid2.{SpecialTokens.eoc}',
+            'split_frames_num': [3]
+        }, {
+            'text': f'{"".join([SpecialTokens.video] * 8)} vid3.{SpecialTokens.eoc}',
+            'split_frames_num': [8]
+        }]
+        op = VideoSplitByDurationMapper(
+            split_duration=10,
+            overlap_duration=5,
+            min_last_split_duration=10,
+            keep_original_sample=False)
+        self._run_video_split_by_duration_mapper(op, ds_list, tgt_list)
+
+    def test_overlap_bytes_output(self):
+        """Overlap with bytes output format."""
+        ds_list = [{
+            'text': f'{SpecialTokens.video} vid2.{SpecialTokens.eoc}',
+            'videos': [self.vid2_path]
+        }]
+        save_field = "clips"
+        op = VideoSplitByDurationMapper(
+            split_duration=10,
+            overlap_duration=5,
+            keep_original_sample=False,
+            output_format="bytes",
+            save_field=save_field,
+            save_dir=self.tmp_dir,
+            legacy_split_by_text_token=True)
+
+        dataset = Dataset.from_list(ds_list)
+        dataset = dataset.map(op.process, num_proc=1)
+        res = dataset.to_list()[0]
+
+        # video2(23.17s), split=10, overlap=5 → 4 clips
+        self.assertEqual(len(res[save_field]), 4)
+        self.assertTrue(all(isinstance(v, bytes) for v in res[save_field]))
+        self.assertEqual(len(res[Fields.source_file]), 4)
+
+    def test_overlap_non_legacy_save_field(self):
+        """Overlap with non-legacy mode (save_field, no text token update)."""
+        ds_list = [{
+            'text': '',
+            'videos': [self.vid3_path]
+        }]
+        save_field = "clips"
+        op = VideoSplitByDurationMapper(
+            split_duration=10,
+            overlap_duration=5,
+            keep_original_sample=False,
+            save_field=save_field,
+            save_dir=self.tmp_dir,
+            legacy_split_by_text_token=False)
+
+        dataset = Dataset.from_list(ds_list)
+        dataset = dataset.map(op.process, num_proc=1)
+        res = dataset.to_list()[0]
+
+        # video3(49.58s), split=10, overlap=5 → 9 clips
+        self.assertEqual(len(res[save_field]), 9)
+        # Original videos field untouched
+        self.assertEqual(res['videos'], [self.vid3_path])
+
+    def test_overlap_zero_same_as_default(self):
+        """overlap_duration=0 produces identical results to the default."""
+        ds_list = [{
+            'text': f'{SpecialTokens.video} vid2.{SpecialTokens.eoc}',
+            'videos': [self.vid2_path]
+        }]
+        op_default = VideoSplitByDurationMapper(
+            split_duration=10,
+            keep_original_sample=False)
+        op_zero = VideoSplitByDurationMapper(
+            split_duration=10,
+            overlap_duration=0,
+            keep_original_sample=False)
+
+        dataset_d = Dataset.from_list(ds_list)
+        dataset_d = dataset_d.map(op_default.process, num_proc=1)
+        res_d = dataset_d.to_list()[0]
+
+        dataset_z = Dataset.from_list(ds_list)
+        dataset_z = dataset_z.map(op_zero.process, num_proc=1)
+        res_z = dataset_z.to_list()[0]
+
+        self.assertEqual(len(res_d['videos']), len(res_z['videos']))
+        self.assertEqual(res_d['text'], res_z['text'])
+
+    def test_overlap_validation_negative(self):
+        """overlap_duration < 0 should raise AssertionError."""
+        with self.assertRaises(AssertionError):
+            VideoSplitByDurationMapper(split_duration=10, overlap_duration=-1)
+
+    def test_overlap_validation_exceeds_split(self):
+        """overlap_duration >= split_duration should raise AssertionError."""
+        with self.assertRaises(AssertionError):
+            VideoSplitByDurationMapper(split_duration=10, overlap_duration=10)
+        with self.assertRaises(AssertionError):
+            VideoSplitByDurationMapper(split_duration=10, overlap_duration=15)
+
+    def test_overlap_multi_chunk(self):
+        """Overlap with multi-video sample.
+        video1(11.76s) split=10,overlap=5: 2 clips
+        video3(49.58s) split=10,overlap=5: 9 clips
+        """
+        ds_list = [{
+            'text': f'{SpecialTokens.video} v1.{SpecialTokens.eoc}{SpecialTokens.video} v3.{SpecialTokens.eoc}',
+            'videos': [self.vid1_path, self.vid3_path]
+        }]
+        tgt_list = [{
+            'text': f'{SpecialTokens.video}{SpecialTokens.video} v1.{SpecialTokens.eoc}{"".join([SpecialTokens.video] * 9)} v3.{SpecialTokens.eoc}',
+            'split_frames_num': [2, 9]
+        }]
+        op = VideoSplitByDurationMapper(
+            split_duration=10,
+            overlap_duration=5,
+            keep_original_sample=False)
+        self._run_video_split_by_duration_mapper(op, ds_list, tgt_list)
 
 
 if __name__ == '__main__':

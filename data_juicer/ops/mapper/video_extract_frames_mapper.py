@@ -171,11 +171,15 @@ class VideoExtractFramesMapper(Mapper):
         assert self.video_backend in ["ffmpeg", "av"]
 
         if self.frame_sampling_method in ["uniform"]:
-            assert (
-                self.video_backend == "av"
-            ), f"Only 'av' backend is supported for '{self.frame_sampling_method}' frame sampling method."
+            assert self.video_backend in [
+                "av",
+                "ffmpeg",
+            ], f"Only 'av' and 'ffmpeg' backends are supported for '{self.frame_sampling_method}' frame sampling method."
         if self.duration > 0:
-            assert self.video_backend == "av", "Only 'av' backend is supported when duration > 0."
+            assert self.video_backend in [
+                "av",
+                "ffmpeg",
+            ], f"Only 'av' and 'ffmpeg' backends are supported when duration > 0."
 
     def _get_default_frame_dir(self, original_filepath):
         original_dir = os.path.dirname(original_filepath)
@@ -192,23 +196,42 @@ class VideoExtractFramesMapper(Mapper):
         # extract frame videos
         if self.frame_sampling_method == "all_keyframes":
             if self.duration:
-                # only support av backend when duration > 0
-                frames = extract_key_frames_by_seconds(video.container, self.duration)
-                frames = [frame.to_image() for frame in frames]
+                if self.video_backend == "av":
+                    frames = extract_key_frames_by_seconds(video.container, self.duration)
+                    frames = [frame.to_image() for frame in frames]
+                else:
+                    # For non-av backends, extract keyframes from each segment
+                    video_duration = video.metadata.duration
+                    import numpy as _np
+
+                    timestamps = _np.arange(0, video_duration, self.duration).tolist()
+                    timestamps.append(video_duration)
+                    frames = []
+                    for i in range(len(timestamps) - 1):
+                        kf = video.extract_keyframes(start_time=timestamps[i], end_time=timestamps[i + 1])
+                        frames.extend([Image.fromarray(img) for img in kf.frames])
             else:
                 frames = video.extract_keyframes().frames
                 frames = [Image.fromarray(img) for img in frames]
         elif self.frame_sampling_method == "all_frames":
             frames = [Image.fromarray(img) for img in video.extract_frames()]
         elif self.frame_sampling_method == "uniform":
-            # only support av backend if using uniform sampling
-            if self.duration:
-                frames = extract_video_frames_uniformly_by_seconds(
-                    video.container, self.frame_num, duration=self.duration
-                )
+            if self.video_backend == "av":
+                # Use legacy av-specific functions
+                if self.duration:
+                    frames = extract_video_frames_uniformly_by_seconds(
+                        video.container, self.frame_num, duration=self.duration
+                    )
+                else:
+                    frames = extract_video_frames_uniformly(video.container, self.frame_num)
+                frames = [frame.to_image() for frame in frames]
             else:
-                frames = extract_video_frames_uniformly(video.container, self.frame_num)
-            frames = [frame.to_image() for frame in frames]
+                # Use VideoReader interface (works for ffmpeg and other backends)
+                if self.duration:
+                    frames = video.extract_frames_uniformly_by_seconds(self.frame_num, duration=self.duration)
+                else:
+                    frames = video.extract_frames_uniformly(self.frame_num)
+                frames = [Image.fromarray(img) for img in frames]
         else:
             raise ValueError(
                 f"Not support sampling method \

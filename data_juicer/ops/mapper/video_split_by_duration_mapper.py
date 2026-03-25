@@ -49,6 +49,7 @@ class VideoSplitByDurationMapper(Mapper):
     def __init__(
         self,
         split_duration: float = 10,
+        overlap_duration: float = 0,
         min_last_split_duration: float = 0,
         keep_original_sample: bool = True,
         save_dir: str = None,
@@ -64,6 +65,11 @@ class VideoSplitByDurationMapper(Mapper):
         Initialization method.
 
         :param split_duration: duration of each video split in seconds.
+        :param overlap_duration: overlap duration in seconds between
+            consecutive splits. For example, with split_duration=20 and
+            overlap_duration=5, clips will be [0-20, 15-35, 30-50, ...].
+            Must be non-negative and less than split_duration. Default: 0
+            (no overlap).
         :param min_last_split_duration: The minimum allowable duration in
             seconds for the last video split. If the duration of the last
             split is less than this value, it will be discarded.
@@ -94,6 +100,11 @@ class VideoSplitByDurationMapper(Mapper):
         self._init_parameters.pop("save_dir", None)
 
         self.split_duration = split_duration
+        self.overlap_duration = overlap_duration
+        assert self.overlap_duration >= 0, f"overlap_duration must be >= 0, got {overlap_duration}"
+        assert self.overlap_duration < self.split_duration, (
+            f"overlap_duration ({overlap_duration}) must be less than " f"split_duration ({split_duration})"
+        )
         self.min_last_split_duration = min_last_split_duration
         self.keep_original_sample = keep_original_sample
         self.extra_args = kwargs
@@ -124,7 +135,12 @@ class VideoSplitByDurationMapper(Mapper):
             if video_key:
                 return [video_key]
             return []
-        timestamps = np.arange(0, video_duration, self.split_duration).tolist()
+
+        # Step size: split_duration - overlap_duration
+        # e.g. split=20, overlap=5 → step=15 → starts=[0, 15, 30, ...]
+        step = self.split_duration - self.overlap_duration
+        start_times = np.arange(0, video_duration, step).tolist()
+
         count = 0
         split_video_keys = []
 
@@ -137,17 +153,25 @@ class VideoSplitByDurationMapper(Mapper):
             kwargs = {"ffmpeg_extra_args": self.ffmpeg_extra_args}
         else:
             kwargs = {}
-        for i in range(1, len(timestamps)):
-            split_video_key = add_suffix_to_filename(unique_video_key, f"_{count}")
-            if container.extract_clip(timestamps[i - 1], timestamps[i], split_video_key, **kwargs):
-                split_video_keys.append(split_video_key)
-                count += 1
 
-        if video_duration - timestamps[-1] >= self.min_last_split_duration:
-            split_video_key = add_suffix_to_filename(unique_video_key, f"_{count}")
+        for start in start_times:
+            end = start + self.split_duration
 
-            if container.extract_clip(timestamps[-1], None, split_video_key, **kwargs):
-                split_video_keys.append(split_video_key)
+            if end >= video_duration:
+                # Last segment: check minimum duration
+                remaining = video_duration - start
+                if remaining >= self.min_last_split_duration:
+                    split_video_key = add_suffix_to_filename(unique_video_key, f"_{count}")
+                    if container.extract_clip(start, None, split_video_key, **kwargs):
+                        split_video_keys.append(split_video_key)
+                        count += 1
+                break
+            else:
+                split_video_key = add_suffix_to_filename(unique_video_key, f"_{count}")
+                if container.extract_clip(start, end, split_video_key, **kwargs):
+                    split_video_keys.append(split_video_key)
+                    count += 1
+
         return split_video_keys
 
     def _process_single_sample(self, sample):
