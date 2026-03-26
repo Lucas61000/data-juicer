@@ -43,6 +43,7 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
         frame_field: str = MetaKeys.video_frames,
         camera_calibration_field: str = "camera_calibration",
         max_frames: int = 1000,
+        droid_buffer: int = 1024,
         *args,
         **kwargs,
     ):
@@ -52,10 +53,16 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
         :param frame_field: The field name where the video frames are stored.
         :param camera_calibration_field: The field name where the camera calibration info is stored.
         :param max_frames: Maximum number of frames to save.
+        :param droid_buffer: DROID SLAM pre-allocated frame buffer size.
+            Controls GPU memory usage — each buffer slot pre-allocates
+            correlation volumes on GPU. Default 1024, sufficient for
+            clips up to ~100 frames. Reduce for shorter clips to save
+            VRAM, increase for longer videos.
         :param args: extra args
         :param kwargs: extra args
         """
         super().__init__(*args, **kwargs)
+        self.droid_buffer = droid_buffer
 
         megasam_repo_path = os.path.join(DATA_JUICER_ASSETS_CACHE, "mega-sam")
         # droid_slam conflict with the VideoCalibrationMapper
@@ -292,7 +299,7 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
                 valid_intrinsics_list.append(intr)
 
                 if t == 0:
-                    args = droid_args(image_size=[image.shape[2], image.shape[3]])
+                    args = droid_args(image_size=[image.shape[2], image.shape[3]], buffer=self.droid_buffer)
                     droid = self.Droid(args)
 
                 droid.track(t, image, depth, intrinsics=intr, mask=mask)
@@ -312,6 +319,11 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
 
             poses = traj_est
             intrinsics = droid.video.intrinsics[:t].cpu().numpy()
+
+            # release droid slam instance and its pre-allocated GPU buffer
+            # to avoid cumulative GPU memory in subsequent clip processing or other actors
+            del droid
+            torch.cuda.empty_cache()
 
             intrinsics = intrinsics[0] * 8.0
             poses_th = torch.as_tensor(poses, device="cpu")
@@ -341,11 +353,11 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
 
 
 class droid_args:
-    def __init__(self, image_size):
+    def __init__(self, image_size, buffer=1024):
         self.weights = os.path.join(DATA_JUICER_ASSETS_CACHE, "mega-sam", "checkpoints", "megasam_final.pth")
         self.disable_vis = True
         self.image_size = image_size
-        self.buffer = 1024
+        self.buffer = buffer
         self.stereo = False
         self.filter_thresh = 2.0
 
