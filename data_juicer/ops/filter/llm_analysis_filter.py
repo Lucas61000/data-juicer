@@ -213,7 +213,7 @@ json
             )
 
             # api model. Change the accelerator to cpu
-            self._accelerator = "cpu"
+            self.accelerator = "cpu"
 
     def build_input(self, sample):
         if not set(self.input_keys) <= set(sample.keys()):
