@@ -2,12 +2,14 @@ import importlib
 import os
 import subprocess
 import sys
+import uuid
 
 import numpy as np
 from loguru import logger
 
 from data_juicer.utils.cache_utils import DATA_JUICER_ASSETS_CACHE
 from data_juicer.utils.constant import CameraCalibrationKeys, Fields, MetaKeys
+from data_juicer.utils.file_utils import load_numpy
 from data_juicer.utils.lazy_loader import LazyLoader
 
 from ..base_op import OPERATORS, Mapper
@@ -44,6 +46,7 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
         camera_calibration_field: str = "camera_calibration",
         max_frames: int = 1000,
         droid_buffer: int = 1024,
+        save_dir: str = None,
         *args,
         **kwargs,
     ):
@@ -58,11 +61,18 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             correlation volumes on GPU. Default 1024, sufficient for
             clips up to ~100 frames. Reduce for shorter clips to save
             VRAM, increase for longer videos.
+        :param save_dir: Directory to save large numpy arrays (depth,
+            cam_c2w) as .npy files instead of storing them inline.
+            When set, tag_dict stores file paths (strings) instead of
+            numpy arrays, which avoids memory limit.
         :param args: extra args
         :param kwargs: extra args
         """
         super().__init__(*args, **kwargs)
         self.droid_buffer = droid_buffer
+        self.save_dir = save_dir
+        if save_dir is not None:
+            os.makedirs(save_dir, exist_ok=True)
 
         megasam_repo_path = os.path.join(DATA_JUICER_ASSETS_CACHE, "mega-sam")
         # droid_slam conflict with the VideoCalibrationMapper
@@ -207,6 +217,7 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             image = torch.as_tensor(image).permute(2, 0, 1)
             image = image[None]
 
+            raw_depth = load_numpy(raw_depth)
             if isinstance(raw_depth, np.ndarray):
                 depth = torch.from_numpy(raw_depth.astype(np.float32))
             else:
@@ -341,13 +352,32 @@ class VideoCameraPoseMegaSaMMapper(Mapper):
             return_depths = np.float32(1.0 / disps[:max_frames, ...])
             return_cam_c2w = cam_c2w[:max_frames]
 
-            sample[Fields.meta][self.tag_field_name].append(
-                {
-                    CameraCalibrationKeys.depth: return_depths,
-                    CameraCalibrationKeys.intrinsics: K,
-                    CameraCalibrationKeys.cam_c2w: return_cam_c2w,
-                }
-            )
+            if self.save_dir is not None:
+                depth_path = os.path.join(
+                    self.save_dir,
+                    f"megasam_depth_{uuid.uuid4().hex[:12]}.npy",
+                )
+                np.save(depth_path, return_depths)
+                c2w_path = os.path.join(
+                    self.save_dir,
+                    f"megasam_c2w_{uuid.uuid4().hex[:12]}.npy",
+                )
+                np.save(c2w_path, return_cam_c2w)
+                sample[Fields.meta][self.tag_field_name].append(
+                    {
+                        CameraCalibrationKeys.depth: depth_path,
+                        CameraCalibrationKeys.intrinsics: K,
+                        CameraCalibrationKeys.cam_c2w: c2w_path,
+                    }
+                )
+            else:
+                sample[Fields.meta][self.tag_field_name].append(
+                    {
+                        CameraCalibrationKeys.depth: return_depths,
+                        CameraCalibrationKeys.intrinsics: K,
+                        CameraCalibrationKeys.cam_c2w: return_cam_c2w,
+                    }
+                )
 
         return sample
 

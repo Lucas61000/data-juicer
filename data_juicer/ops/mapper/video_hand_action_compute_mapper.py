@@ -2,6 +2,7 @@ import numpy as np
 from loguru import logger
 
 from data_juicer.utils.constant import CameraCalibrationKeys, Fields, MetaKeys
+from data_juicer.utils.file_utils import load_numpy
 from data_juicer.utils.lazy_loader import LazyLoader
 
 from ..base_op import OPERATORS, Mapper
@@ -352,8 +353,8 @@ class VideoHandActionComputeMapper(Mapper):
             hand_recon = hand_recon_list[video_idx]
             camera_pose = camera_pose_list[video_idx]
 
-            cam_c2w_all = camera_pose.get(CameraCalibrationKeys.cam_c2w, None) if camera_pose else None
-            if cam_c2w_all is None:
+            cam_c2w_raw = camera_pose.get(CameraCalibrationKeys.cam_c2w, None) if camera_pose else None
+            if cam_c2w_raw is None:
                 logger.warning(f"Video {video_idx}: missing cam_c2w, skipping.")
                 empty = {
                     ht: {
@@ -369,7 +370,7 @@ class VideoHandActionComputeMapper(Mapper):
                 all_video_results.append(empty)
                 continue
 
-            cam_c2w_all = np.asarray(cam_c2w_all, dtype=np.float64)
+            cam_c2w_all = np.asarray(load_numpy(cam_c2w_raw), dtype=np.float64)
 
             video_result = {}
             for ht in hand_types:

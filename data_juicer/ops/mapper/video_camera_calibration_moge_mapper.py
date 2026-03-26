@@ -1,3 +1,6 @@
+import os
+import uuid
+
 import numpy as np
 from loguru import logger
 
@@ -35,6 +38,7 @@ class VideoCameraCalibrationMogeMapper(Mapper):
         output_depth: bool = True,
         output_mask: bool = True,
         frame_batch_size: int = 8,
+        save_dir: str = None,
         *args,
         **kwargs,
     ):
@@ -56,6 +60,10 @@ class VideoCameraCalibrationMogeMapper(Mapper):
         :param frame_batch_size: Number of frames to batch together for GPU
             inference. Larger values improve throughput but require more VRAM.
             Default: 8.
+        :param save_dir: Directory to save large numpy arrays (depth, mask,
+            points) as .npy files instead of storing them inline. When set,
+            tag_dict stores file paths (strings) instead of numpy arrays,
+            which avoids memory limit.
         :param args: extra args
         :param kwargs: extra args
         """
@@ -71,6 +79,9 @@ class VideoCameraCalibrationMogeMapper(Mapper):
         self.output_hfov = output_hfov
         self.output_vfov = output_vfov
         self.frame_batch_size = frame_batch_size
+        self.save_dir = save_dir
+        if save_dir is not None:
+            os.makedirs(save_dir, exist_ok=True)
         assert (
             self.output_points
             or self.output_depth
@@ -108,6 +119,13 @@ class VideoCameraCalibrationMogeMapper(Mapper):
                 return True
 
         return False
+
+    def _save_numpy(self, arr: np.ndarray, prefix: str) -> str:
+        """Save a numpy array to a .npy file and return the path."""
+        filename = f"{prefix}_{uuid.uuid4().hex[:12]}.npy"
+        path = os.path.join(self.save_dir, filename)
+        np.save(path, arr)
+        return path
 
     def _decode_frame(self, frame, device):
         """Decode a single frame to a (3, H, W) float32 tensor and return (tensor, H, W)."""
@@ -221,6 +239,8 @@ class VideoCameraCalibrationMogeMapper(Mapper):
                     final_mask_list.append(output["mask"].cpu().numpy())
 
         # Step 3: Write results to tag_dict
+        # For large numpy arrays (depth, mask, points), save to .npy files
+        # when save_dir is configured, to avoid memory limit.
         if need_K:
             tag_dict[CameraCalibrationKeys.intrinsics] = final_k_list
         if need_hfov:
@@ -228,11 +248,20 @@ class VideoCameraCalibrationMogeMapper(Mapper):
         if need_vfov:
             tag_dict[CameraCalibrationKeys.vfov] = final_vfov_list
         if need_points:
-            tag_dict[CameraCalibrationKeys.points] = final_points_list
+            if self.save_dir is not None:
+                tag_dict[CameraCalibrationKeys.points] = [self._save_numpy(arr, "points") for arr in final_points_list]
+            else:
+                tag_dict[CameraCalibrationKeys.points] = final_points_list
         if need_depth:
-            tag_dict[CameraCalibrationKeys.depth] = final_depth_list
+            if self.save_dir is not None:
+                tag_dict[CameraCalibrationKeys.depth] = [self._save_numpy(arr, "depth") for arr in final_depth_list]
+            else:
+                tag_dict[CameraCalibrationKeys.depth] = final_depth_list
         if need_mask:
-            tag_dict[CameraCalibrationKeys.mask] = final_mask_list
+            if self.save_dir is not None:
+                tag_dict[CameraCalibrationKeys.mask] = [self._save_numpy(arr, "mask") for arr in final_mask_list]
+            else:
+                tag_dict[CameraCalibrationKeys.mask] = final_mask_list
 
     def process_single(self, sample=None, rank=None):
         # there is no video in this sample
