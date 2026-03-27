@@ -112,14 +112,6 @@ output/
 
 Two visualization scripts are provided for inspecting processing results:
 
-### Hand Mesh Visualization (vis_hand_demo.py)
-
-Visualize MANO hand mesh with OpenCV 2D overlay or aitviewer 3D interactive viewer:
-
-```bash
-python vis_hand_demo.py --data_path output/xxx.parquet --render_mode opencv
-```
-
 ### Action Annotation Verification (vis_hand_action_demo.py)
 
 Verify hand action annotations with hand trajectory, state, and action value overlays:

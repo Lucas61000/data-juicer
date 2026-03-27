@@ -317,7 +317,7 @@ def main():
     parser.add_argument("--save_dir", type=str, default="./vis_action_verify")
     parser.add_argument("--sample_idx", type=int, default=0)
     parser.add_argument("--video_idx", type=int, default=0)
-    parser.add_argument("--fps", type=float, default=3.0)
+    parser.add_argument("--fps", type=float, default=30)
     args = parser.parse_args()
 
     os.makedirs(args.save_dir, exist_ok=True)
@@ -347,7 +347,10 @@ def main():
     action_tags = meta[MetaKeys.hand_action_tags][args.video_idx]
     hawor = meta[MetaKeys.hand_reconstruction_hawor_tags][args.video_idx]
     cam_pose = meta[MetaKeys.video_camera_pose_tags][args.video_idx]
-    cam_c2w_all = np.array(cam_pose["cam_c2w"], dtype=np.float64)
+
+    from data_juicer.utils.file_utils import load_numpy
+    cam_c2w_all = load_numpy(cam_pose["cam_c2w"])
+
     fov_x = hawor["fov_x"]
 
     # Detect data format: new {"right":{...}, "left":{...}} or old flat
