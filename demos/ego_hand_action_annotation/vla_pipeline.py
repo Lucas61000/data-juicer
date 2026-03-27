@@ -130,9 +130,8 @@ if __name__ == '__main__':
     ray.init(address='auto')
 
     output_dir = "./output/"
-
     os.makedirs(output_dir, exist_ok=True)
-    LEROBOT_OUTPUT_DIR = os.path.join(output_dir, "lerobot_dataset")
+    lerobot_output_dir = os.path.join(output_dir, "lerobot_dataset")
 
     video_key = "videos"
     skip_op_error = False
@@ -246,7 +245,7 @@ if __name__ == '__main__':
     ds = ds.map_batches(
         ExportToLeRobotMapper,
         fn_constructor_kwargs=dict(
-            output_dir=LEROBOT_OUTPUT_DIR,
+            output_dir=lerobot_output_dir,
             hand_action_field=MetaKeys.hand_action_tags,  # outputs of VideoHandActionComputeMapper
             frame_field=MetaKeys.video_frames,
             video_key=video_key,
@@ -266,10 +265,10 @@ if __name__ == '__main__':
     # ds.write_json(output_dir, force_ascii=False)
 
     ExportToLeRobotMapper.finalize_dataset(
-        output_dir=LEROBOT_OUTPUT_DIR,
+        output_dir=lerobot_output_dir,
         fps=10,
         robot_type="egodex_hand",
     )
 
-    print(f"LeRobot exported to: {LEROBOT_OUTPUT_DIR}")
+    print(f"LeRobot exported to: {lerobot_output_dir}")
     print(f'>>>>total cost time: {time.time() - s_time}')
