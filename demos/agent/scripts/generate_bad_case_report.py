@@ -653,6 +653,19 @@ def _model_tier_matrix(rows: List[dict]) -> Dict[str, Counter]:
     return dict(m)
 
 
+# Stacked ``request_model`` figure: top K by row count; remaining models merged into one bar.
+MODEL_STACK_CHART_TOP_N = 8
+
+
+def _model_tier_sorted_pairs(
+    model_tier: Dict[str, Counter],
+) -> List[Tuple[str, Counter]]:
+    return sorted(
+        model_tier.items(),
+        key=lambda kv: (-sum(kv[1].values()), kv[0]),
+    )
+
+
 def _json_pretty(obj: object) -> str:
     try:
         return json.dumps(obj, ensure_ascii=False, indent=2, default=str)
@@ -1292,30 +1305,143 @@ def _insight_card_lens_html(meta: dict, *, html_lang: str) -> str:
     )
 
 
-def _insight_section_rich_html(
+def _skill_insight_coverage_stats(rows: List[dict]) -> Tuple[int, int, int]:
+    """Return (n_rows, rows_with_any_skill_insight, sum of label slots per row)."""
+    n = len(rows)
+    with_lab = 0
+    slots = 0
+    for row in rows:
+        meta = get_dj_meta(row)
+        labs = _skill_insight_labels_from_meta(meta)
+        if labs:
+            with_lab += 1
+            slots += len(labs)
+    return n, with_lab, slots
+
+
+def _insight_cluster_key(text: str) -> str:
+    t = " ".join((text or "").split())
+    if not t:
+        return ""
+    if all(ord(c) < 128 for c in t):
+        return t.casefold()
+    return t
+
+
+def _model_family_key(model: str) -> str:
+    m = (model or "").strip().lower()
+    if not m:
+        return "unknown"
+    # Substring checks on model id / endpoint strings; keep broader vendors last.
+    if any(k in m for k in ("qwen", "tongyi", "dashscope", "通义")):
+        return "qwen"
+    if any(
+        k in m
+        for k in (
+            "gpt",
+            "openai",
+            "o1-preview",
+            "o1-mini",
+            "o3-",
+            "chatgpt",
+        )
+    ):
+        return "gpt"
+    if "claude" in m or "anthropic" in m:
+        return "claude"
+    if "gemini" in m or "google" in m:
+        return "gemini"
+    if "deepseek" in m:
+        return "deepseek"
+    if any(k in m for k in ("kimi", "moonshot", "月之暗面")):
+        return "kimi"
+    if any(k in m for k in ("glm", "chatglm", "zhipu", "智谱", "cogview", "codegeex")):
+        return "glm"
+    if any(k in m for k in ("minimax", "abab", "海螺")):
+        return "minimax"
+    return "other"
+
+
+def _model_family_tab_label(fk: str, *, en: bool) -> str:
+    labels = {
+        "qwen": ("Qwen / 通义", "Qwen / Tongyi"),
+        "gpt": ("GPT / OpenAI", "GPT / OpenAI"),
+        "claude": ("Claude", "Claude"),
+        "gemini": ("Gemini", "Gemini"),
+        "deepseek": ("DeepSeek", "DeepSeek"),
+        "kimi": ("Kimi / Moonshot", "Kimi / Moonshot"),
+        "glm": ("GLM / 智谱", "GLM / Zhipu"),
+        "minimax": ("MiniMax", "MiniMax"),
+        "other": ("其它模型", "Other models"),
+        "unknown": ("未标注模型", "Unknown model"),
+    }
+    zh, eg = labels.get(fk, ("其它", "Other"))
+    return eg if en else zh
+
+
+def _normalize_model_tab_bucket_key(model: str) -> str:
+    """Bucket key for Insight model tabs: full label, versions kept (3.5 vs 2.5, etc.)."""
+    s = " ".join(str(model or "").split())
+    if not s:
+        return "unknown"
+    if all(ord(c) < 128 for c in s):
+        return s.casefold()
+    return s
+
+
+_INSIGHT_TAB_LABEL_MAX = 56
+
+
+def _truncate_insight_tab_caption(s: str, max_len: int = _INSIGHT_TAB_LABEL_MAX) -> str:
+    t = s.strip()
+    if len(t) <= max_len:
+        return t
+    return t[: max_len - 1] + "…"
+
+
+def _insight_model_tab_bucket(row: dict, *, group: str) -> str:
+    meta = get_dj_meta(row)
+    raw = str(meta.get("agent_request_model") or "")
+    if group == "family":
+        return _model_family_key(raw)
+    return _normalize_model_tab_bucket_key(raw)
+
+
+def _insight_tab_bucket_from_chart_model_key(chart_key: str, *, group: str) -> str:
+    """Map ``_model_tier_matrix`` key (uses ``_unknown``) to the same bucket as Insight tabs."""
+    raw = "" if chart_key == "_unknown" else str(chart_key)
+    if group == "family":
+        return _model_family_key(raw)
+    return _normalize_model_tab_bucket_key(raw)
+
+
+def _insight_tab_batch_volume_by_bucket(
+    model_tier: Dict[str, Counter],
+    *,
+    group: str,
+) -> Counter:
+    vol: Counter = Counter()
+    for ck, tc in model_tier.items():
+        bk = _insight_tab_bucket_from_chart_model_key(ck, group=group)
+        vol[bk] += sum(tc.values())
+    return vol
+
+
+def _insight_model_tab_caption(bucket: str, *, group: str, en: bool) -> str:
+    if group == "family":
+        return _model_family_tab_label(bucket, en=en)
+    if bucket == "unknown":
+        return _model_family_tab_label("unknown", en=en)
+    return bucket
+
+
+def _collect_tier_insight_candidates(
     rows: List[dict],
     tier: str,
-    limit: int,
-    anchor_by_rid: Dict[str, str],
-    *,
-    html_lang: str = "zh-CN",
-) -> str:
-    """较完整的单条 insight 卡片（来自 agent_insight_llm）。
-
-    卡片顺序：本档内按 P0→P3、aligned→mixed→conflict，再按原行号稳定排序；
-    取前 ``limit`` 条（仅统计含 headline 的样本）。
-    """
-    en = str(html_lang).lower().startswith("en")
-    tier_zh = _tier_zh(tier)
-    sec_id = (
-        "sec-insights-hp"
-        if tier == "high_precision"
-        else "sec-insights-wl"
-        if tier == "watchlist"
-        else "sec-insights"
-    )
+) -> Tuple[List[dict], int]:
+    """Rows with headline in tier, PII filter applied, sorted; omitted_pii count."""
     candidates: List[Tuple[Tuple[int, int, int], dict]] = []
-    insight_omitted_pii = 0
+    omitted = 0
     for i, row in enumerate(rows):
         meta = get_dj_meta(row)
         if str(meta.get("agent_bad_case_tier", "")) != tier:
@@ -1327,110 +1453,529 @@ def _insight_section_rich_html(
         if not hl:
             continue
         if _exclude_insight_card_for_pii_row(row, ins):
-            insight_omitted_pii += 1
+            omitted += 1
             continue
         candidates.append((_insight_sort_tuple(row, i), row))
     candidates.sort(key=lambda x: (x[0][0], x[0][1], x[0][2]))
-    selected = [row for _, row in candidates[:limit]]
+    return [row for _, row in candidates], omitted
 
-    cards: List[str] = []
-    for row in selected:
+
+def _insight_card_html(
+    row: dict,
+    anchor_by_rid: Dict[str, str],
+    *,
+    en: bool,
+) -> str:
+    meta = get_dj_meta(row)
+    ins = meta.get("agent_insight_llm") or {}
+    if not isinstance(ins, dict):
+        ins = {}
+    hl = (ins.get("headline") or "").strip()
+    rid = str(
+        meta.get("agent_request_id")
+        or row.get("request_id")
+        or row.get("trace_id")
+        or row.get("id")
+        or ""
+    ).strip()
+    model = str(meta.get("agent_request_model") or "")
+    pr = (ins.get("human_review_priority") or "").strip()
+    align = (ins.get("narrative_alignment") or "").strip()
+    audit = (ins.get("audit_notes") or "").strip()
+    facets = ins.get("viz_facets") or []
+    if not isinstance(facets, list):
+        facets = [str(facets)]
+    facets_s = "、".join(str(x) for x in facets[:12] if x)
+    causes = ins.get("root_causes") or []
+    cause_lis = []
+    if isinstance(causes, list):
+        for c in causes[:5]:
+            if not isinstance(c, dict):
+                cause_lis.append(f"<li>{html.escape(str(c))}</li>")
+                continue
+            factor = html.escape(str(c.get("factor") or ""))
+            conf = html.escape(str(c.get("confidence") or ""))
+            r1 = html.escape(str(c.get("rationale_one_line") or "")[:280])
+            cited = c.get("cited_fields") or []
+            if not isinstance(cited, list):
+                cited = [str(cited)]
+            cf = html.escape(", ".join(str(x) for x in cited[:8]))
+            if cf:
+                cite_html = (
+                    f' <span class="cite">Fields: {cf}</span>'
+                    if en
+                    else f' <span class="cite">依据字段: {cf}</span>'
+                )
+            else:
+                cite_html = ""
+            if en:
+                cause_lis.append(
+                    f"<li><strong>{factor}</strong> (conf {conf}) — {r1}{cite_html}</li>"
+                )
+            else:
+                cause_lis.append(
+                    f"<li><strong>{factor}</strong>（置信 {conf}）— {r1}{cite_html}</li>"
+                )
+    causes_html = "<ul class='causes'>" + "".join(cause_lis) + "</ul>" if cause_lis else ""
+    drill_href = anchor_by_rid.get(rid) if rid else None
+    if drill_href:
+        ttxt = (
+            "→ Case study for this row (snapshots &amp; fields)"
+            if en
+            else "→ 本条 case study（快照与字段）"
+        )
+        to_drill = (
+            f"<a class='to-drill' href='{html.escape(drill_href, quote=True)}'>"
+            f"{ttxt}</a>"
+        )
+    else:
+        ttxt = "→ Case study section" if en else "→ case study 章节"
+        to_drill = (
+            f"<a class='to-drill to-drill-fallback' href='#sec-cases'>{ttxt}</a>"
+        )
+    meta_line = (
+        f"<span class='ins-meta'><code>{html.escape(rid or '—')}</code> · "
+        f"{html.escape(model or '—')} · {to_drill}</span>"
+    )
+    badges = []
+    if pr:
+        badges.append(f"<span class='ins-badge pr'>{html.escape(pr)}</span>")
+    if align:
+        badges.append(f"<span class='ins-badge al'>{html.escape(align)}</span>")
+    badge_html = " ".join(badges)
+    audit_html = (
+        f"<p class='ins-audit'><strong>{'Audit notes' if en else '审阅备注'}</strong>："
+        f"{html.escape(audit)}</p>"
+        if audit
+        else ""
+    )
+    facets_fold = ""
+    if facets_s:
+        sumy = "建议制图维度（可展开）" if not en else "Viz facet suggestions (expand)"
+        facets_body = f"<p class='ins-facets'>{html.escape(facets_s)}</p>"
+        facets_fold = (
+            f"<details class='insight-extra'><summary>{html.escape(sumy)}</summary>"
+            f"<div class='insight-extra-body'>{facets_body}</div></details>"
+        )
+    return (
+        "<div class='insight-card'>"
+        f"<div class='insight-h'>{html.escape(hl)} {badge_html}</div>"
+        f"{meta_line}"
+        f"{causes_html}"
+        f"{_insight_card_lens_html(meta, html_lang='en' if en else 'zh-CN')}"
+        f"{audit_html}"
+        f"{facets_fold}"
+        "</div>"
+    )
+
+
+def _collect_headline_audit_cluster_stats(
+    candidates: List[dict],
+) -> Tuple[Counter, Dict[str, str], Counter, Dict[str, str]]:
+    hc: Counter = Counter()
+    h_example: Dict[str, str] = {}
+    ac: Counter = Counter()
+    a_example: Dict[str, str] = {}
+    for row in candidates:
         meta = get_dj_meta(row)
         ins = meta.get("agent_insight_llm") or {}
+        if not isinstance(ins, dict):
+            ins = {}
         hl = (ins.get("headline") or "").strip()
-        rid = str(
-            meta.get("agent_request_id") or row.get("request_id") or row.get("trace_id") or row.get("id") or ""
-        ).strip()
-        model = str(meta.get("agent_request_model") or "")
-        pr = (ins.get("human_review_priority") or "").strip()
-        align = (ins.get("narrative_alignment") or "").strip()
-        audit = (ins.get("audit_notes") or "").strip()
-        facets = ins.get("viz_facets") or []
-        if not isinstance(facets, list):
-            facets = [str(facets)]
-        facets_s = "、".join(str(x) for x in facets[:12] if x)
-        causes = ins.get("root_causes") or []
-        cause_lis = []
-        if isinstance(causes, list):
-            for c in causes[:5]:
-                if not isinstance(c, dict):
-                    cause_lis.append(f"<li>{html.escape(str(c))}</li>")
-                    continue
-                factor = html.escape(str(c.get("factor") or ""))
-                conf = html.escape(str(c.get("confidence") or ""))
-                r1 = html.escape(str(c.get("rationale_one_line") or "")[:280])
-                cited = c.get("cited_fields") or []
-                if not isinstance(cited, list):
-                    cited = [str(cited)]
-                cf = html.escape(", ".join(str(x) for x in cited[:8]))
-                if cf:
-                    cite_html = (
-                        f' <span class="cite">Fields: {cf}</span>'
-                        if en
-                        else f' <span class="cite">依据字段: {cf}</span>'
-                    )
-                else:
-                    cite_html = ""
-                if en:
-                    cause_lis.append(
-                        f"<li><strong>{factor}</strong> (conf {conf}) — {r1}{cite_html}</li>"
-                    )
-                else:
-                    cause_lis.append(
-                        f"<li><strong>{factor}</strong>（置信 {conf}）— {r1}{cite_html}</li>"
-                    )
-        causes_html = "<ul class='causes'>" + "".join(cause_lis) + "</ul>" if cause_lis else ""
-        drill_href = anchor_by_rid.get(rid) if rid else None
-        if drill_href:
-            ttxt = (
-                "→ Case study for this row (snapshots &amp; fields)"
-                if en
-                else "→ 本条 case study（快照与字段）"
-            )
-            to_drill = (
-                f"<a class='to-drill' href='{html.escape(drill_href, quote=True)}'>"
-                f"{ttxt}</a>"
-            )
-        else:
-            ttxt = "→ Case study section" if en else "→ case study 章节"
-            to_drill = (
-                f"<a class='to-drill to-drill-fallback' href='#sec-cases'>{ttxt}</a>"
-            )
-        meta_line = (
-            f"<span class='ins-meta'><code>{html.escape(rid or '—')}</code> · "
-            f"{html.escape(model or '—')} · {to_drill}</span>"
+        if hl:
+            k = _insight_cluster_key(hl)
+            if k:
+                hc[k] += 1
+                h_example.setdefault(k, hl)
+        au = (ins.get("audit_notes") or "").strip()
+        if au:
+            k2 = _insight_cluster_key(au)
+            if k2:
+                ac[k2] += 1
+                a_example.setdefault(k2, au[:200])
+    return hc, h_example, ac, a_example
+
+
+def _insight_exact_cluster_tables_only_html(
+    hc: Counter,
+    h_example: Dict[str, str],
+    ac: Counter,
+    a_example: Dict[str, str],
+    *,
+    en: bool,
+    top_n: int,
+) -> str:
+    if not hc and not ac:
+        return ""
+    th_c = "Rows" if en else "条数"
+    th_x = "Representative text" if en else "代表性原文"
+    parts: List[str] = [
+        "<p class='note'>"
+        + (
+            "Keys collapse ASCII case and extra spaces; not semantic clustering."
+            if en
+            else "合并规则：英文大小写不敏感、空白压紧；非语义聚类，仅便于看重复表述。"
         )
-        badges = []
-        if pr:
-            badges.append(f"<span class='ins-badge pr'>{html.escape(pr)}</span>")
-        if align:
-            badges.append(f"<span class='ins-badge al'>{html.escape(align)}</span>")
-        badge_html = " ".join(badges)
-        audit_html = (
-            f"<p class='ins-audit'><strong>{'Audit notes' if en else '审阅备注'}</strong>："
-            f"{html.escape(audit)}</p>"
-            if audit
-            else ""
+        + "</p>"
+    ]
+    if hc:
+        h4 = "Headline" if en else "卡片标题 headline"
+        parts.append(f"<h4>{html.escape(h4)}</h4>")
+        parts.append("<table class='inner insight-cluster'><thead><tr>")
+        parts.append(f"<th>{th_c}</th><th>{th_x}</th></tr></thead><tbody>")
+        for k, n in hc.most_common(top_n):
+            ex = html.escape(h_example.get(k, k)[:220])
+            parts.append(f"<tr><td>{int(n)}</td><td>{ex}</td></tr>")
+        parts.append("</tbody></table>")
+    if ac:
+        h4a = "Audit notes" if en else "审阅备注 audit_notes"
+        parts.append(f"<h4>{html.escape(h4a)}</h4>")
+        parts.append("<table class='inner insight-cluster'><thead><tr>")
+        parts.append(f"<th>{th_c}</th><th>{th_x}</th></tr></thead><tbody>")
+        for k, n in ac.most_common(top_n):
+            ex = html.escape(a_example.get(k, k)[:220])
+            parts.append(f"<tr><td>{int(n)}</td><td>{ex}</td></tr>")
+        parts.append("</tbody></table>")
+    return "".join(parts)
+
+
+def _tfidf_kmeans_labels(texts: List[str], max_k: int) -> Optional[List[int]]:
+    n = len(texts)
+    if n < 4:
+        return None
+    try:
+        from sklearn.cluster import MiniBatchKMeans
+        from sklearn.feature_extraction.text import TfidfVectorizer
+    except ImportError:
+        return None
+    try:
+        k = max(2, min(int(max_k), n // 2, n - 1))
+        if k < 2:
+            return None
+        max_df = 1.0 if n < 12 else 0.95
+        vec = TfidfVectorizer(
+            max_features=8000,
+            analyzer="char",
+            ngram_range=(1, 3),
+            min_df=1,
+            max_df=max_df,
         )
-        facets_fold = ""
-        if facets_s:
-            sumy = "建议制图维度（可展开）" if not en else "Viz facet suggestions (expand)"
-            facets_body = f"<p class='ins-facets'>{html.escape(facets_s)}</p>"
-            facets_fold = (
-                f"<details class='insight-extra'><summary>{html.escape(sumy)}</summary>"
-                f"<div class='insight-extra-body'>{facets_body}</div></details>"
+        x = vec.fit_transform(texts)
+        km = MiniBatchKMeans(
+            n_clusters=k,
+            random_state=0,
+            batch_size=min(256, n),
+            n_init=3,
+        )
+        lab = km.fit_predict(x)
+        return lab.tolist()
+    except Exception:
+        return None
+
+
+def _semantic_cluster_subsection_html(
+    texts: List[str],
+    labels: List[int],
+    *,
+    en: bool,
+    top_n: int,
+    title_en: str,
+    title_zh: str,
+) -> str:
+    title = title_en if en else title_zh
+    th_c = "Rows" if en else "条数"
+    th_x = (
+        "Representative (shortest in cluster)"
+        if en
+        else "代表性原文（簇内最短）"
+    )
+    buckets: DefaultDict[int, List[int]] = defaultdict(list)
+    for i, lab in enumerate(labels):
+        buckets[int(lab)].append(i)
+    ordered = sorted(buckets.items(), key=lambda kv: -len(kv[1]))
+    rows: List[str] = []
+    for _lab, idxs in ordered[:top_n]:
+        rep_i = min(idxs, key=lambda ii: len(texts[ii]))
+        ex = html.escape(texts[rep_i][:220])
+        rows.append(f"<tr><td>{len(idxs)}</td><td>{ex}</td></tr>")
+    tb = "".join(rows)
+    return (
+        f"<h4>{html.escape(title)}</h4>"
+        "<table class='inner insight-cluster'><thead><tr>"
+        f"<th>{th_c}</th><th>{th_x}</th></tr></thead><tbody>{tb}</tbody></table>"
+    )
+
+
+def _insight_semantic_cluster_block_html(
+    candidates: List[dict],
+    *,
+    en: bool,
+    top_n: int,
+    max_k: int,
+) -> str:
+    summary = (
+        "Semantic clustering (char TF-IDF + MiniBatchKMeans, open by default)"
+        if en
+        else "语义聚类（字符 TF-IDF + MiniBatchKMeans，默认展开）"
+    )
+    try:
+        import sklearn  # noqa: F401
+    except ImportError:
+        msg = (
+            "Semantic clustering needs <code>scikit-learn</code>. "
+            "Install with <code>pip install scikit-learn</code> and re-run the report; "
+            "the exact-normalized table below remains available."
+            if en
+            else "语义聚类依赖 <code>scikit-learn</code>，请执行 "
+            "<code>pip install scikit-learn</code> 后重新生成报告；"
+            "下方精确合并表仍可用。"
+        )
+        return (
+            "<details class='insight-cluster insight-cluster-semantic' open>"
+            f"<summary>{html.escape(summary)}</summary>"
+            f"<p class='note'>{msg}</p></details>"
+        )
+    h_texts: List[str] = []
+    a_texts: List[str] = []
+    for row in candidates:
+        meta = get_dj_meta(row)
+        ins = meta.get("agent_insight_llm") or {}
+        if not isinstance(ins, dict):
+            ins = {}
+        hl = (ins.get("headline") or "").strip()
+        if hl:
+            h_texts.append(hl)
+        au = (ins.get("audit_notes") or "").strip()
+        if au:
+            a_texts.append(au)
+    body_parts: List[str] = []
+    if len(h_texts) >= 4:
+        h_lab = _tfidf_kmeans_labels(h_texts, max_k)
+        if h_lab is not None:
+            body_parts.append(
+                _semantic_cluster_subsection_html(
+                    h_texts,
+                    h_lab,
+                    en=en,
+                    top_n=top_n,
+                    title_en="Headline",
+                    title_zh="卡片标题 headline",
+                )
             )
-        cards.append(
-            "<div class='insight-card'>"
-            f"<div class='insight-h'>{html.escape(hl)} {badge_html}</div>"
-            f"{meta_line}"
-            f"{causes_html}"
-            f"{_insight_card_lens_html(meta, html_lang=html_lang)}"
-            f"{audit_html}"
-            f"{facets_fold}"
-            "</div>"
+    if len(a_texts) >= 4:
+        a_lab = _tfidf_kmeans_labels(a_texts, max_k)
+        if a_lab is not None:
+            body_parts.append(
+                _semantic_cluster_subsection_html(
+                    a_texts,
+                    a_lab,
+                    en=en,
+                    top_n=top_n,
+                    title_en="Audit notes",
+                    title_zh="审阅备注 audit_notes",
+                )
+            )
+    if not body_parts:
+        msg = (
+            "Not enough headline/audit lines (need ≥4 per sub-table) to build semantic clusters."
+            if en
+            else "本档 headline 或审阅备注有效条数不足 4，未生成语义簇表。"
         )
-    if not cards:
+        inner = f"<p class='note'>{html.escape(msg)}</p>"
+    else:
+        foot = (
+            "Char n-gram TF-IDF + MiniBatchKMeans; exploratory only, not human topic labels."
+            if en
+            else "基于字符 n-gram 的 TF-IDF 与 MiniBatchKMeans，仅供浏览探索，不等价于人工主题归类。"
+        )
+        inner = "".join(body_parts) + f"<p class='note'>{html.escape(foot)}</p>"
+    return (
+        "<details class='insight-cluster insight-cluster-semantic' open>"
+        f"<summary>{html.escape(summary)}</summary>{inner}</details>"
+    )
+
+
+def _insight_headline_audit_cluster_html(
+    candidates: List[dict],
+    *,
+    en: bool,
+    top_n: int = 18,
+    use_semantic_cluster: bool = True,
+    semantic_max_k: int = 15,
+) -> str:
+    if not candidates:
+        return ""
+    hc, h_example, ac, a_example = _collect_headline_audit_cluster_stats(candidates)
+    exact_tables = _insight_exact_cluster_tables_only_html(
+        hc, h_example, ac, a_example, en=en, top_n=top_n
+    )
+    if not use_semantic_cluster:
+        if not exact_tables:
+            return ""
+        h3 = (
+            "Headline and audit clustering (this tier, exact-normalized)"
+            if en
+            else "本档 Headline / 审阅备注聚类（归一化后精确合并）"
+        )
+        return (
+            "<div class='insight-cluster'>"
+            f"<h3>{html.escape(h3)}</h3>{exact_tables}</div>"
+        )
+    sem = _insight_semantic_cluster_block_html(
+        candidates, en=en, top_n=top_n, max_k=semantic_max_k
+    )
+    parts: List[str] = ["<div class='insight-clusters'>", sem]
+    if exact_tables:
+        sum_exact = (
+            "Exact-normalized headline / audit merge (expand)"
+            if en
+            else "精确归一：Headline / 审阅备注合并（点击展开）"
+        )
+        parts.append(
+            "<details class='insight-cluster insight-cluster-exact'>"
+            f"<summary>{html.escape(sum_exact)}</summary>{exact_tables}</details>"
+        )
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def _insight_model_tabs_html(
+    sec_id: str,
+    candidates: List[dict],
+    limit: int,
+    model_tab_limit: int,
+    anchor_by_rid: Dict[str, str],
+    *,
+    en: bool,
+    model_tab_group: str = "full",
+    model_tier: Optional[Dict[str, Counter]] = None,
+) -> str:
+    if not candidates:
+        return ""
+    group = "family" if model_tab_group == "family" else "full"
+    buckets: DefaultDict[str, List[dict]] = defaultdict(list)
+    for row in candidates:
+        bk = _insight_model_tab_bucket(row, group=group)
+        buckets[bk].append(row)
+    batch_vol: Optional[Counter] = None
+    if model_tier:
+        batch_vol = _insight_tab_batch_volume_by_bucket(model_tier, group=group)
+    tab_keys = list(buckets.keys())
+    if batch_vol is not None:
+        tab_order = sorted(
+            tab_keys,
+            key=lambda bk: (-int(batch_vol.get(bk, 0)), bk),
+        )
+    else:
+        tab_order = sorted(tab_keys, key=lambda bk: (-len(buckets[bk]), bk))
+    list_html = "".join(
+        _insight_card_html(r, anchor_by_rid, en=en) for r in candidates[:limit]
+    )
+    if len(tab_order) <= 1:
+        return f"<div class='insight-list'>{list_html}</div>"
+
+    if group == "family":
+        aria = "Insight cards by model family" if en else "按模型族分组的 Insight 卡片"
+    else:
+        aria = (
+            "Insight cards by full agent_request_model"
+            if en
+            else "按完整 agent_request_model 分组的 Insight 卡片"
+        )
+    parts: List[str] = [
+        "<div class='insight-tab-host'>",
+        f"<p class='note'>{html.escape(aria)}</p>",
+        f"<div class='scenario-tabs' role='tablist' aria-label='{html.escape(aria)}'>",
+    ]
+    panels: List[str] = []
+
+    def panel_block(pid: str, rows_slice: List[dict], *, active: bool) -> None:
+        hid = "" if active else " hidden"
+        cls = "scenario-panel active" if active else "scenario-panel"
+        inner = "".join(_insight_card_html(r, anchor_by_rid, en=en) for r in rows_slice)
+        panels.append(
+            f"<div id='{html.escape(pid, quote=True)}' class='{cls}' "
+            f"role='tabpanel'{hid}><div class='insight-list'>{inner}</div></div>"
+        )
+
+    pid_all = f"{sec_id}-panel-all"
+    shown_all = candidates[:limit]
+    parts.append(
+        f"<button type='button' class='scenario-tab active' role='tab' "
+        f"aria-selected='true' aria-controls='{html.escape(pid_all, quote=True)}' "
+        f"id='{html.escape(sec_id + '-tab-all', quote=True)}' "
+        f"data-panel='{html.escape(pid_all, quote=True)}'>"
+        f"{html.escape(('All' if en else '全部') + f' ({len(shown_all)}/{len(candidates)})')}"
+        f"</button>"
+    )
+    for i, bk in enumerate(tab_order):
+        rows_b = buckets[bk]
+        if not rows_b:
+            continue
+        shown = rows_b[:model_tab_limit]
+        pid = f"{sec_id}-panel-m{i}"
+        tab_id = f"{sec_id}-tab-m{i}"
+        cap_full = _insight_model_tab_caption(bk, group=group, en=en)
+        cap_short = _truncate_insight_tab_caption(cap_full)
+        tab_label = f"{cap_short} ({len(shown)}/{len(rows_b)})"
+        title_attr = f" title='{html.escape(cap_full, quote=True)}'"
+        parts.append(
+            f"<button type='button' class='scenario-tab' role='tab' "
+            f"aria-selected='false' aria-controls='{html.escape(pid, quote=True)}' "
+            f"id='{html.escape(tab_id, quote=True)}' "
+            f"data-panel='{html.escape(pid, quote=True)}'{title_attr}>"
+            f"{html.escape(tab_label)}</button>"
+        )
+    parts.append("</div>")
+    panel_block(pid_all, shown_all, active=True)
+    for i, bk in enumerate(tab_order):
+        rows_b = buckets[bk]
+        if not rows_b:
+            continue
+        shown = rows_b[:model_tab_limit]
+        pid = f"{sec_id}-panel-m{i}"
+        panel_block(pid, shown, active=False)
+    parts.extend(panels)
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def _insight_section_rich_html(
+    rows: List[dict],
+    tier: str,
+    limit: int,
+    model_tab_limit: int,
+    use_model_tabs: bool,
+    anchor_by_rid: Dict[str, str],
+    *,
+    html_lang: str = "zh-CN",
+    use_semantic_cluster: bool = True,
+    semantic_max_k: int = 15,
+    model_tab_group: str = "full",
+    model_tier: Optional[Dict[str, Counter]] = None,
+) -> str:
+    """Insight cards from ``agent_insight_llm`` plus headline/audit clusters.
+
+    Order: P0→P3, aligned→mixed→conflict, stable row index. ``limit`` caps the
+    **All** tab; each per-model sub-tab caps at ``model_tab_limit``.
+    Model tabs default to full ``agent_request_model`` strings; use
+    ``model_tab_group='family'`` to merge by vendor family.
+    Sub-tab order follows batch request volume (same basis as the stacked
+    request_model chart) when ``model_tier`` is provided.
+    Semantic clustering (TF-IDF + k-means) is on by default when
+    ``use_semantic_cluster`` is true.
+    """
+    en = str(html_lang).lower().startswith("en")
+    tier_zh = _tier_zh(tier)
+    sec_id = (
+        "sec-insights-hp"
+        if tier == "high_precision"
+        else "sec-insights-wl"
+        if tier == "watchlist"
+        else "sec-insights"
+    )
+    candidates, insight_omitted_pii = _collect_tier_insight_candidates(rows, tier)
+    if not candidates:
         if insight_omitted_pii > 0:
             omit_msg = (
                 (
@@ -1456,18 +2001,100 @@ def _insight_section_rich_html(
             "<p class='note'>本档下暂无带 <code>headline</code> 的 "
             "<code>meta.agent_insight_llm</code>（可能未跑 insight 算子，或解析失败）。</p></section>"
         )
-    intro = (
-        "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
-        "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
-        "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
-        "<a href='#sec-insight-fields'>Badge semantics</a>.</p>"
-        if en
-        else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
-        "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
-        "<a href='#sec-charts'>图表</a>、"
-        "<a href='#sec-signal-cluster'>聚类表</a>一致。"
-        "<a href='#sec-insight-fields'>徽标含义</a>。</p>"
+    cluster_html = _insight_headline_audit_cluster_html(
+        candidates,
+        en=en,
+        use_semantic_cluster=use_semantic_cluster,
+        semantic_max_k=semantic_max_k,
     )
+    if use_model_tabs:
+        body_html = _insight_model_tabs_html(
+            sec_id,
+            candidates,
+            limit,
+            max(1, model_tab_limit),
+            anchor_by_rid,
+            en=en,
+            model_tab_group=model_tab_group,
+            model_tier=model_tier,
+        )
+    else:
+        body_html = "".join(
+            _insight_card_html(r, anchor_by_rid, en=en) for r in candidates[:limit]
+        )
+        body_html = f"<div class='insight-list'>{body_html}</div>"
+    if use_model_tabs:
+        n_chart_models = len(model_tier) if model_tier else 0
+        chart_tail_en = (
+            (
+                "Sub-tab order matches the stacked request_model chart (descending batch "
+                f"volume per bucket). The chart shows the top {MODEL_STACK_CHART_TOP_N} "
+                "models by requests and merges the rest."
+            )
+            if n_chart_models > MODEL_STACK_CHART_TOP_N
+            else (
+                "Sub-tab order matches the stacked request_model chart (descending batch "
+                "volume per bucket), same models as in the figure."
+            )
+        )
+        chart_tail_zh = (
+            (
+                "子 Tab 顺序与同页「按请求模型堆叠」一致，按<strong>全批次</strong>各桶请求量降序；"
+                f"图中为 Top {MODEL_STACK_CHART_TOP_N} 高频模型，其余合并为一柱。"
+            )
+            if n_chart_models > MODEL_STACK_CHART_TOP_N
+            else (
+                "子 Tab 顺序与同页「按请求模型堆叠」一致，按<strong>全批次</strong>各桶请求量降序；"
+                "图中为本批全部请求模型。"
+            )
+        )
+        if str(model_tab_group).strip().lower() == "family":
+            intro = (
+                "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
+                "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
+                "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
+                "<a href='#sec-insight-fields'>Badge semantics</a>. "
+                "Sub-tabs group by model <em>family</em> (parsed from "
+                f"<code>agent_request_model</code>). {chart_tail_en}</p>"
+                if en
+                else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
+                "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
+                "<a href='#sec-charts'>图表</a>、"
+                "<a href='#sec-signal-cluster'>聚类表</a>一致。"
+                "<a href='#sec-insight-fields'>徽标含义</a>。"
+                "下方按 <code>agent_request_model</code> 解析出的<strong>模型族</strong>分 Tab 抽样展示；"
+                f"{chart_tail_zh}</p>"
+            )
+        else:
+            intro = (
+                "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
+                "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
+                "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
+                "<a href='#sec-insight-fields'>Badge semantics</a>. "
+                "Sub-tabs use the full <code>agent_request_model</code> string "
+                f"(versions such as 3.5 vs 2.5 stay separate). {chart_tail_en}</p>"
+                if en
+                else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
+                "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
+                "<a href='#sec-charts'>图表</a>、"
+                "<a href='#sec-signal-cluster'>聚类表</a>一致。"
+                "<a href='#sec-insight-fields'>徽标含义</a>。"
+                "下方按 <code>agent_request_model</code> <strong>完整型号</strong>分 Tab（如 3.5 与 2.5 不同桶）抽样展示；"
+                f"{chart_tail_zh}</p>"
+            )
+    else:
+        intro = (
+            "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
+            "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
+            "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
+            "<a href='#sec-insight-fields'>Badge semantics</a>.</p>"
+            if en
+            else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
+            "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
+            "<a href='#sec-charts'>图表</a>、"
+            "<a href='#sec-signal-cluster'>聚类表</a>一致。"
+            "<a href='#sec-insight-fields'>徽标含义</a>。</p>"
+        )
     pii_omit_note = ""
     if insight_omitted_pii > 0:
         om = (
@@ -1488,16 +2115,23 @@ def _insight_section_rich_html(
         f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
         f"{intro}"
         f"{pii_omit_note}"
-        f"<div class='insight-list'>{''.join(cards)}</div></section>"
+        f"{cluster_html}"
+        f"{body_html}</section>"
     )
 
 
 def _insight_sections_html(
     rows: List[dict],
     per_tier_limit: int,
+    model_tab_limit: int,
+    use_model_tabs: bool,
     anchor_by_rid: Dict[str, str],
     *,
     html_lang: str = "zh-CN",
+    use_semantic_cluster: bool = True,
+    semantic_max_k: int = 15,
+    model_tab_group: str = "full",
+    model_tier: Optional[Dict[str, Counter]] = None,
 ) -> str:
     """Render insight sections for both high_precision and watchlist tiers."""
     blocks = [
@@ -1505,15 +2139,27 @@ def _insight_sections_html(
             rows,
             "high_precision",
             per_tier_limit,
+            model_tab_limit,
+            use_model_tabs,
             anchor_by_rid,
             html_lang=html_lang,
+            use_semantic_cluster=use_semantic_cluster,
+            semantic_max_k=semantic_max_k,
+            model_tab_group=model_tab_group,
+            model_tier=model_tier,
         ),
         _insight_section_rich_html(
             rows,
             "watchlist",
             per_tier_limit,
+            model_tab_limit,
+            use_model_tabs,
             anchor_by_rid,
             html_lang=html_lang,
+            use_semantic_cluster=use_semantic_cluster,
+            semantic_max_k=semantic_max_k,
+            model_tab_group=model_tab_group,
+            model_tier=model_tier,
         ),
     ]
     return "".join(blocks)
@@ -1881,8 +2527,25 @@ def _chart_signals(
 def _chart_by_model(model_tier: Dict[str, Counter], plt_mod) -> Optional[str]:
     if plt_mod is None or len(model_tier) == 0:
         return None
-    models = sorted(model_tier.keys())
+    ordered = _model_tier_sorted_pairs(model_tier)
+    top_n = MODEL_STACK_CHART_TOP_N
+    other_label = "其他（其余模型）"
     tiers = ("high_precision", "watchlist", "none")
+    if len(ordered) <= top_n:
+        models = [m for m, _ in ordered]
+        per_model: Dict[str, Counter] = {m: model_tier[m] for m in models}
+        title = "按 request_model 堆叠分档（每段数字为该档条数）"
+    else:
+        models = [m for m, _ in ordered[:top_n]]
+        per_model = {m: model_tier[m] for m in models}
+        other_c = Counter()
+        for m, c in ordered[top_n:]:
+            other_c.update(c)
+        models.append(other_label)
+        per_model[other_label] = other_c
+        title = (
+            f"按 request_model 堆叠分档（Top {top_n} 请求量 + 其余合并；每段数字为该档条数）"
+        )
     fig, ax = plt_mod.subplots(figsize=(max(6, len(models) * 0.9), 3.8))
     n = len(models)
     x = list(range(n))
@@ -1890,7 +2553,7 @@ def _chart_by_model(model_tier: Dict[str, Counter], plt_mod) -> Optional[str]:
     bottom = [0.0] * n
     colors = {"high_precision": "#c0392b", "watchlist": "#f39c12", "none": "#bdc3c7"}
     for tier in tiers:
-        vs = [float(model_tier[m].get(tier, 0)) for m in models]
+        vs = [float(per_model[m].get(tier, 0)) for m in models]
         if not any(vs):
             continue
         leg = f"{_tier_zh(tier)} ({tier})"
@@ -1911,12 +2574,17 @@ def _chart_by_model(model_tier: Dict[str, Counter], plt_mod) -> Optional[str]:
         bottom = [b + v for b, v in zip(bottom, vs)]
     ax.set_xticks(x)
     ax.set_xticklabels(models)
-    ax.set_title("按 request_model 堆叠分档（每段数字为该档条数）")
+    ax.set_title(title)
     ax.set_ylabel("条数")
     ax.legend()
     plt_mod.setp(ax.xaxis.get_majorticklabels(), rotation=30, ha="right")
     fig.tight_layout()
     return _fig_to_data_uri(fig, plt_mod)
+
+
+def _normalize_list_label(s: str) -> str:
+    """Collapse whitespace so the same phrase from LLM maps to one bucket."""
+    return " ".join(str(s).strip().split())
 
 
 def _labels_from_meta_list(meta: dict, key: str) -> List[str]:
@@ -1929,10 +2597,32 @@ def _labels_from_meta_list(meta: dict, key: str) -> List[str]:
         return []
     out: List[str] = []
     for x in raw:
-        s = str(x).strip()
+        s = _normalize_list_label(str(x))
         if s:
             out.append(s)
-    return out
+    return list(dict.fromkeys(out))
+
+
+# Align with agent_skill_insight_mapper: split glued phrases without re-running the pipeline.
+_SKILL_INSIGHT_SPLIT_RE = re.compile(r"[,，、;；]+")
+
+
+def _skill_insight_labels_from_meta(meta: dict) -> List[str]:
+    """Expand ``agent_skill_insights`` list entries on CN/EN punctuation (same as mapper)."""
+    raw = meta.get("agent_skill_insights")
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list):
+        return []
+    out: List[str] = []
+    for x in raw:
+        for piece in _SKILL_INSIGHT_SPLIT_RE.split(str(x)):
+            s = _normalize_list_label(piece)
+            if s:
+                out.append(s)
+    return list(dict.fromkeys(out))
 
 
 def _counter_add_row_unique_labels(c: Counter, labels: List[str]) -> None:
@@ -1965,7 +2655,7 @@ def _compute_macro_tag_counters(rows: List[dict]) -> Dict[str, Counter]:
         )
         _counter_add_row_unique_labels(
             skill_insight,
-            _labels_from_meta_list(meta, "agent_skill_insights"),
+            _skill_insight_labels_from_meta(meta),
         )
         _counter_add_row_unique_labels(
             skill_type,
@@ -2104,6 +2794,7 @@ def _build_macro_distribution_section(
 ) -> str:
     en = str(html_lang).lower().startswith("en")
     counters = _compute_macro_tag_counters(rows)
+    si_n_tot, si_n_with, si_slots = _skill_insight_coverage_stats(rows)
     if not any(counters[k] for k in counters):
         empty = (
             "No tool/skill/intent/topic/sentiment tags in meta for this batch."
@@ -2186,6 +2877,29 @@ def _build_macro_distribution_section(
         title = title_en if en else title_zh
         parts.append("<div class='macro-dim'>")
         parts.append(f"<h4>{html.escape(title)}</h4>")
+        if key == "skill_insight":
+            if en:
+                cov = (
+                    f"This report loaded <strong>{si_n_tot}</strong> rows; "
+                    f"<strong>{si_n_with}</strong> have non-empty "
+                    f"<code>meta.agent_skill_insights</code>; "
+                    f"<strong>{si_slots}</strong> label slots total "
+                    "(deduped per row; list items are also split on "
+                    "<code>,，、;；</code> like the mapper, so old JSONL "
+                    "need not be reprocessed). If this is far below row count, "
+                    "many rows likely skipped the mapper (no tools/skills), "
+                    "API failure, or you used <code>--limit</code>."
+                )
+            else:
+                cov = (
+                    f"本报告载入 <strong>{si_n_tot}</strong> 行；其中 "
+                    f"<strong>{si_n_with}</strong> 行 "
+                    f"<code>meta.agent_skill_insights</code> 非空；"
+                    f"标签条数合计 <strong>{si_slots}</strong>（每行内短语已去重；"
+                    "若明显少于总行数，请核对是否使用 <code>--limit</code>、"
+                    "checkpoint 是否跳过该算子、或大量行无 tool/skill / API 失败。"
+                )
+            parts.append(f"<p class='note macro-si-cov'>{cov}</p>")
         if no_charts or plt_mod is None:
             parts.append(_macro_inner_table_html(cnt, en=en))
         else:
@@ -2385,6 +3099,18 @@ def _html_page(
         ".macro-mini th{background:#edf2f7;}"
         ".macro-wc{margin-top:6px;border:1px solid #eee;border-radius:6px;padding:6px 10px;"
         "background:#fff;}"
+        ".macro-si-cov{font-size:0.84rem;margin:4px 0 8px;}"
+        ".insight-clusters{margin:12px 0;}"
+        ".insight-clusters>details.insight-cluster{margin:10px 0;padding:10px 12px;"
+        "border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;}"
+        ".insight-clusters>details.insight-cluster>summary{cursor:pointer;font-weight:600;"
+        "font-size:0.95rem;color:#2d3748;list-style:none;}"
+        ".insight-clusters>details.insight-cluster>summary::-webkit-details-marker{display:none;}"
+        ".insight-cluster{margin:12px 0;padding:10px 12px;border:1px solid #e2e8f0;"
+        "border-radius:8px;background:#f8fafc;}"
+        ".insight-cluster h3{margin:0 0 8px;font-size:1rem;color:#2d3748;}"
+        ".insight-cluster h4{margin:10px 0 6px;font-size:0.92rem;color:#4a5568;}"
+        ".insight-tab-host{margin-top:10px;}"
         ".macro-wc summary{cursor:pointer;font-weight:600;font-size:0.88rem;}"
         ".report-fold>summary{cursor:pointer;font-weight:600;font-size:0.95rem;list-style:none;}"
         ".report-fold>summary::-webkit-details-marker{display:none;}"
@@ -2553,6 +3279,30 @@ def main() -> int:
         help="Max high_precision insight cards (0=off)",
     )
     ap.add_argument(
+        "--insight-model-tab-limit",
+        type=int,
+        default=8,
+        metavar="N",
+        help="每个模型子 Tab 内最多展示几条 Insight（需未加 --no-insight-model-tabs）",
+    )
+    ap.add_argument(
+        "--insight-model-tab-group",
+        choices=("full", "family"),
+        default="full",
+        help="Insight 子 Tab 分桶：full=完整 agent_request_model（默认，区分 3.5/2.5 等）；"
+        "family=按厂商族合并",
+    )
+    ap.add_argument(
+        "--no-insight-model-tabs",
+        action="store_true",
+        help="关闭 Insight 节按模型的子 Tab（不再分桶，仅单一列表）",
+    )
+    ap.add_argument(
+        "--no-insight-semantic-cluster",
+        action="store_true",
+        help="关闭 Insight 节默认的语义聚类（TF-IDF+KMeans），仅保留精确归一合并表",
+    )
+    ap.add_argument(
         "--drilldown-limit",
         type=int,
         default=-1,
@@ -2709,8 +3459,13 @@ def main() -> int:
         insight_section_html = _insight_sections_html(
             rows,
             args.sample_headlines,
+            max(1, int(args.insight_model_tab_limit)),
+            not args.no_insight_model_tabs,
             anchor_by_rid,
             html_lang=html_page_lang,
+            use_semantic_cluster=not args.no_insight_semantic_cluster,
+            model_tab_group=str(args.insight_model_tab_group),
+            model_tier=model_tier,
         )
 
     bilingual_header = ""

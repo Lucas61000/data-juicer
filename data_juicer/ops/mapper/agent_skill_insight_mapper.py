@@ -4,6 +4,7 @@
 # LLM-based summarization of agent_tool_types + agent_skill_types into
 # short concrete capability phrases (agent_skill_insights).
 
+import re
 from typing import Dict, Optional
 
 from loguru import logger
@@ -110,7 +111,8 @@ class AgentSkillInsightMapper(Mapper):
         if not raw or not isinstance(raw, str):
             meta[self.insights_key] = []
             return sample
-        # Parse comma-separated labels, strip, dedupe order-preserving
-        labels = [s.strip() for s in raw.split(",") if s.strip()]
+        # Split on common separators (LLMs often use Chinese commas /顿号).
+        parts = re.split(r"[,，、;；]+", raw.strip())
+        labels = [s.strip() for s in parts if s.strip()]
         meta[self.insights_key] = list(dict.fromkeys(labels))
         return sample

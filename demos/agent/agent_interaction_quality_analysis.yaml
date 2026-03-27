@@ -110,7 +110,8 @@ process:
       store_per_tool_results: true
   - agent_tool_type_mapper:
       top_k_dominant: 5
-  # LLM 归纳工具/技能为 3～5 条具体能力短语（约 10 字级、忌空洞「处理/读写」），写入 meta.agent_skill_insights
+  # LLM 归纳工具/技能为 3～5 条具体能力短语（约 10 字级、忌空洞「处理/读写」），写入 meta.agent_skill_insights。
+  # 报告里柱状/词云按「样本行」计数且每行内短语去重；总行数与词云合计受 --limit、空 meta、API 失败影响。
   - agent_skill_insight_mapper:
       api_model: "qwen-turbo"
       preferred_output_lang: zh
