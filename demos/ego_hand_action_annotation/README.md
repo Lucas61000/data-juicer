@@ -39,30 +39,21 @@ ExportToLeRobotMapper            # Export to LeRobot v2.0 dataset
 
 ### 1. Base Environment
 
-Install Data-Juicer and its dependencies:
+Create an image based on the Dockerfile.
 
-```bash
-cd data-juicer
-pip install -e .
-```
+The `VideoCameraPoseMegaSaMMapper` operator depends on MegaSaM (based on DROID-SLAM). Its CUDA compiled components (`droid_backends`, `lietorch`, `torch-scatter`) **conflict with the main environment** and must run in a separate conda environment.
+
+> **Note**: This environment is automatically activated at runtime via Ray's `runtime_env={"conda": "mega-sam"}` mechanism. You do not need to manually switch environments. All other operators run in the default environment.
+
 
 ### 2. Ray Cluster
 
-The pipeline runs on Ray. Start a Ray cluster:
-
-```bash
-ray start --head --num-gpus=1
-```
+The pipeline runs on Ray. You need to start a Ray cluster.
 
 ### 3. MANO Hand Model
 
 Download MANO v1.2 from the [MANO website](https://mano.is.tue.mpg.de/). Update the `mano_right_path` and `mano_left_path` in the config or script to point to your `MANO_RIGHT.pkl` and `MANO_LEFT.pkl` files.
 
-### 4. MegaSaM Conda Environment (Important)
-
-The `VideoCameraPoseMegaSaMMapper` operator depends on MegaSaM (based on DROID-SLAM). Its CUDA compiled components (`droid_backends`, `lietorch`, `torch-scatter`) **conflict with the main environment** and must run in a separate conda environment.
-
-> **Note**: This environment is automatically activated at runtime via Ray's `runtime_env={"conda": "mega-sam"}` mechanism. You do not need to manually switch environments. All other operators run in the default environment.
 
 ## Running the Demo
 
@@ -86,7 +77,7 @@ Each sample is a JSON object containing a video path list:
 ```json
 {
     "videos": ["./data/1018.mp4"],
-    "text": "task description",
+    "text": "",
     "__dj__meta__": {}
 }
 ```
