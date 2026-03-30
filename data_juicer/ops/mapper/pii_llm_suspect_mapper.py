@@ -6,7 +6,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import threading
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from loguru import logger
@@ -20,12 +22,61 @@ from data_juicer.utils.model_utils import get_model, prepare_model
 
 OP_NAME = "pii_llm_suspect_mapper"
 
+_SPACY_PIPELINE_LOCKS: Dict[str, threading.Lock] = {}
+
+
+def _spacy_pipeline_lock(name: str) -> threading.Lock:
+    if name not in _SPACY_PIPELINE_LOCKS:
+        _SPACY_PIPELINE_LOCKS[name] = threading.Lock()
+    return _SPACY_PIPELINE_LOCKS[name]
+
+
+def _resolve_spacy_auto_download_flag(requested: bool) -> bool:
+    """Env ``PII_SPACY_AUTO_DOWNLOAD`` overrides when set to true/false."""
+    raw = os.environ.get("PII_SPACY_AUTO_DOWNLOAD", "").strip().lower()
+    if raw in ("0", "false", "no", "off"):
+        return False
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    return bool(requested)
+
+
+def ensure_spacy_pipeline_installed(model_name: str, *, auto_download: bool) -> None:
+    """If ``auto_download`` and pipeline missing, run ``spacy.cli.download`` (needs network)."""
+    if not auto_download or not model_name:
+        return
+    try:
+        import spacy.util
+
+        if spacy.util.is_package(model_name):
+            return
+    except Exception:
+        pass
+    try:
+        from spacy.cli import download
+
+        logger.info(
+            "pii_llm_suspect_mapper: downloading spaCy pipeline {} (pip/network)",
+            repr(model_name),
+        )
+        download(model_name)
+    except Exception as e:
+        logger.warning(
+            "pii_llm_suspect_mapper: spaCy download({}) failed: {} — "
+            "install manually e.g. python -m spacy download {}",
+            repr(model_name),
+            e,
+            model_name,
+        )
+
+
 DEFAULT_REDACTION_PLACEHOLDER = "[LLM_PII_SUSPECT_REDACTED]"
 
 DEFAULT_SYSTEM_PROMPT = (
     "你是数据合规审计助手。下面给出若干字段的截断文本（可能已部分脱敏）。"
     "请只识别**仍可能残留的敏感信息**（如真实人名、未脱敏手机号/证件片段、"
-    "内网地址、密钥片段、可识别工号等）。不要编造；不确定则不要列出。"
+    "内网地址、密钥片段、可识别工号、仍未规则脱敏的 URL/IPv4/MAC、"
+    "JWT/PEM/credential 片段等）。不要编造；不确定则不要列出。"
     "必须只输出一个 JSON 对象，不要 markdown，不要解释。Schema:\n"
     '{"suspected":[{"field":"字段名","category":"类型简述",'
     '"evidence":"从输入中摘录的极短原文片段≤48字符"}],'
@@ -37,7 +88,8 @@ DEFAULT_SYSTEM_PROMPT_EN = (
     "You are a data-compliance auditor. Below are truncated field excerpts "
     "(possibly partially redacted). Identify **only** residual sensitive "
     "data (real names, phone/ID fragments, intranet hosts, secret snippets, "
-    "identifiable employee IDs, etc.). Do not invent; if unsure, omit.\n"
+    "identifiable employee IDs, raw URLs/IPv4/MAC not yet redacted, "
+    "JWT/PEM/credential fragments, etc.). Do not invent; if unsure, omit.\n"
     "Output exactly one JSON object, no markdown. Schema:\n"
     '{"suspected":[{"field":"field_key","category":"short_type",'
     '"evidence":"verbatim snippet from input, ≤48 chars"}],'
@@ -82,6 +134,50 @@ def _heuristic_trigger(text: str) -> bool:
     if re.search(r"[A-Za-z0-9_-]{24,}", text):
         return True
     return False
+
+
+# High-precision contextual cues (no extra deps). Intentionally conservative to limit false API calls.
+_NAME_LIKE_RULE_PAT = re.compile(
+    r"(?:"
+    r"(?:^|[\s，,。.!！?？;；:：])"
+    r"(?:我叫|叫我|更名为|姓名\s*[:：\s为是]|真名\s*[:：\s为是]|"
+    r"联系人\s*[:：\s为]?|负责人\s*[:：\s为]?|经办人\s*[:：\s为]?|"
+    r"用户(?:姓名|名叫)\s*[:：\s为]?|(?:致|尊敬的)\s*)"
+    # Name may be followed by more hanzi (e.g. 我叫张三想咨询) without punctuation.
+    r"[\u4e00-\u9fff]{2,4}(?=$|[\s，,。.!！?？;；:：]|[\u4e00-\u9fff])"
+    r"|"
+    r"[\u4e00-\u9fff]{2,4}(?:先生|女士|老师|大夫|经理|主任|院长|博士|教授|同志)(?=[\s，,。.!！?？;；]|$)"
+    r"|"
+    r"\b(?:Mr|Mrs|Ms|Miss|Dr|Prof)\.?\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b"
+    r")",
+    re.UNICODE,
+)
+
+
+def _name_like_rule_trigger(text: str) -> bool:
+    """Rule-based cues that real person names may appear (esp. missed by ``_heuristic_trigger``)."""
+    if not text or len(text.strip()) < 4:
+        return False
+    return _NAME_LIKE_RULE_PAT.search(text) is not None
+
+
+def _normalize_spacy_ner_model_names(
+    spacy_ner_model: Optional[str],
+    spacy_ner_models: Optional[List[str]],
+) -> List[str]:
+    """Deduplicated pipeline names; list order first, then legacy ``spacy_ner_model``."""
+    out: List[str] = []
+    seen: Set[str] = set()
+    if spacy_ner_models:
+        for x in spacy_ner_models:
+            s = str(x).strip()
+            if s and s not in seen:
+                seen.add(s)
+                out.append(s)
+    one = (spacy_ner_model or "").strip()
+    if one and one not in seen:
+        out.append(one)
+    return out
 
 
 def _collect_messages_excerpt(
@@ -231,6 +327,20 @@ class PiiLlmSuspectMapper(Mapper):
 
     Use ``gate_mode="heuristic"`` to call the API only when cheap patterns
     suggest residual risk (long digit runs, @, secret-like keywords, etc.).
+
+    **Pre-LLM extensions** (still no API cost unless you enable spaCy):
+
+    - ``heuristic_name_rules`` (default True): contextual CJK / English name
+      cues so person-heavy text is not skipped when the base heuristic fires
+      only on digits and secrets.
+    - ``spacy_ner_models``: optional list of spaCy pipeline names (e.g.
+      ``["zh_core_web_sm", "en_core_web_sm"]``) so one job loads both and
+      runs NER on the same text prefix until a ``PERSON`` / ``PER`` hit.
+    - ``spacy_ner_model``: legacy single name; merged after ``spacy_ner_models``
+      (deduped). Install with ``python -m spacy download <name>``.
+    - ``spacy_auto_download`` (default True): if the pipeline is missing, run
+      spaCy's downloader before ``spacy.load`` (needs network, uses pip).
+      Disable in air-gapped jobs or set env ``PII_SPACY_AUTO_DOWNLOAD=0``.
     """
 
     def __init__(
@@ -254,6 +364,11 @@ class PiiLlmSuspectMapper(Mapper):
         model_params: Optional[Dict] = None,
         sampling_params: Optional[Dict] = None,
         text_key: str = "text",
+        heuristic_name_rules: bool = True,
+        spacy_ner_model: Optional[str] = None,
+        spacy_ner_models: Optional[List[str]] = None,
+        spacy_ner_max_chars: PositiveInt = 4000,
+        spacy_auto_download: bool = True,
         redaction_mode: str = "none",
         redaction_placeholder: str = DEFAULT_REDACTION_PLACEHOLDER,
         **kwargs,
@@ -296,6 +411,81 @@ class PiiLlmSuspectMapper(Mapper):
         self.redaction_mode = rm
         rp = redaction_placeholder or DEFAULT_REDACTION_PLACEHOLDER
         self.redaction_placeholder = str(rp)
+        self.heuristic_name_rules = bool(heuristic_name_rules)
+        self.spacy_ner_model_names = _normalize_spacy_ner_model_names(
+            spacy_ner_model,
+            spacy_ner_models,
+        )
+        self.spacy_ner_max_chars = int(spacy_ner_max_chars)
+        self.spacy_auto_download = _resolve_spacy_auto_download_flag(
+            bool(spacy_auto_download),
+        )
+        self._spacy_nlp_by_name: Dict[str, Any] = {}
+        self._spacy_load_failed: Set[str] = set()
+
+    def _get_spacy_nlp(self, model_name: str) -> Any:
+        if model_name in self._spacy_load_failed:
+            return None
+        if model_name in self._spacy_nlp_by_name:
+            return self._spacy_nlp_by_name[model_name]
+        lock = _spacy_pipeline_lock(model_name)
+        with lock:
+            if model_name in self._spacy_nlp_by_name:
+                return self._spacy_nlp_by_name[model_name]
+            if model_name in self._spacy_load_failed:
+                return None
+            ensure_spacy_pipeline_installed(
+                model_name,
+                auto_download=self.spacy_auto_download,
+            )
+            try:
+                import spacy
+
+                nlp = spacy.load(model_name)
+                self._spacy_nlp_by_name[model_name] = nlp
+                return nlp
+            except Exception as e:  # pragma: no cover - env specific
+                logger.warning(
+                    "pii_llm_suspect_mapper: spacy.load(%r) failed (%s); " "skipping this model for the NER gate.",
+                    model_name,
+                    e,
+                )
+                self._spacy_load_failed.add(model_name)
+                return None
+
+    def _spacy_person_trigger(self, text: str) -> bool:
+        if not self.spacy_ner_model_names:
+            return False
+        snippet = (text or "")[: self.spacy_ner_max_chars]
+        if len(snippet.strip()) < 2:
+            return False
+        for model_name in self.spacy_ner_model_names:
+            nlp = self._get_spacy_nlp(model_name)
+            if nlp is None:
+                continue
+            try:
+                doc = nlp(snippet)
+            except Exception as e:  # pragma: no cover
+                logger.debug(
+                    "pii_llm_suspect_mapper spacy infer (%s): %s",
+                    model_name,
+                    e,
+                )
+                continue
+            for ent in doc.ents:
+                if ent.label_ in ("PERSON", "PER"):
+                    return True
+        return False
+
+    def _heuristic_allow_llm(self, user_block: str) -> bool:
+        """If True, heuristic gate opens and the LLM may run."""
+        if _heuristic_trigger(user_block):
+            return True
+        if self.heuristic_name_rules and _name_like_rule_trigger(user_block):
+            return True
+        if self._spacy_person_trigger(user_block):
+            return True
+        return False
 
     def _assemble_user_block(self, sample: dict) -> Tuple[str, List[str]]:
         lines: List[str] = []
@@ -385,7 +575,7 @@ class PiiLlmSuspectMapper(Mapper):
             }
             return sample
 
-        gated = self.gate_mode == "heuristic" and not _heuristic_trigger(
+        gated = self.gate_mode == "heuristic" and not self._heuristic_allow_llm(
             user_block,
         )
         if gated:

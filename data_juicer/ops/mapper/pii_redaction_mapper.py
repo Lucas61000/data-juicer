@@ -19,6 +19,11 @@ PLACEHOLDER_ID = "[ID_REDACTED]"
 PLACEHOLDER_PHONE = "[PHONE_REDACTED]"
 PLACEHOLDER_ID_CARD = "[ID_CARD_REDACTED]"
 PLACEHOLDER_CHANNEL_ID = "[CHANNEL_ID_REDACTED]"
+PLACEHOLDER_URL = "[URL_REDACTED]"
+PLACEHOLDER_IP = "[IP_REDACTED]"
+PLACEHOLDER_JWT = "[JWT_REDACTED]"
+PLACEHOLDER_PEM = "[PEM_REDACTED]"
+PLACEHOLDER_MAC = "[MAC_REDACTED]"
 
 # Keys that often hold paths/emails/PII; redact when found in any nested dict
 PII_VALUE_KEYS = ("file_path", "path", "file", "arguments", "file_paths")
@@ -26,6 +31,7 @@ PII_VALUE_KEYS = ("file_path", "path", "file", "arguments", "file_paths")
 
 def _compile_patterns() -> dict:
     """Build regex patterns for multi-platform and common PII."""
+    ipv4 = r"(?<![0-9.])" r"(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}" r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)" r"(?![0-9])"
     return {
         # Unix: /Users/..., /home/..., /tmp/..., /opt/...
         "path_unix": re.compile(
@@ -65,6 +71,25 @@ def _compile_patterns() -> dict:
         "id_card_cn": re.compile(
             r"\b[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])" r"(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx]\b"
         ),
+        # PEM / SSH keys & certs (strip whole block first)
+        "pem_block": re.compile(
+            r"-----BEGIN [A-Z0-9 -]+-----[\s\S]*?-----END [A-Z0-9 -]+-----",
+            re.MULTILINE,
+        ),
+        # Typical JWS (header often starts with eyJ = {"alg"...)
+        "jwt": re.compile(
+            r"\beyJ[A-Za-z0-9_=-]+\.[A-Za-z0-9_=-]+\.[A-Za-z0-9_=-]+\b",
+        ),
+        # http(s) URLs (query strings may carry tokens)
+        "url": re.compile(r"https?://[^\s\"'<>]+"),
+        "ipv4": re.compile(ipv4),
+        # Bracketed IPv6 + optional :port
+        "ipv6": re.compile(
+            r"\[[0-9a-fA-F:.]{3,}\](?::\d{1,5})?\b",
+        ),
+        "mac": re.compile(
+            r"(?<![0-9A-Fa-f:])(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b",
+        ),
     }
 
 
@@ -74,6 +99,8 @@ class PiiRedactionMapper(Mapper):
 
     Covers paths (Unix/Windows), emails, secrets, IDs, phones, agent channel
     identifiers (飞书/钉钉/企业微信 open_id, channel: feishu|dingtalk|email).
+    Optional: PEM blocks, JWT-shaped tokens, http(s) URLs, IPv4, bracketed
+    IPv6, MAC addresses (see ``mask_extended_pii`` or individual flags).
     Use redact_keys to apply to text, query, response, and/or messages (recursive).
     """
 
@@ -83,10 +110,15 @@ class PiiRedactionMapper(Mapper):
         mask_emails: bool = True,
         mask_secrets: bool = True,
         mask_ids: bool = True,
-        mask_phones: bool = False,
-        mask_id_cards: bool = False,
+        mask_phones: bool = True,
+        mask_id_cards: bool = True,
         mask_channel_ids: bool = True,
         mask_platform_open_ids: bool = True,
+        mask_pem: bool = True,
+        mask_jwt: bool = True,
+        mask_urls: bool = False,
+        mask_ips: bool = True,
+        mask_macs: bool = True,
         path_replacement: str = PLACEHOLDER_PATH,
         email_replacement: str = PLACEHOLDER_EMAIL,
         secret_replacement: str = PLACEHOLDER_SECRET,
@@ -94,6 +126,11 @@ class PiiRedactionMapper(Mapper):
         phone_replacement: str = PLACEHOLDER_PHONE,
         id_card_replacement: str = PLACEHOLDER_ID_CARD,
         channel_id_replacement: str = PLACEHOLDER_CHANNEL_ID,
+        pem_replacement: str = PLACEHOLDER_PEM,
+        jwt_replacement: str = PLACEHOLDER_JWT,
+        url_replacement: str = PLACEHOLDER_URL,
+        ip_replacement: str = PLACEHOLDER_IP,
+        mac_replacement: str = PLACEHOLDER_MAC,
         extra_patterns: Optional[List[Tuple[str, str]]] = None,
         text_key: str = "text",
         redact_keys: Optional[List[str]] = None,
@@ -109,6 +146,11 @@ class PiiRedactionMapper(Mapper):
         self.mask_id_cards = mask_id_cards
         self.mask_channel_ids = mask_channel_ids
         self.mask_platform_open_ids = mask_platform_open_ids
+        self.mask_pem = mask_pem
+        self.mask_jwt = mask_jwt
+        self.mask_urls = mask_urls
+        self.mask_ips = mask_ips
+        self.mask_macs = mask_macs
         self.path_replacement = path_replacement
         self.email_replacement = email_replacement
         self.secret_replacement = secret_replacement
@@ -116,6 +158,11 @@ class PiiRedactionMapper(Mapper):
         self.phone_replacement = phone_replacement
         self.id_card_replacement = id_card_replacement
         self.channel_id_replacement = channel_id_replacement
+        self.pem_replacement = pem_replacement
+        self.jwt_replacement = jwt_replacement
+        self.url_replacement = url_replacement
+        self.ip_replacement = ip_replacement
+        self.mac_replacement = mac_replacement
         self.extra_patterns = extra_patterns or []
         if redact_keys is not None:
             self.redact_keys = redact_keys
@@ -142,6 +189,12 @@ class PiiRedactionMapper(Mapper):
         self._phone_cn = patterns["phone_cn"]
         self._phone_intl = patterns["phone_intl"]
         self._id_card_cn = patterns["id_card_cn"]
+        self._pem_block = patterns["pem_block"]
+        self._jwt_re = patterns["jwt"]
+        self._url_re = patterns["url"]
+        self._ipv4_re = patterns["ipv4"]
+        self._ipv6_re = patterns["ipv6"]
+        self._mac_re = patterns["mac"]
 
         self._extra_compiled = []
         for pat_str, repl in self.extra_patterns:
@@ -153,6 +206,18 @@ class PiiRedactionMapper(Mapper):
     def _redact_text(self, text: str) -> str:
         if not text or not isinstance(text, str):
             return text
+        # Order: broad blocks / URL-like first, then finer tokens.
+        if self.mask_pem:
+            text = self._pem_block.sub(self.pem_replacement, text)
+        if self.mask_jwt:
+            text = self._jwt_re.sub(self.jwt_replacement, text)
+        if self.mask_urls:
+            text = self._url_re.sub(self.url_replacement, text)
+        if self.mask_ips:
+            text = self._ipv4_re.sub(self.ip_replacement, text)
+            text = self._ipv6_re.sub(self.ip_replacement, text)
+        if self.mask_macs:
+            text = self._mac_re.sub(self.mac_replacement, text)
         if self.mask_paths:
             text = self._path_unix.sub(r"\1" + self.path_replacement, text)
             text = self._path_win.sub(r"\1" + self.path_replacement, text)

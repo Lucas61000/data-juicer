@@ -48,18 +48,22 @@ process:
       # history_max_user_chars: 0
       # history_compress_head_ratio: 0.62
 
-  # ----- 2. PII 脱敏（路径/邮箱/密钥/ID/飞书·钉钉·企业微信 channel 与 open_id，支持多键与 messages 递归）-----
+  # ----- 2. PII 脱敏（路径/邮箱/密钥/ID/IM/ PEM/JWT/URL/IPv4/ bracket IPv6/MAC等，支持多键与 messages 递归）-----
+  # 注释掉某行不代表关闭该开关：未写的参数仍用 PiiRedactionMapper 的 Python 默认值
+  # （多数掩码类默认为 true）。需要真正关闭时请在 yaml 中显式写 mask_*: false。
   - pii_redaction_mapper:
-      mask_paths: true
-      mask_emails: true
-      mask_secrets: true
-      mask_ids: true
-      mask_channel_ids: true   # channel: feishu|dingtalk|email|飞书|钉钉|企业微信|邮箱
-      mask_platform_open_ids: true  # 飞书 ou_xxx、钉钉/企业微信等 open_id
-      redact_keys: ["text", "query", "response", "dialog_history", "messages"]
-      messages_key: "messages"
+      # mask_paths: true
+      # mask_emails: true
+      # mask_secrets: true
+      # mask_ids: true
+      # mask_channel_ids: true   # channel: feishu|dingtalk|email|飞书|钉钉|企业微信|邮箱
       # mask_phones: false
       # mask_id_cards: false
+      # mask_platform_open_ids: true  # 飞书 ou_xxx、钉钉/企业微信等 open_id
+      mask_urls: false
+      redact_keys: ["text", "query", "response", "dialog_history", "messages"]
+      messages_key: "messages"
+
 
   # LLM 复核正则未覆盖的敏感残留（仅 meta；需 API）。放在 pii_redaction 之后。
   # 分析配方：none 保留原文供下游 LLM 质检/洞察；对外分发可改为 whole_field / evidence
@@ -67,7 +71,10 @@ process:
       api_model: "qwen-turbo"
       preferred_output_lang: zh
       gate_mode: heuristic
-      redaction_mode: whole_field
+      # heuristic_name_rules: true   # 默认：姓名上下文（我叫/联系人/先生 等）也会打开 LLM 门控
+      # spacy_ner_models: [zh_core_web_sm, en_core_web_sm]
+      # spacy_auto_download: true   # 默认 true；离线环境设 false 或 PII_SPACY_AUTO_DOWNLOAD=0
+      redaction_mode: evidence
       inspect_keys: ["text", "query", "response"]
       messages_key: "messages"
       try_num: 2

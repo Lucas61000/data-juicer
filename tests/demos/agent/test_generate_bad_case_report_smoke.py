@@ -59,7 +59,7 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
             self.assertIn("<!DOCTYPE html>", html)
             self.assertIn("sec-charts", html)
 
-    def test_insight_section_omits_pii_related_headlines(self) -> None:
+    def test_insight_section_groups_pii_related_headlines(self) -> None:
         rows = [
             {
                 "query": "q1",
@@ -122,7 +122,9 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
             html = out.read_text(encoding="utf-8")
             self.assertIn("VISIBLE_HEADLINE", html)
             self.assertNotIn("HIDDEN_HEADLINE", html)
-            self.assertIn("insight-pii-omit", html)
+            self.assertIn("insight-pii-split-ledger", html)
+            self.assertIn("insight-pii-lite-note", html)
+            self.assertIn("insight-card-pii-lite", html)
 
     def test_skill_insight_macro_splits_cn_punctuation_without_reprocess(self) -> None:
         row = {
