@@ -33,7 +33,6 @@ dependencies = [
     "pydantic>=2.0", # data validation
     "uv",
     "httpx",
-    "av==13.1.0", # video/audio handling
     "emoji==2.2.0", # emoji handling
     "tabulate",
     "bs4",
@@ -74,6 +73,7 @@ analysis = [
 
 # Computer Vision
 vision = [
+    "av==13.1.0", # video/audio handling
     "opencv-contrib-python",
     "imagededup",  # Image deduplication
     "diffusers>=0.33.0",  # Diffusion models
