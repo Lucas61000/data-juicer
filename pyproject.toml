@@ -32,7 +32,6 @@ dependencies = [
     "psutil", # system monitoring
     "pydantic>=2.0", # data validation
     "uv",
-    "wordcloud==1.9.4",
     "spacy==3.8.7",
     "httpx",
     "av==13.1.0", # video/audio handling
@@ -67,6 +66,11 @@ generic = [
     "uvloop==0.21.0",  # avoid async error before it's fixed in uvloop
     "onnxruntime",  # ONNX runtime
     "cudf-cu12==25.4.0", # dataframe on GPU
+]
+
+# Analysis
+analysis = [
+    "wordcloud==1.9.4",  # For drawing word clouds
 ]
 
 # Computer Vision
@@ -160,6 +164,7 @@ ai_services = [
 # All dependencies (default + all optional)
 all = [
     "py-data-juicer[generic]",
+    "py-data-juicer[analysis]",
     "py-data-juicer[vision]",
     "py-data-juicer[nlp]",
     "py-data-juicer[audio]",

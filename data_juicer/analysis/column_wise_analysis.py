@@ -6,9 +6,9 @@ import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
-from wordcloud import WordCloud
 
 from data_juicer.utils.constant import DEFAULT_PREFIX, Fields
+from data_juicer.utils.lazy_loader import LazyLoader
 
 from .overall_analysis import OverallAnalysis
 
@@ -311,7 +311,8 @@ class ColumnWiseAnalysis:
             else:
                 word_nums[w] = 1
 
-        wc = WordCloud(font_path=FONT_PATH, width=400, height=320)
+        wordcloud = LazyLoader("wordcloud")
+        wc = wordcloud.WordCloud(font_path=FONT_PATH, width=400, height=320)
         wc.generate_from_frequencies(word_nums)
 
         if ax is None:
