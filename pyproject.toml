@@ -38,9 +38,6 @@ dependencies = [
     "av==13.1.0", # video/audio handling
     "emoji==2.2.0", # emoji handling
     "tabulate",
-    "librosa>=0.10",
-    "resampy",
-    "samplerate==0.1.0",
     "bs4",
     "matplotlib",
     "plotly", # interactive plots
@@ -110,6 +107,9 @@ nlp = [
 
 # Audio Processing
 audio = [
+    "librosa>=0.10",
+    "resampy",
+    "samplerate==0.1.0",
     "torchaudio",  # Audio processing with PyTorch
     "torchcodec==0.7",
     "soundfile",  # audio handling
