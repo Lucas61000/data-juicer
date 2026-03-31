@@ -42,7 +42,6 @@ dependencies = [
     "matplotlib",
     "requests",
     "wget",
-    "pdfplumber",
     "python-docx",
     "streamlit",
     "Pillow",
@@ -101,6 +100,7 @@ nlp = [
     "opencc==1.1.9",  # Chinese conversion
     "spacy-pkuseg",  # Chinese segmentation
     "rouge",  # Text evaluation
+    "pdfplumber",  # For PDF input and processing
 ]
 
 # Audio Processing
