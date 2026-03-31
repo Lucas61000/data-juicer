@@ -32,7 +32,6 @@ dependencies = [
     "psutil", # system monitoring
     "pydantic>=2.0", # data validation
     "uv",
-    "spacy==3.8.7",
     "httpx",
     "av==13.1.0", # video/audio handling
     "emoji==2.2.0", # emoji handling
@@ -105,6 +104,7 @@ nlp = [
     "spacy-pkuseg",  # Chinese segmentation
     "rouge",  # Text evaluation
     "pdfplumber",  # For PDF input and processing
+    "spacy==3.8.7",
 ]
 
 # Audio Processing
