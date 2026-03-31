@@ -40,8 +40,6 @@ dependencies = [
     "tabulate",
     "bs4",
     "matplotlib",
-    "plotly", # interactive plots
-    "seaborn",
     "requests",
     "wget",
     "pdfplumber",

@@ -10,7 +10,6 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 import yaml
 from loguru import logger
@@ -20,6 +19,7 @@ from data_juicer.config import init_configs
 from data_juicer.core import Analyzer, DefaultExecutor
 from data_juicer.ops.base_op import OPERATORS
 from data_juicer.utils.constant import Fields, StatsKeys
+from data_juicer.utils.lazy_loader import LazyLoader
 from data_juicer.utils.logger_utils import get_log_file_path
 from data_juicer.utils.model_utils import MODEL_ZOO, prepare_model
 
@@ -438,6 +438,7 @@ class Visualize:
 
     @staticmethod
     def draw_sunburst(df, path, values):
+        px = LazyLoader("plotly.express")
         fig = px.sunburst(df, path=path, values=values)
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), font_family="Times New Roman", font=dict(size=40))
         st.plotly_chart(fig, use_container_width=True)
