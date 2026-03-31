@@ -58,7 +58,6 @@ dependencies = [
     "tomli-w",
     "gitpython",
     "mcp[cli]>=1.7.0",
-    "pylance",
     "dep-logic",
     "rank-bm25>=0.2.2",
 ]
@@ -126,6 +125,7 @@ distributed = [
     "s3fs",  # S3 filesystem support for cloud storage
     "boto3",  # AWS SDK for S3 operations
     "bitarray", # efficient arrays of booleans
+    "pylance",  # to support I/O for lance data in ray mode
 ]
 
 # Development & Tools
