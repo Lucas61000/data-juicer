@@ -325,7 +325,7 @@ def main():
     # Load data
     print(f"Loading: {args.data_path}")
     with open(args.data_path, "rb") as f:
-        if args.data_path.endswith('.jsonl'):
+        if args.data_path.endswith(('.json', '.jsonl')):
             samples = [json.loads(line) for line in f.readlines()]
         elif args.data_path.endswith('.pkl'):
             samples = pickle.load(f)
