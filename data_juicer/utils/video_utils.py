@@ -550,7 +550,7 @@ class FFmpegReader(VideoReader):
                     "-i",
                     self.video_path,
                     "-vf",
-                    "showinfo,select=eq(pict_type\,I)",  # noqa: W605
+                    r"showinfo,select=eq(pict_type\,I)",  # noqa: W605
                     "-vsync",
                     "vfr",
                     "-f",
@@ -564,7 +564,7 @@ class FFmpegReader(VideoReader):
                     "-i",
                     self.video_path,
                     "-vf",
-                    "showinfo,select=eq(pict_type\,I)",  # noqa: W605
+                    r"showinfo,select=eq(pict_type\,I)",  # noqa: W605
                     "-vsync",
                     "vfr",
                     "-f",
