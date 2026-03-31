@@ -46,7 +46,7 @@ Data-Juicer 中的算子分为以下 8 种类型。
 | [filter](#filter) | 56 | Filters out low-quality samples. 过滤低质量样本。 |
 | [formatter](#formatter) | 8 | Discovers, loads, and canonicalizes source data. 发现、加载、规范化原始数据。 |
 | [grouper](#grouper) | 3 | Group samples to batched samples. 将样本分组，每一组组成一个批量样本。 |
-| [mapper](#mapper) | 108 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
+| [mapper](#mapper) | 110 | Edits and transforms samples. 对数据样本进行编辑和转换。 |
 | [pipeline](#pipeline) | 3 | Applies dataset-level processing; both input and output are datasets. 执行数据集级别的操作，输入和输出均为完整数据集。 |
 | [selector](#selector) | 5 | Selects top samples based on ranking. 基于排序选取高质量样本。 |
 
@@ -269,11 +269,13 @@ All the specific operators are listed below, each featured with several capabili
 | video_captioning_from_summarizer_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Mapper to generate video captions by summarizing several kinds of generated texts (captions from video/audio/frames, tags from audio/frames, ...). 映射器通过总结几种生成的文本 (来自视频/音频/帧的字幕，来自音频/帧的标签，...) 来生成视频字幕。 | [info](operators/mapper/video_captioning_from_summarizer_mapper.md) | - |
 | video_captioning_from_video_mapper | 🔮Multimodal 🚀GPU 🧩HF 🟢Stable | Generates video captions using a Hugging Face video-to-text model and sampled video frames. 使用拥抱面部视频到文本模型和采样视频帧生成视频字幕。 | [info](operators/mapper/video_captioning_from_video_mapper.md) | - |
 | video_captioning_from_vlm_mapper | 🔮Multimodal 🚀GPU 🌊vLLM 🧩HF 🟡Beta | Generates video captions using a VLM that accepts videos as inputs. 使用接受视频作为输入的VLM生成视频字幕。 | [info](operators/mapper/video_captioning_from_vlm_mapper.md) | - |
+| video_clip_reassembly_mapper | 🎬Video 💻CPU 🟡Beta | Reassemble hand-action results from overlapping video clips. 重新组合-重叠视频剪辑的手部动作结果。 | - | - |
 | video_depth_estimation_mapper | 🎬Video 🚀GPU 🟡Beta | Perform depth estimation on the video. 对视频进行深度估计。 | [info](operators/mapper/video_depth_estimation_mapper.md) | - |
 | video_extract_frames_mapper | 🔮Multimodal 💻CPU 🟢Stable | Mapper to extract frames from video files according to specified methods. 映射器根据指定的方法从视频文件中提取帧。 | [info](operators/mapper/video_extract_frames_mapper.md) | - |
 | video_face_blur_mapper | 🎬Video 💻CPU 🟢Stable | Mapper to blur faces detected in videos. 映射器模糊在视频中检测到的人脸。 | [info](operators/mapper/video_face_blur_mapper.md) | - |
 | video_ffmpeg_wrapped_mapper | 🎬Video 💻CPU 🟢Stable | Wraps FFmpeg video filters for processing video files in a dataset. 包装FFmpeg视频过滤器，用于处理数据集中的视频文件。 | [info](operators/mapper/video_ffmpeg_wrapped_mapper.md) | - |
 | video_hand_action_compute_mapper | 🎬Video 💻CPU 🟡Beta | Compute 7-DoF actions and 8-dim states from hand reconstruction and camera pose results. 根据手重建和相机姿态结果计算7自由度动作和8-dim状态。 | - | - |
+| video_hand_motion_smooth_mapper | 🎬Video 💻CPU 🟡Beta | Apply smoothing to world-space hand motions and remove outliers. 对世界空间手部运动应用平滑并移除异常值。 | - | - |
 | video_hand_reconstruction_hawor_mapper | 🎬Video 🚀GPU 🟡Beta | Use HaWoR and MoGe-2 for hand reconstruction. 使用HaWoR和MoGe-2进行手部重建。 | - | - |
 | video_hand_reconstruction_mapper | 🎬Video 🚀GPU 🔴Alpha | Use the WiLoR model for hand localization and reconstruction. 使用WiLoR模型进行手部定位和重建。 | [info](operators/mapper/video_hand_reconstruction_mapper.md) | - |
 | video_object_segmenting_mapper | 🎬Video 🚀GPU 🧩HF 🟡Beta | Text-guided semantic segmentation of valid objects throughout the video (YOLOE + SAM2). 在整个视频中对有效对象进行文本引导的语义分割 (YOLOE SAM2)。 | [info](operators/mapper/video_object_segmenting_mapper.md) | - |
