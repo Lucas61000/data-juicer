@@ -83,7 +83,8 @@ run_report() {
     _rep_args+=(--llm-summary)
   fi
   "$PY" demos/agent/scripts/generate_bad_case_report.py "${_rep_args[@]}"
-  echo "Open in browser: $out"
+  echo "Open in browser (PII-safe): $out"
+  echo "Open PII audit copy: ${out%.html}_pii_audit.html"
 }
 
 run_postprocess() {

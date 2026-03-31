@@ -37,6 +37,8 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
                 str(inp),
                 "--output",
                 str(out),
+                "--report-pii-variants",
+                "safe",
                 "--no-charts",
                 "--sample-headlines",
                 "0",
@@ -59,7 +61,7 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
             self.assertIn("<!DOCTYPE html>", html)
             self.assertIn("sec-charts", html)
 
-    def test_insight_section_groups_pii_related_headlines(self) -> None:
+    def test_safe_report_omits_pii_headlines_audit_report_keeps(self) -> None:
         rows = [
             {
                 "query": "q1",
@@ -100,6 +102,8 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
                 str(inp),
                 "--output",
                 str(out),
+                "--report-pii-variants",
+                "both",
                 "--no-charts",
                 "--sample-headlines",
                 "10",
@@ -119,12 +123,15 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
                 timeout=120,
             )
             self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
-            html = out.read_text(encoding="utf-8")
-            self.assertIn("VISIBLE_HEADLINE", html)
-            self.assertNotIn("HIDDEN_HEADLINE", html)
-            self.assertIn("insight-pii-split-ledger", html)
-            self.assertIn("insight-pii-lite-note", html)
-            self.assertIn("insight-card-pii-lite", html)
+            html_safe = out.read_text(encoding="utf-8")
+            audit_path = out.with_name(out.stem + "_pii_audit" + out.suffix)
+            self.assertTrue(audit_path.is_file(), proc.stdout)
+            html_audit = audit_path.read_text(encoding="utf-8")
+            self.assertIn("VISIBLE_HEADLINE", html_safe)
+            self.assertNotIn("HIDDEN_HEADLINE", html_safe)
+            self.assertIn("report-variant-banner", html_safe)
+            self.assertIn("HIDDEN_HEADLINE", html_audit)
+            self.assertIn("report-variant-banner", html_audit)
 
     def test_skill_insight_macro_splits_cn_punctuation_without_reprocess(self) -> None:
         row = {
@@ -149,6 +156,8 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
                 str(inp),
                 "--output",
                 str(out),
+                "--report-pii-variants",
+                "safe",
                 "--no-charts",
                 "--sample-headlines",
                 "0",

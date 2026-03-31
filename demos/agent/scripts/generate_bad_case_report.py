@@ -2,7 +2,9 @@
 """HTML 报告：分档统计、信号图、队列表、case study 样例（可展开）、可选 LLM 页首导读。
 
 - 图表使用中文字体配置，避免中文显示为方框。
-- Case study 默认页内最多 50 条，全量写入同目录 ``*_drilldown_full.jsonl``。
+- 默认生成 **两份 HTML**：PII 安全版（``--output``）与同目录 ``*_pii_audit.html``（审计版）；
+  Case study 页内在两档（强怀疑 / 待观察）间 **各约一半** 配额，并按与 Insight 相同的
+  **字符 TF-IDF + MiniBatchKMeans** 语义簇做轮询抽样；全量写入对应 ``*_drilldown_full.jsonl``。
 - ``--llm-summary``：调用 OpenAI 兼容接口（默认读 ``DASHSCOPE_API_KEY`` / ``OPENAI_API_KEY``）。
 - 导读 HTTP 读超时默认 120s，可用 ``--llm-timeout-sec`` 或环境变量 ``BAD_CASE_REPORT_LLM_TIMEOUT_SEC``；超时自动重试 1 次。
 
@@ -776,10 +778,7 @@ def _insight_llm_text_suggests_pii(ins: dict) -> bool:
 
 
 def _exclude_insight_card_for_pii_row(row: dict, ins: dict) -> bool:
-    """True when row should appear in the PII subgroup (minimal in-page cards).
-
-    Drilldown / JSONL are unchanged.
-    """
+    """True when the row carries PII-audit / redaction signals (safe reports omit these)."""
     meta = get_dj_meta(row)
     if _pii_llm_suspect_meta_flags_row(meta):
         return True
@@ -790,23 +789,148 @@ def _exclude_insight_card_for_pii_row(row: dict, ins: dict) -> bool:
     return False
 
 
-def _iter_bad_case_drill_rows(rows: List[dict]):
-    """Yield high_precision rows, then watchlist.
+def _row_has_pii_audit_signals(row: dict) -> bool:
+    meta = get_dj_meta(row)
+    ins = meta.get("agent_insight_llm") or {}
+    if not isinstance(ins, dict):
+        ins = {}
+    return _exclude_insight_card_for_pii_row(row, ins)
 
-    Within each tier: P0→P3, aligned→conflict, then stable row order.
-    """
-    tier_rank = {"high_precision": 0, "watchlist": 1}
-    scored: List[Tuple[int, int, int, int, dict]] = []
+
+def _ordered_bad_case_row_lists(
+    rows: List[dict],
+    *,
+    exclude_pii: bool,
+) -> Tuple[List[dict], List[dict]]:
+    """Split bad-case rows into (high_precision ordered, watchlist ordered)."""
+    hp: List[Tuple[int, int, int, dict]] = []
+    wl: List[Tuple[int, int, int, dict]] = []
     for i, row in enumerate(rows):
+        if exclude_pii and _row_has_pii_audit_signals(row):
+            continue
         meta = get_dj_meta(row)
         tier = str(meta.get("agent_bad_case_tier", "none"))
-        if tier not in tier_rank:
-            continue
-        pr, ar, _ = _insight_sort_tuple(row, i)
-        scored.append((tier_rank[tier], pr, ar, i, row))
-    scored.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
-    for _a, _b, _c, _i, row in scored:
-        yield row
+        if tier == "high_precision":
+            pr, ar, _ = _insight_sort_tuple(row, i)
+            hp.append((pr, ar, i, row))
+        elif tier == "watchlist":
+            pr, ar, _ = _insight_sort_tuple(row, i)
+            wl.append((pr, ar, i, row))
+    hp.sort(key=lambda x: (x[0], x[1], x[2]))
+    wl.sort(key=lambda x: (x[0], x[1], x[2]))
+    return [t[3] for t in hp], [t[3] for t in wl]
+
+
+def _balanced_tier_caps(n_hp: int, n_wl: int, display_cap: int) -> Tuple[int, int]:
+    """Target ~half high_precision and half watchlist; spill unused quota to the other tier."""
+    if display_cap <= 0:
+        return 0, 0
+    want_hp = display_cap // 2
+    want_wl = display_cap - want_hp
+    hp_take = min(want_hp, n_hp)
+    wl_take = min(want_wl, n_wl)
+    deficit = display_cap - hp_take - wl_take
+    if deficit > 0:
+        more_hp = min(deficit, n_hp - hp_take)
+        hp_take += more_hp
+        deficit -= more_hp
+    if deficit > 0:
+        wl_take += min(deficit, n_wl - wl_take)
+    return hp_take, wl_take
+
+
+def _row_headline_or_snippet_for_audit_cluster(row: dict) -> str:
+    meta = get_dj_meta(row)
+    ins = meta.get("agent_insight_llm") or {}
+    if isinstance(ins, dict):
+        h = (ins.get("headline") or "").strip()
+        if h:
+            return h
+    q = str(row.get("query") or "")[:400]
+    r = str(row.get("response") or "")[:400]
+    blob = (q + "\n" + r).strip()
+    return blob if blob else " "
+
+
+def _diversify_rows_by_semantic_clusters(
+    rows_priority: List[dict],
+    limit: int,
+    max_k: int,
+) -> List[dict]:
+    """Round-robin pick across MiniBatchKMeans clusters (same featurizer as Insight semantic block)."""
+    if limit <= 0 or not rows_priority:
+        return []
+    if limit >= len(rows_priority):
+        return list(rows_priority)
+    texts = [_row_headline_or_snippet_for_audit_cluster(r) for r in rows_priority]
+    labels = _tfidf_kmeans_labels(texts, max_k)
+    if labels is None:
+        return rows_priority[:limit]
+    by_lab: DefaultDict[int, List[dict]] = defaultdict(list)
+    for r, lab in zip(rows_priority, labels):
+        by_lab[int(lab)].append(r)
+    clusters = sorted(by_lab.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    queues: List[List[dict]] = [list(lst) for _, lst in clusters]
+    out: List[dict] = []
+    while len(out) < limit and any(queues):
+        for q in queues:
+            if len(out) >= limit:
+                break
+            if q:
+                out.append(q.pop(0))
+    if len(out) < limit:
+        seen = {id(x) for x in out}
+        for r in rows_priority:
+            if len(out) >= limit:
+                break
+            if id(r) not in seen:
+                out.append(r)
+                seen.add(id(r))
+    return out
+
+
+def _pick_balanced_diverse_drill_rows(
+    rows: List[dict],
+    display_n: int,
+    *,
+    exclude_pii: bool,
+    semantic_max_k: int,
+    use_diversify: bool,
+) -> List[dict]:
+    hp_rows, wl_rows = _ordered_bad_case_row_lists(rows, exclude_pii=exclude_pii)
+    hp_take, wl_take = _balanced_tier_caps(len(hp_rows), len(wl_rows), display_n)
+    if not use_diversify:
+        return hp_rows[:hp_take] + wl_rows[:wl_take]
+    hp_pick = _diversify_rows_by_semantic_clusters(hp_rows, hp_take, semantic_max_k)
+    wl_pick = _diversify_rows_by_semantic_clusters(wl_rows, wl_take, semantic_max_k)
+    return hp_pick + wl_pick
+
+
+def _merge_drill_all_entries(
+    hp_rows: List[dict],
+    wl_rows: List[dict],
+    limit: Optional[int],
+) -> List[dict]:
+    out: List[dict] = []
+    for r in hp_rows:
+        out.append(_row_to_drill_entry(r))
+        if limit is not None and len(out) >= limit:
+            return out
+    for r in wl_rows:
+        out.append(_row_to_drill_entry(r))
+        if limit is not None and len(out) >= limit:
+            break
+    return out
+
+
+def _build_drill_all_entries(
+    rows: List[dict],
+    cap_export: Optional[int],
+    *,
+    exclude_pii: bool,
+) -> List[dict]:
+    hp_rows, wl_rows = _ordered_bad_case_row_lists(rows, exclude_pii=exclude_pii)
+    return _merge_drill_all_entries(hp_rows, wl_rows, cap_export)
 
 
 def _request_id_to_drill_anchor(drill: List[dict]) -> Dict[str, str]:
@@ -868,16 +992,6 @@ def _row_to_drill_entry(row: dict) -> dict:
     }
 
 
-def _collect_drilldown(rows: List[dict], limit: Optional[int]) -> List[dict]:
-    """Bad-case rows (high_precision, watchlist) for the report UI; ``limit`` None = all."""
-    out: List[dict] = []
-    for row in _iter_bad_case_drill_rows(rows):
-        out.append(_row_to_drill_entry(row))
-        if limit is not None and len(out) >= limit:
-            break
-    return out
-
-
 def _drill_export_payload(d: dict) -> dict:
     """JSONL-friendly row (drop pre-rendered HTML)."""
     skip = frozenset({"evidence_snapshot_html", "signal_evidence_html"})
@@ -905,34 +1019,74 @@ def _drilldown_section_html(
     *,
     total_count: int,
     export_rel: Optional[str] = None,
+    html_lang: str = "zh-CN",
+    use_display_diversify: bool = True,
 ) -> str:
-    """Case study 清单：页内仅展示前几条，全量可另存 jsonl。"""
-    title = "Case study（强怀疑 / 待观察，可展开详情）"
+    """Case study 清单：页内为两档配额 + 可选语义分桶抽样，全量可另存 jsonl。"""
+    en = str(html_lang).lower().startswith("en")
+    title = (
+        "Case study (high_precision / watchlist, expandable)"
+        if en
+        else "Case study（强怀疑 / 待观察，可展开详情）"
+    )
     if not drill and total_count == 0:
+        empty = (
+            "No high_precision or watchlist rows in this batch, or this section was disabled."
+            if en
+            else "本批没有 <code>high_precision</code>（强怀疑）或 "
+            "<code>watchlist</code>（待观察）命中样本；或已在命令行关闭本段。"
+        )
         return (
             f"<h2 id='sec-cases'>{html.escape(title)}</h2>"
-            "<p class='note'>本批没有 <code>high_precision</code>（强怀疑）或 "
-            "<code>watchlist</code>（待观察）命中样本；或已在命令行关闭本段。</p>"
+            f"<p class='note'>{html.escape(empty)}</p>"
         )
     shown = len(drill)
     extra_note = ""
     if total_count > shown:
-        extra_note = (
-            f"<p class='note'><strong>页内展示 {shown} 条</strong>（先强怀疑再待观察；"
-            f"同档内按 P0→P3、aligned→mixed→conflict，再按原行号），"
-            f"本批同条件共 <strong>{total_count}</strong> 条。"
-        )
-        if export_rel:
-            extra_note += (
-                f" 全量请下载/用脚本打开："
-                f"<a href='{html.escape(export_rel)}'><code>{html.escape(export_rel)}</code></a> "
-                f"（JSON Lines，一行一例，便于 jq / pandas）。"
+        strat = (
+            "Per-tier ~half quota + semantic cluster round-robin (char TF-IDF + "
+            "MiniBatchKMeans, same as Insight); within tier: P0→P3, aligned→conflict."
+            if use_display_diversify and en
+            else (
+                "两档各约一半配额，并对每档按与 Insight 相同的字符 TF-IDF + MiniBatchKMeans "
+                "语义簇做轮询抽样；档内仍为 P0→P3、aligned→mixed→conflict。"
+                if use_display_diversify
+                else (
+                    "Per-tier ~half quota; within tier: P0→P3, aligned→conflict."
+                    if en
+                    else "两档各约一半配额；档内按 P0→P3、aligned→mixed→conflict 截取。"
+                )
             )
+        )
+        head = (
+            f"<p class='note'><strong>页内展示 {shown} 条</strong>（{strat}）；"
+            f"本批本版导出条件共 <strong>{total_count}</strong> 条。"
+            if not en
+            else f"<p class='note'><strong>{shown}</strong> rows in-page ({strat}); "
+            f"<strong>{total_count}</strong> rows in this report’s export cohort."
+        )
+        extra_note = head
+        if export_rel:
+            ext = (
+                f" Full export: "
+                f"<a href='{html.escape(export_rel)}'><code>{html.escape(export_rel)}</code></a> "
+                f"(JSON Lines)."
+                if en
+                else (
+                    f" 全量请打开："
+                    f"<a href='{html.escape(export_rel)}'><code>{html.escape(export_rel)}</code></a> "
+                    f"（JSON Lines）。"
+                )
+            )
+            extra_note += ext
         extra_note += "</p>"
     elif export_rel and total_count > 0:
         extra_note = (
-            f"<p class='note'>本批共 <strong>{total_count}</strong> 条，已同时写入 "
+            f"<p class='note'>本批共 <strong>{total_count}</strong> 条，已写入 "
             f"<a href='{html.escape(export_rel)}'><code>{html.escape(export_rel)}</code></a>。</p>"
+            if not en
+            else f"<p class='note'><strong>{total_count}</strong> rows written to "
+            f"<a href='{html.escape(export_rel)}'><code>{html.escape(export_rel)}</code></a>.</p>"
         )
     cards = []
     for i, d in enumerate(drill):
@@ -976,10 +1130,15 @@ def _drilldown_section_html(
             "</div></div></div>"
         )
     intro = (
-        "<p class='note'>顺序：<strong>强怀疑→待观察</strong>；档内 P0→P3、aligned→conflict。"
-        "点「展开字段」查看 meta/stats 快照、各信号证据及全文 query/response；"
-        "<code>#编号</code> 可分享锚点。"
-        "与上文 Insight 的 <code>request_id</code> 一一对应。</p>"
+        "<p class='note'>列表顺序：<strong>强怀疑区块在前，待观察区块在后</strong>。"
+        "点「展开字段」查看快照与各信号证据及全文 query/response；"
+        "<code>#编号</code> 可分享锚点；与上文 Insight 中 <code>request_id</code> 对应。</p>"
+        if not en
+        else (
+            "<p class='note'>Order: <strong>high_precision block</strong>, then <strong>watchlist</strong>. "
+            "Expand for evidence tables and full query/response; <code>#</code> is the in-page anchor; "
+            "<code>request_id</code> matches Insight cards.</p>"
+        )
     )
     block = (
         f"<h2 id='sec-cases'>{html.escape(title)}</h2>"
@@ -1447,10 +1606,12 @@ def _insight_model_tab_caption(bucket: str, *, group: str, en: bool) -> str:
 def _collect_tier_insight_candidates(
     rows: List[dict],
     tier: str,
-) -> Tuple[List[dict], List[dict]]:
-    """Rows with headline in tier, split into (non-PII, PII-flagged), each sorted."""
-    clean: List[Tuple[Tuple[int, int, int], dict]] = []
-    pii: List[Tuple[Tuple[int, int, int], dict]] = []
+    *,
+    hide_pii: bool,
+) -> Tuple[List[dict], int]:
+    """Rows with headline in tier, sorted; ``hide_pii`` drops PII-flagged rows (count in int)."""
+    scored: List[Tuple[Tuple[int, int, int], dict]] = []
+    omitted = 0
     for i, row in enumerate(rows):
         meta = get_dj_meta(row)
         if str(meta.get("agent_bad_case_tier", "")) != tier:
@@ -1461,14 +1622,12 @@ def _collect_tier_insight_candidates(
         hl = (ins.get("headline") or "").strip()
         if not hl:
             continue
-        t = (_insight_sort_tuple(row, i), row)
-        if _exclude_insight_card_for_pii_row(row, ins):
-            pii.append(t)
-        else:
-            clean.append(t)
-    clean.sort(key=lambda x: (x[0][0], x[0][1], x[0][2]))
-    pii.sort(key=lambda x: (x[0][0], x[0][1], x[0][2]))
-    return [row for _, row in clean], [row for _, row in pii]
+        if hide_pii and _exclude_insight_card_for_pii_row(row, ins):
+            omitted += 1
+            continue
+        scored.append((_insight_sort_tuple(row, i), row))
+    scored.sort(key=lambda x: (x[0][0], x[0][1], x[0][2]))
+    return [row for _, row in scored], omitted
 
 
 def _insight_card_html(
@@ -1476,7 +1635,6 @@ def _insight_card_html(
     anchor_by_rid: Dict[str, str],
     *,
     en: bool,
-    minimal_pii: bool = False,
 ) -> str:
     meta = get_dj_meta(row)
     ins = meta.get("agent_insight_llm") or {}
@@ -1498,46 +1656,37 @@ def _insight_card_html(
     if not isinstance(facets, list):
         facets = [str(facets)]
     facets_s = "、".join(str(x) for x in facets[:12] if x)
-    if minimal_pii:
-        hl = (
-            "PII audit / redaction signals — headline and detail omitted in-page "
-            "(see export / case study)."
-            if en
-            else "含 PII 审计或脱敏线索 — 页内不显式展示标题与根因全文（详见导出与 case study）。"
-        )
-        causes_html = ""
-    else:
-        causes = ins.get("root_causes") or []
-        cause_lis = []
-        if isinstance(causes, list):
-            for c in causes[:5]:
-                if not isinstance(c, dict):
-                    cause_lis.append(f"<li>{html.escape(str(c))}</li>")
-                    continue
-                factor = html.escape(str(c.get("factor") or ""))
-                conf = html.escape(str(c.get("confidence") or ""))
-                r1 = html.escape(str(c.get("rationale_one_line") or "")[:280])
-                cited = c.get("cited_fields") or []
-                if not isinstance(cited, list):
-                    cited = [str(cited)]
-                cf = html.escape(", ".join(str(x) for x in cited[:8]))
-                if cf:
-                    cite_html = (
-                        f' <span class="cite">Fields: {cf}</span>'
-                        if en
-                        else f' <span class="cite">依据字段: {cf}</span>'
-                    )
-                else:
-                    cite_html = ""
-                if en:
-                    cause_lis.append(
-                        f"<li><strong>{factor}</strong> (conf {conf}) — {r1}{cite_html}</li>"
-                    )
-                else:
-                    cause_lis.append(
-                        f"<li><strong>{factor}</strong>（置信 {conf}）— {r1}{cite_html}</li>"
-                    )
-        causes_html = "<ul class='causes'>" + "".join(cause_lis) + "</ul>" if cause_lis else ""
+    causes = ins.get("root_causes") or []
+    cause_lis = []
+    if isinstance(causes, list):
+        for c in causes[:5]:
+            if not isinstance(c, dict):
+                cause_lis.append(f"<li>{html.escape(str(c))}</li>")
+                continue
+            factor = html.escape(str(c.get("factor") or ""))
+            conf = html.escape(str(c.get("confidence") or ""))
+            r1 = html.escape(str(c.get("rationale_one_line") or "")[:280])
+            cited = c.get("cited_fields") or []
+            if not isinstance(cited, list):
+                cited = [str(cited)]
+            cf = html.escape(", ".join(str(x) for x in cited[:8]))
+            if cf:
+                cite_html = (
+                    f' <span class="cite">Fields: {cf}</span>'
+                    if en
+                    else f' <span class="cite">依据字段: {cf}</span>'
+                )
+            else:
+                cite_html = ""
+            if en:
+                cause_lis.append(
+                    f"<li><strong>{factor}</strong> (conf {conf}) — {r1}{cite_html}</li>"
+                )
+            else:
+                cause_lis.append(
+                    f"<li><strong>{factor}</strong>（置信 {conf}）— {r1}{cite_html}</li>"
+                )
+    causes_html = "<ul class='causes'>" + "".join(cause_lis) + "</ul>" if cause_lis else ""
     drill_href = anchor_by_rid.get(rid) if rid else None
     if drill_href:
         ttxt = (
@@ -1564,29 +1713,23 @@ def _insight_card_html(
     if align:
         badges.append(f"<span class='ins-badge al'>{html.escape(align)}</span>")
     badge_html = " ".join(badges)
-    if minimal_pii:
-        audit_html = ""
-        facets_fold = ""
-        lens_html = ""
-    else:
-        audit_html = (
-            f"<p class='ins-audit'><strong>{'Audit notes' if en else '审阅备注'}</strong>："
-            f"{html.escape(audit)}</p>"
-            if audit
-            else ""
+    audit_html = (
+        f"<p class='ins-audit'><strong>{'Audit notes' if en else '审阅备注'}</strong>："
+        f"{html.escape(audit)}</p>"
+        if audit
+        else ""
+    )
+    facets_fold = ""
+    if facets_s:
+        sumy = "建议制图维度（可展开）" if not en else "Viz facet suggestions (expand)"
+        facets_body = f"<p class='ins-facets'>{html.escape(facets_s)}</p>"
+        facets_fold = (
+            f"<details class='insight-extra'><summary>{html.escape(sumy)}</summary>"
+            f"<div class='insight-extra-body'>{facets_body}</div></details>"
         )
-        facets_fold = ""
-        if facets_s:
-            sumy = "建议制图维度（可展开）" if not en else "Viz facet suggestions (expand)"
-            facets_body = f"<p class='ins-facets'>{html.escape(facets_s)}</p>"
-            facets_fold = (
-                f"<details class='insight-extra'><summary>{html.escape(sumy)}</summary>"
-                f"<div class='insight-extra-body'>{facets_body}</div></details>"
-            )
-        lens_html = _insight_card_lens_html(meta, html_lang="en" if en else "zh-CN")
-    card_cls = "insight-card insight-card-pii-lite" if minimal_pii else "insight-card"
+    lens_html = _insight_card_lens_html(meta, html_lang="en" if en else "zh-CN")
     return (
-        f"<div class='{card_cls}'>"
+        "<div class='insight-card'>"
         f"<div class='insight-h'>{html.escape(hl)} {badge_html}</div>"
         f"{meta_line}"
         f"{causes_html}"
@@ -1981,18 +2124,14 @@ def _insight_section_rich_html(
     semantic_max_k: int = 15,
     model_tab_group: str = "full",
     model_tier: Optional[Dict[str, Counter]] = None,
+    hide_pii: bool = False,
+    use_display_diversify: bool = True,
 ) -> str:
     """Insight cards from ``agent_insight_llm`` plus headline/audit clusters.
 
-    Order: P0→P3, aligned→mixed→conflict, stable row index. ``limit`` caps the
-    **All** tab; each per-model sub-tab caps at ``model_tab_limit``.
-    Model tabs default to full ``agent_request_model`` strings; use
-    ``model_tab_group='family'`` to merge by vendor family.
-    Sub-tab order follows batch request volume (same basis as the stacked
-    request_model chart) when ``model_tier`` is provided.
-    Semantic clustering (TF-IDF + k-means) is on by default when
-    ``use_semantic_cluster`` is true. Headline clusters are built from the
-    non-PII subgroup only; PII-flagged rows render as abridged cards.
+    Cards shown in-page use semantic-cluster round-robin when enabled (same TF-IDF
+    + MiniBatchKMeans as the open cluster block). ``hide_pii`` removes PII-flagged
+    rows (safe report variant).
     """
     en = str(html_lang).lower().startswith("en")
     tier_zh = _tier_zh(tier)
@@ -2003,181 +2142,150 @@ def _insight_section_rich_html(
         if tier == "watchlist"
         else "sec-insights"
     )
-    clean, pii_rows = _collect_tier_insight_candidates(rows, tier)
-    n_clean = len(clean)
-    n_pii = len(pii_rows)
-    if not clean and not pii_rows:
+    candidates, omitted_pii = _collect_tier_insight_candidates(rows, tier, hide_pii=hide_pii)
+    if not candidates and omitted_pii == 0:
         return (
             f"<section class='insight-sec' id='{sec_id}'>"
             f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
             "<p class='note'>本档下暂无带 <code>headline</code> 的 "
             "<code>meta.agent_insight_llm</code>（可能未跑 insight 算子，或解析失败）。</p></section>"
         )
+    if hide_pii and not candidates and omitted_pii > 0:
+        msg = (
+            f"{omitted_pii} headline row(s) in this tier omitted here (PII audit / redaction); "
+            "open the PII audit HTML or export."
+            if en
+            else (
+                f"本档 {omitted_pii} 条带 headline 的样本因 PII 审计/脱敏信号未在此页展示；"
+                "请打开同目录 PII 审计版 HTML 或导出。"
+            )
+        )
+        return (
+            f"<section class='insight-sec' id='{sec_id}'>"
+            f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
+            f"<p class='note'>{html.escape(msg)}</p></section>"
+        )
     cluster_html = _insight_headline_audit_cluster_html(
-        clean,
+        candidates,
         en=en,
         use_semantic_cluster=use_semantic_cluster,
         semantic_max_k=semantic_max_k,
     )
-    if clean:
-        if use_model_tabs:
-            n_chart_models = len(model_tier) if model_tier else 0
-            chart_tail_en = (
-                (
-                    "Sub-tab order matches the stacked request_model chart (descending batch "
-                    f"volume per bucket). The chart shows the top {MODEL_STACK_CHART_TOP_N} "
-                    "models by requests and merges the rest."
-                )
-                if n_chart_models > MODEL_STACK_CHART_TOP_N
-                else (
-                    "Sub-tab order matches the stacked request_model chart (descending batch "
-                    "volume per bucket), same models as in the figure."
-                )
+    div_note = ""
+    if use_display_diversify and len(candidates) >= 4:
+        div_note += (
+            "<p class='note'>Card sample uses semantic-cluster round-robin (same method as the "
+            "open cluster block below) for audit diversity.</p>"
+            if en
+            else "<p class='note'>以下卡片按语义簇轮询抽样展示（与下方默认展开的聚类同源），"
+            "减轻与 case study 的简单前缀重复。</p>"
+        )
+    if hide_pii and omitted_pii > 0:
+        div_note += (
+            f"<p class='note'>{omitted_pii} PII-flagged headline row(s) omitted here "
+            "(see PII audit report).</p>"
+            if en
+            else f"<p class='note'>另有 <strong>{omitted_pii}</strong> 条含 PII 线索的 headline 未在此安全版展示"
+            "（详见 PII 审计版）。</p>"
+        )
+    display_rows = (
+        _diversify_rows_by_semantic_clusters(candidates, limit, semantic_max_k)
+        if use_display_diversify
+        else candidates[:limit]
+    )
+    if use_model_tabs:
+        n_chart_models = len(model_tier) if model_tier else 0
+        chart_tail_en = (
+            (
+                "Sub-tab order matches the stacked request_model chart (descending batch "
+                f"volume per bucket). The chart shows the top {MODEL_STACK_CHART_TOP_N} "
+                "models by requests and merges the rest."
             )
-            chart_tail_zh = (
-                (
-                    "子 Tab 顺序与同页「按请求模型堆叠」一致，按<strong>全批次</strong>各桶请求量降序；"
-                    f"图中为 Top {MODEL_STACK_CHART_TOP_N} 高频模型，其余合并为一柱。"
-                )
-                if n_chart_models > MODEL_STACK_CHART_TOP_N
-                else (
-                    "子 Tab 顺序与同页「按请求模型堆叠」一致，按<strong>全批次</strong>各桶请求量降序；"
-                    "图中为本批全部请求模型。"
-                )
+            if n_chart_models > MODEL_STACK_CHART_TOP_N
+            else (
+                "Sub-tab order matches the stacked request_model chart (descending batch "
+                "volume per bucket), same models as in the figure."
             )
-            if str(model_tab_group).strip().lower() == "family":
-                intro = (
-                    "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
-                    "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
-                    "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
-                    "<a href='#sec-insight-fields'>Badge semantics</a>. "
-                    "Sub-tabs group by model <em>family</em> (parsed from "
-                    f"<code>agent_request_model</code>). {chart_tail_en}</p>"
-                    if en
-                    else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
-                    "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
-                    "<a href='#sec-charts'>图表</a>、"
-                    "<a href='#sec-signal-cluster'>聚类表</a>一致。"
-                    "<a href='#sec-insight-fields'>徽标含义</a>。"
-                    "下方按 <code>agent_request_model</code> 解析出的<strong>模型族</strong>分 Tab 抽样展示；"
-                    f"{chart_tail_zh}</p>"
-                )
-            else:
-                intro = (
-                    "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
-                    "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
-                    "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
-                    "<a href='#sec-insight-fields'>Badge semantics</a>. "
-                    "Sub-tabs use the full <code>agent_request_model</code> string "
-                    f"(versions such as 3.5 vs 2.5 stay separate). {chart_tail_en}</p>"
-                    if en
-                    else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
-                    "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
-                    "<a href='#sec-charts'>图表</a>、"
-                    "<a href='#sec-signal-cluster'>聚类表</a>一致。"
-                    "<a href='#sec-insight-fields'>徽标含义</a>。"
-                    "下方按 <code>agent_request_model</code> <strong>完整型号</strong>分 Tab（如 3.5 与 2.5 不同桶）抽样展示；"
-                    f"{chart_tail_zh}</p>"
-                )
-        else:
+        )
+        chart_tail_zh = (
+            (
+                "子 Tab 顺序与同页「按请求模型堆叠」一致，按<strong>全批次</strong>各桶请求量降序；"
+                f"图中为 Top {MODEL_STACK_CHART_TOP_N} 高频模型，其余合并为一柱。"
+            )
+            if n_chart_models > MODEL_STACK_CHART_TOP_N
+            else (
+                "子 Tab 顺序与同页「按请求模型堆叠」一致，按<strong>全批次</strong>各桶请求量降序；"
+                "图中为本批全部请求模型。"
+            )
+        )
+        if str(model_tab_group).strip().lower() == "family":
             intro = (
                 "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
                 "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
                 "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
-                "<a href='#sec-insight-fields'>Badge semantics</a>.</p>"
+                "<a href='#sec-insight-fields'>Badge semantics</a>. "
+                "Sub-tabs group by model <em>family</em> (parsed from "
+                f"<code>agent_request_model</code>). {chart_tail_en}</p>"
                 if en
                 else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
                 "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
                 "<a href='#sec-charts'>图表</a>、"
                 "<a href='#sec-signal-cluster'>聚类表</a>一致。"
-                "<a href='#sec-insight-fields'>徽标含义</a>。</p>"
+                "<a href='#sec-insight-fields'>徽标含义</a>。"
+                "下方按 <code>agent_request_model</code> 解析出的<strong>模型族</strong>分 Tab 抽样展示；"
+                f"{chart_tail_zh}</p>"
+            )
+        else:
+            intro = (
+                "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
+                "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
+                "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
+                "<a href='#sec-insight-fields'>Badge semantics</a>. "
+                "Sub-tabs use the full <code>agent_request_model</code> string "
+                f"(versions such as 3.5 vs 2.5 stay separate). {chart_tail_en}</p>"
+                if en
+                else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
+                "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
+                "<a href='#sec-charts'>图表</a>、"
+                "<a href='#sec-signal-cluster'>聚类表</a>一致。"
+                "<a href='#sec-insight-fields'>徽标含义</a>。"
+                "下方按 <code>agent_request_model</code> <strong>完整型号</strong>分 Tab（如 3.5 与 2.5 不同桶）抽样展示；"
+                f"{chart_tail_zh}</p>"
             )
     else:
         intro = (
-            "<p class='note'>Every row with a headline in this tier is grouped under "
-            "PII audit / redaction signals; cards below are abridged in-page "
-            "(see export / case study).</p>"
+            "<p class='note'>Sorted P0→P3 then aligned→mixed→conflict. "
+            "Each card adds <strong>dual-lens cues</strong> from this row’s signals; "
+            "same bucketing as <a href='#sec-charts'>charts tabs</a>. "
+            "<a href='#sec-insight-fields'>Badge semantics</a>.</p>"
             if en
-            else "<p class='note'>本档带 headline 的样本均含 PII 审计或脱敏相关信号；"
-            "下方为页内从简卡片，完整内容见导出与 case study。</p>"
+            else "<p class='note'>排序：P0→P3，同档 aligned→mixed→conflict。"
+            "卡片中的<strong>双视角</strong>由本行信号生成，分桶规则与"
+            "<a href='#sec-charts'>图表</a>、"
+            "<a href='#sec-signal-cluster'>聚类表</a>一致。"
+            "<a href='#sec-insight-fields'>徽标含义</a>。</p>"
         )
-    split_ledger = ""
-    if n_clean and n_pii:
-        split_ledger = (
-            "<p class='note insight-pii-split-ledger'>"
-            + (
-                f"Split: <strong>{n_clean}</strong> without PII flags (full cards; clusters below "
-                f"use this subgroup only) · <strong>{n_pii}</strong> PII-flagged (abridged list "
-                "afterward).</p>"
-                if en
-                else (
-                    f"本档 headline 分组：<strong>{n_clean}</strong> 条无 PII 标记（全文卡片；"
-                    f"下方聚类仅统计该子组）· <strong>{n_pii}</strong> 条含 PII 线索（文末从简列表）。</p>"
-                )
-            )
+    if use_model_tabs:
+        body_html = _insight_model_tabs_html(
+            sec_id,
+            display_rows,
+            limit,
+            max(1, model_tab_limit),
+            anchor_by_rid,
+            en=en,
+            model_tab_group=model_tab_group,
+            model_tier=model_tier,
         )
-    body_blocks: List[str] = []
-    if clean:
-        h3c = (
-            "Without PII audit / redaction flags"
-            if en
-            else "无 PII 审计 / 脱敏标记"
+    else:
+        body_html = "".join(
+            _insight_card_html(r, anchor_by_rid, en=en) for r in display_rows[:limit]
         )
-        body_blocks.append(
-            f"<h3 id='{html.escape(sec_id + '-clean', quote=True)}' "
-            f"class='insight-subsec'>{html.escape(h3c)}</h3>"
-        )
-        if use_model_tabs:
-            body_blocks.append(
-                _insight_model_tabs_html(
-                    sec_id,
-                    clean,
-                    limit,
-                    max(1, model_tab_limit),
-                    anchor_by_rid,
-                    en=en,
-                    model_tab_group=model_tab_group,
-                    model_tier=model_tier,
-                )
-            )
-        else:
-            inner = "".join(
-                _insight_card_html(r, anchor_by_rid, en=en) for r in clean[:limit]
-            )
-            body_blocks.append(f"<div class='insight-list'>{inner}</div>")
-    if pii_rows:
-        h3p = (
-            "PII-flagged (abridged in-page)"
-            if en
-            else "含 PII 审计或脱敏线索（页内从简）"
-        )
-        pii_note = (
-            "<p class='note insight-pii-lite-note'>"
-            + (
-                "Headlines, root causes, audit notes, and lens cues are omitted here "
-                "to reduce accidental exposure; open the row in export or case study."
-                if en
-                else "为避免页内复显敏感措辞，本条不显式展示标题、根因与审阅全文；请在导出或 "
-                "case study 中查看。"
-            )
-            + "</p>"
-        )
-        pii_inner = "".join(
-            _insight_card_html(r, anchor_by_rid, en=en, minimal_pii=True)
-            for r in pii_rows[:limit]
-        )
-        body_blocks.append(
-            f"<h3 id='{html.escape(sec_id + '-pii', quote=True)}' "
-            f"class='insight-subsec'>{html.escape(h3p)}</h3>"
-            f"{pii_note}"
-            f"<div class='insight-list insight-pii-strip'>{pii_inner}</div>"
-        )
-    body_html = "".join(body_blocks)
+        body_html = f"<div class='insight-list'>{body_html}</div>"
     return (
         f"<section class='insight-sec' id='{sec_id}'>"
         f"<h2>单条 Insight 摘录（{html.escape(tier_zh)}）</h2>"
         f"{intro}"
-        f"{split_ledger}"
+        f"{div_note}"
         f"{cluster_html}"
         f"{body_html}</section>"
     )
@@ -2195,6 +2303,8 @@ def _insight_sections_html(
     semantic_max_k: int = 15,
     model_tab_group: str = "full",
     model_tier: Optional[Dict[str, Counter]] = None,
+    hide_pii: bool = False,
+    use_display_diversify: bool = True,
 ) -> str:
     """Render insight sections for both high_precision and watchlist tiers."""
     blocks = [
@@ -2210,6 +2320,8 @@ def _insight_sections_html(
             semantic_max_k=semantic_max_k,
             model_tab_group=model_tab_group,
             model_tier=model_tier,
+            hide_pii=hide_pii,
+            use_display_diversify=use_display_diversify,
         ),
         _insight_section_rich_html(
             rows,
@@ -2223,6 +2335,8 @@ def _insight_sections_html(
             semantic_max_k=semantic_max_k,
             model_tab_group=model_tab_group,
             model_tier=model_tier,
+            hide_pii=hide_pii,
+            use_display_diversify=use_display_diversify,
         ),
     ]
     return "".join(blocks)
@@ -2989,6 +3103,43 @@ def _build_macro_distribution_section(
     return "\n".join(parts)
 
 
+def _pii_audit_report_path(safe_output: Path) -> Path:
+    """Sibling path for the full PII-audit HTML next to the safe ``--output``."""
+    return safe_output.with_name(f"{safe_output.stem}_pii_audit{safe_output.suffix}")
+
+
+def _report_variant_banner_html(
+    *,
+    variant: str,
+    html_lang: str,
+    wrote_audit_sibling: bool,
+) -> str:
+    en = str(html_lang).lower().startswith("en")
+    if variant == "safe":
+        msg = (
+            "This is the <strong>PII-safe</strong> report: Insight cards and in-page Case study "
+            "exclude rows flagged by PII audit / redaction heuristics."
+            if en
+            else "本页为 <strong>PII 安全版</strong>：单条 Insight 与 Case study 页内展示已排除 "
+            "含 PII 审计或脱敏线索的样本。"
+        )
+        if wrote_audit_sibling:
+            msg += (
+                " Open <code>*_pii_audit.html</code> in the same folder for the audit view."
+                if en
+                else " 内部分析请打开同目录生成的 <code>*_pii_audit.html</code>（PII 审计版）。"
+            )
+    else:
+        msg = (
+            "This is the <strong>PII audit</strong> report: Insight and Case study include "
+            "PII-flagged rows for internal review only — do not share externally."
+            if en
+            else "本页为 <strong>PII 审计版</strong>：Insight 与 Case study 保留含 PII 线索的样本，"
+            "仅供内部分析，请勿对外转发。"
+        )
+    return f"<p class='note report-variant-banner'>{msg}</p>"
+
+
 def _html_page(
     title: str,
     input_path: str,
@@ -3005,6 +3156,7 @@ def _html_page(
     bilingual_header: str = "",
     *,
     html_lang: str = "zh-CN",
+    variant_banner: str = "",
 ) -> str:
     gen_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     tier_rows = "".join(
@@ -3229,6 +3381,7 @@ def _html_page(
 <style>{css}</style>
 </head><body>
 <h1>{html.escape(title)}</h1>
+{variant_banner}
 <div class="meta">
   生成时间 {html.escape(gen_at)} ·
   数据文件 <code>{html.escape(input_path)}</code><br/>
@@ -3366,6 +3519,18 @@ def main() -> int:
         help="关闭 Insight 节默认的语义聚类（TF-IDF+KMeans），仅保留精确归一合并表",
     )
     ap.add_argument(
+        "--report-pii-variants",
+        choices=("both", "safe", "audit"),
+        default="both",
+        help="默认 both：写出 PII 安全版（--output）与同目录 *_pii_audit.html；"
+        "safe|audit 仅生成一种；audit 时路径即 --output",
+    )
+    ap.add_argument(
+        "--no-audit-display-diversify",
+        action="store_true",
+        help="关闭 Insight 卡片与 Case study 页内的语义簇轮询抽样（改回按优先级顺序截取）",
+    )
+    ap.add_argument(
         "--drilldown-limit",
         type=int,
         default=-1,
@@ -3375,7 +3540,7 @@ def main() -> int:
         "--drilldown-display-max",
         type=int,
         default=50,
-        help="HTML 内嵌展开的强怀疑/待观察样例条数上限（其余仅写入 jsonl）",
+        help="Case study 页内最多展开条数（默认两档各约一半；语义簇轮询抽样，其余见 jsonl）",
     )
     ap.add_argument(
         "--no-drilldown-export",
@@ -3495,41 +3660,19 @@ def main() -> int:
         macro_distribution_html=macro_html,
     )
 
-    drill_html = ""
-    export_rel: Optional[str] = None
     out_path = Path(args.output)
-    drill_show: List[dict] = []
-    if args.drilldown_limit != 0:
-        cap_export = args.drilldown_limit if args.drilldown_limit > 0 else None
-        drill_all = _collect_drilldown(rows, cap_export)
-        total_drill = len(drill_all)
-        display_n = max(0, args.drilldown_display_max)
-        drill_show = drill_all[:display_n] if display_n else []
-        if not args.no_drilldown_export and drill_all:
-            export_path = out_path.with_name(out_path.stem + "_drilldown_full.jsonl")
-            _write_drilldown_jsonl(export_path, drill_all)
-            export_rel = export_path.name
-            print(f"Wrote drilldown export {export_path.resolve()}")
-        drill_html = _drilldown_section_html(
-            drill_show,
-            total_count=total_drill,
-            export_rel=export_rel,
-        )
+    use_div = not args.no_audit_display_diversify
+    insight_semantic_k = 15
 
-    anchor_by_rid = _request_id_to_drill_anchor(drill_show)
-    insight_section_html = ""
-    if args.sample_headlines > 0:
-        insight_section_html = _insight_sections_html(
-            rows,
-            args.sample_headlines,
-            max(1, int(args.insight_model_tab_limit)),
-            not args.no_insight_model_tabs,
-            anchor_by_rid,
-            html_lang=html_page_lang,
-            use_semantic_cluster=not args.no_insight_semantic_cluster,
-            model_tab_group=str(args.insight_model_tab_group),
-            model_tier=model_tier,
-        )
+    variants: List[Tuple[str, Path]] = []
+    rpv = str(args.report_pii_variants).strip().lower()
+    if rpv in ("both", "safe"):
+        variants.append(("safe", out_path))
+    if rpv in ("both", "audit"):
+        audit_p = out_path if rpv == "audit" else _pii_audit_report_path(out_path)
+        variants.append(("audit", audit_p))
+    wrote_both = rpv == "both"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
 
     bilingual_header = ""
     if args.bilingual:
@@ -3544,25 +3687,88 @@ def main() -> int:
             "see the <a href='#sec-insight-fields'>field semantics</a> table.</p>"
         )
 
-    page = _html_page(
-        args.title,
-        str(Path(args.input).resolve()),
-        len(rows),
-        tier_cnt,
-        cohort,
-        att_html,
-        exec_summary_html,
-        charts_section_html,
-        drill_html,
-        _insight_fields_legend_html(html_lang=html_page_lang),
-        insight_section_html,
-        _reading_scenarios_html(html_lang=html_page_lang),
-        bilingual_header=bilingual_header,
-        html_lang=html_page_lang,
-    )
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(page, encoding="utf-8")
-    print(f"Wrote {out_path.resolve()}")
+    for variant, target_html in variants:
+        hide_pii = variant == "safe"
+        drill_html = ""
+        export_rel: Optional[str] = None
+        drill_show: List[dict] = []
+        if args.drilldown_limit != 0:
+            cap_export = args.drilldown_limit if args.drilldown_limit > 0 else None
+            drill_all = _build_drill_all_entries(rows, cap_export, exclude_pii=hide_pii)
+            total_drill = len(drill_all)
+            display_n = max(0, args.drilldown_display_max)
+            if display_n:
+                pick_rows = _pick_balanced_diverse_drill_rows(
+                    rows,
+                    display_n,
+                    exclude_pii=hide_pii,
+                    semantic_max_k=insight_semantic_k,
+                    use_diversify=use_div,
+                )
+                drill_show = [_row_to_drill_entry(r) for r in pick_rows]
+            if not args.no_drilldown_export and drill_all:
+                export_path = target_html.with_name(target_html.stem + "_drilldown_full.jsonl")
+                _write_drilldown_jsonl(export_path, drill_all)
+                export_rel = export_path.name
+                print(f"Wrote drilldown export {export_path.resolve()}")
+            drill_html = _drilldown_section_html(
+                drill_show,
+                total_count=total_drill,
+                export_rel=export_rel,
+                html_lang=html_page_lang,
+                use_display_diversify=use_div,
+            )
+
+        anchor_by_rid = _request_id_to_drill_anchor(drill_show)
+        insight_section_html = ""
+        if args.sample_headlines > 0:
+            insight_section_html = _insight_sections_html(
+                rows,
+                args.sample_headlines,
+                max(1, int(args.insight_model_tab_limit)),
+                not args.no_insight_model_tabs,
+                anchor_by_rid,
+                html_lang=html_page_lang,
+                use_semantic_cluster=not args.no_insight_semantic_cluster,
+                semantic_max_k=insight_semantic_k,
+                model_tab_group=str(args.insight_model_tab_group),
+                model_tier=model_tier,
+                hide_pii=hide_pii,
+                use_display_diversify=use_div,
+            )
+
+        variant_banner = _report_variant_banner_html(
+            variant=variant,
+            html_lang=html_page_lang,
+            wrote_audit_sibling=wrote_both,
+        )
+        page_title = args.title
+        if wrote_both:
+            page_title = (
+                f"{args.title}（PII 安全版）"
+                if variant == "safe"
+                else f"{args.title}（PII 审计版）"
+            )
+
+        page = _html_page(
+            page_title,
+            str(Path(args.input).resolve()),
+            len(rows),
+            tier_cnt,
+            cohort,
+            att_html,
+            exec_summary_html,
+            charts_section_html,
+            drill_html,
+            _insight_fields_legend_html(html_lang=html_page_lang),
+            insight_section_html,
+            _reading_scenarios_html(html_lang=html_page_lang),
+            bilingual_header=bilingual_header,
+            html_lang=html_page_lang,
+            variant_banner=variant_banner,
+        )
+        target_html.write_text(page, encoding="utf-8")
+        print(f"Wrote {target_html.resolve()}")
     return 0
 
 
