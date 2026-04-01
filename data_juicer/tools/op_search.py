@@ -362,7 +362,7 @@ class OPSearcher:
             text = self._get_searchable_text(record, fields)
             corpus_tokens.append(self._tokenize(text))
 
-        rank_bm25 = LazyLoader("rank-bm25")
+        rank_bm25 = LazyLoader("rank_bm25", "rank-bm25")
         self._bm25_index = rank_bm25.BM25Okapi(corpus_tokens)
         self._bm25_records = records
         self._bm25_fields_key = tuple(fields)
