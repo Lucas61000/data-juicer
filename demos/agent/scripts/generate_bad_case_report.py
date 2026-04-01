@@ -5,6 +5,8 @@
 - 默认生成 **两份 HTML**：PII 安全版（``--output``）与同目录 ``*_pii_audit.html``（审计版）；
   Case study 页内在两档（强怀疑 / 待观察）间 **各约一半** 配额，并按与 Insight 相同的
   **字符 TF-IDF + MiniBatchKMeans** 语义簇做轮询抽样；全量写入对应 ``*_drilldown_full.jsonl``。
+- 含 **对话形态与用量** 小节：``messages`` 长度、用户轮数、``text`` 字符数、choices 长度、
+  token（meta / stats）与耗时（``agent_total_cost_time_ms`` 等）汇总表及可选直方图。
 - ``--llm-summary``：调用 OpenAI 兼容接口（默认读 ``DASHSCOPE_API_KEY`` / ``OPENAI_API_KEY``）。
 - 导读 HTTP 读超时默认 120s，可用 ``--llm-timeout-sec`` 或环境变量 ``BAD_CASE_REPORT_LLM_TIMEOUT_SEC``；超时自动重试 1 次。
 
@@ -378,6 +380,349 @@ def _tier_counts(rows: List[dict]) -> Counter:
         meta = get_dj_meta(row)
         c[str(meta.get("agent_bad_case_tier", "none"))] += 1
     return c
+
+
+def _coerce_int(val: object) -> Optional[int]:
+    if val is None:
+        return None
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def _coerce_float(val: object) -> Optional[float]:
+    if val is None:
+        return None
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def _meta_or_stats_int(meta: dict, stats: dict, *keys: str) -> Optional[int]:
+    for d in (meta, stats):
+        for k in keys:
+            v = _coerce_int(d.get(k))
+            if v is not None:
+                return v
+    return None
+
+
+def _row_messages_list(row: dict) -> Optional[List]:
+    m = row.get("messages")
+    return m if isinstance(m, list) else None
+
+
+def _count_user_turns_in_messages(messages: List) -> int:
+    return sum(
+        1
+        for msg in messages
+        if isinstance(msg, dict) and str(msg.get("role") or "").lower() == "user"
+    )
+
+
+def _count_tool_touch_messages(messages: List) -> int:
+    n = 0
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("tool_calls"):
+            n += 1
+        if str(msg.get("role") or "").lower() == "tool":
+            n += 1
+    return n
+
+
+def _choices_list_len(row: dict) -> Optional[int]:
+    for k in ("response_choices", "choices"):
+        v = row.get(k)
+        if isinstance(v, list):
+            return len(v)
+    return None
+
+
+def _latency_ms_from_row(row: dict, meta: dict) -> Optional[float]:
+    v = _coerce_float(meta.get("agent_total_cost_time_ms"))
+    if v is not None:
+        return v
+    return _coerce_float(row.get("total_cost_time"))
+
+
+def _gather_dialog_shape_series(rows: List[dict]) -> Dict[str, List[float]]:
+    """Per-row numeric series for dialogue / usage shape (best-effort over DJ export shapes)."""
+    keys = (
+        "messages_len",
+        "user_turns_in_messages",
+        "agent_turn_count",
+        "text_chars",
+        "choices_len",
+        "tool_touch_msgs",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "latency_ms",
+    )
+    series: Dict[str, List[float]] = {k: [] for k in keys}
+    for row in rows:
+        meta = get_dj_meta(row)
+        stats = get_dj_stats(row)
+        msgs = _row_messages_list(row)
+        if msgs is not None:
+            series["messages_len"].append(float(len(msgs)))
+            series["user_turns_in_messages"].append(float(_count_user_turns_in_messages(msgs)))
+            series["tool_touch_msgs"].append(float(_count_tool_touch_messages(msgs)))
+        atc = _coerce_int(meta.get("agent_turn_count"))
+        if atc is not None:
+            series["agent_turn_count"].append(float(atc))
+        text = row.get("text")
+        if isinstance(text, str) and text:
+            series["text_chars"].append(float(len(text)))
+        cl = _choices_list_len(row)
+        if cl is not None:
+            series["choices_len"].append(float(cl))
+        pt = _meta_or_stats_int(meta, stats, "prompt_tokens")
+        ct = _meta_or_stats_int(meta, stats, "completion_tokens")
+        tt = _meta_or_stats_int(meta, stats, "total_tokens")
+        if pt is not None:
+            series["prompt_tokens"].append(float(pt))
+        if ct is not None:
+            series["completion_tokens"].append(float(ct))
+        if tt is not None:
+            series["total_tokens"].append(float(tt))
+        lat = _latency_ms_from_row(row, meta)
+        if lat is not None:
+            series["latency_ms"].append(lat)
+    return series
+
+
+def _series_summary(vals: List[float]) -> Optional[Dict[str, float]]:
+    if not vals:
+        return None
+    s = sorted(vals)
+    n = len(s)
+    mid = s[n // 2]
+    p90_idx = min(n - 1, max(0, int(0.9 * (n - 1))))
+    return {
+        "n": float(n),
+        "min": s[0],
+        "max": s[-1],
+        "avg": sum(s) / n,
+        "median": float(mid),
+        "p90": s[p90_idx],
+    }
+
+
+def _fmt_metric_cell(x: Optional[float], *, as_int: bool = False) -> str:
+    if x is None:
+        return "—"
+    if as_int:
+        return str(int(round(x)))
+    if abs(x) >= 1000 or x == int(x):
+        return str(int(round(x)))
+    return f"{x:.2f}"
+
+
+def _chart_numeric_histogram(
+    plt_mod,
+    values: List[float],
+    title: str,
+    xlabel: str,
+    ylabel: str,
+) -> Optional[str]:
+    if plt_mod is None or len(values) < 3:
+        return None
+    vals = [float(x) for x in values if x == x]
+    if len(vals) < 3:
+        return None
+    n_bins = min(48, max(8, len(vals) // 4))
+    fig, ax = plt_mod.subplots(figsize=(7.2, 3.4))
+    ax.hist(vals, bins=n_bins, color="#2e7d9a", edgecolor="white", linewidth=0.4)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    fig.tight_layout()
+    return _fig_to_data_uri(fig, plt_mod)
+
+
+def _dialog_shape_metrics_section_html(
+    rows: List[dict],
+    plt_mod,
+    *,
+    no_charts: bool,
+    html_lang: str,
+) -> str:
+    """HTML: messages / turns / tokens / latency summary + optional histograms."""
+    en = str(html_lang).lower().startswith("en")
+    series = _gather_dialog_shape_series(rows)
+    labels = {
+        "messages_len": (
+            "messages list length (count of items)"
+            if en
+            else "messages 列表长度（条数）"
+        ),
+        "user_turns_in_messages": (
+            "User turns (role==user in messages)"
+            if en
+            else "用户轮数（messages 中 role=user 条数）"
+        ),
+        "agent_turn_count": (
+            "meta.agent_turn_count (dialog rounds from normalize)"
+            if en
+            else "meta.agent_turn_count（规范化写入的对话轮数）"
+        ),
+        "text_chars": (
+            "Flattened text field length (chars)"
+            if en
+            else "扁平 text 字段字符数"
+        ),
+        "choices_len": (
+            "response_choices / choices list length"
+            if en
+            else "response_choices 或 choices 列表长度"
+        ),
+        "tool_touch_msgs": (
+            "Tool-touching messages (tool_calls or role=tool)"
+            if en
+            else "含工具轨迹的消息条数（tool_calls 或 role=tool）"
+        ),
+        "prompt_tokens": (
+            "prompt_tokens (meta / stats)"
+            if en
+            else "prompt_tokens（meta 或 __dj__stats__）"
+        ),
+        "completion_tokens": (
+            "completion_tokens (meta / stats)"
+            if en
+            else "completion_tokens（meta 或 stats）"
+        ),
+        "total_tokens": (
+            "total_tokens (meta / stats; usage_counter / upstream)"
+            if en
+            else "total_tokens（meta 或 stats；用量算子等）"
+        ),
+        "latency_ms": (
+            "Latency ms (meta.agent_total_cost_time_ms or row.total_cost_time)"
+            if en
+            else "耗时毫秒（meta.agent_total_cost_time_ms 或行上 total_cost_time）"
+        ),
+    }
+    order = [
+        "messages_len",
+        "user_turns_in_messages",
+        "agent_turn_count",
+        "text_chars",
+        "choices_len",
+        "tool_touch_msgs",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "latency_ms",
+    ]
+    th_m = "Metric" if en else "指标"
+    th_n = "n" if en else "样本数"
+    th_lo = "min" if en else "最小"
+    th_hi = "max" if en else "最大"
+    th_avg = "avg" if en else "均值"
+    th_med = "median" if en else "中位"
+    th_p90 = "p90" if en else "p90"
+    rows_html: List[str] = []
+    chart_blocks: List[str] = []
+    hist_specs = (
+        ("messages_len", "messages_len", "Messages / row"),
+        ("user_turns_in_messages", "user_turns", "User turns / row"),
+        ("total_tokens", "total_tokens", "total_tokens / row"),
+        ("latency_ms", "latency", "Latency (ms) / row"),
+    )
+    for key in order:
+        vals = series.get(key) or []
+        summ = _series_summary(vals)
+        if not summ:
+            continue
+        lab = labels[key]
+        rows_html.append(
+            "<tr>"
+            f"<td>{html.escape(lab)}</td>"
+            f"<td>{_fmt_metric_cell(summ.get('n'), as_int=True)}</td>"
+            f"<td>{_fmt_metric_cell(summ.get('min'))}</td>"
+            f"<td>{_fmt_metric_cell(summ.get('max'))}</td>"
+            f"<td>{_fmt_metric_cell(summ.get('avg'))}</td>"
+            f"<td>{_fmt_metric_cell(summ.get('median'))}</td>"
+            f"<td>{_fmt_metric_cell(summ.get('p90'))}</td>"
+            "</tr>"
+        )
+    if not rows_html:
+        empty = (
+            "No dialogue / token / latency fields detected on loaded rows."
+            if en
+            else "当前载入的样本上未检测到 messages 长度、token 或耗时等可用字段。"
+        )
+        return (
+            "<section class='dialog-metrics-sec' id='sec-dialog-metrics'>"
+            f"<h2>{html.escape('Dialogue shape & usage' if en else '对话形态与用量')}</h2>"
+            f"<p class='note'>{html.escape(empty)}</p></section>"
+        )
+
+    intro = (
+        "Counts and distributions are computed on the same rows as the rest of this report "
+        "(respects <code>--limit</code>). Token fields are read from <code>meta</code> then "
+        "<code>__dj__stats__</code> when present."
+        if en
+        else "统计范围与本报告其它章节一致（受 <code>--limit</code> 影响）。"
+        "token 类字段优先读 <code>meta</code>，缺失时再读 <code>__dj__stats__</code>。"
+    )
+    h2 = "Dialogue shape & token / latency" if en else "对话形态与 token / 时延"
+    y_ct = "Rows" if en else "样本数"
+
+    if plt_mod is not None and not no_charts:
+        for series_key, alt_slug, en_title in hist_specs:
+            vals = series.get(series_key) or []
+            if len(vals) < 5:
+                continue
+            title = en_title if en else (
+                "messages 条数/行" if series_key == "messages_len"
+                else "用户轮数/行" if series_key == "user_turns_in_messages"
+                else "total_tokens/行" if series_key == "total_tokens"
+                else "耗时(ms)/行"
+            )
+            xlabel = (
+                "Messages" if series_key == "messages_len"
+                else "User turns" if series_key == "user_turns_in_messages"
+                else "total_tokens" if series_key == "total_tokens"
+                else "ms"
+            ) if en else (
+                "条数" if series_key == "messages_len"
+                else "轮数" if series_key == "user_turns_in_messages"
+                else "tokens" if series_key == "total_tokens"
+                else "ms"
+            )
+            uri = _chart_numeric_histogram(plt_mod, vals, title, xlabel, y_ct)
+            if uri:
+                chart_blocks.append(
+                    f"<h4 class='chart-sub'>{html.escape(title)}</h4>"
+                    f"<p class='note'><img src='{uri}' alt='{html.escape(alt_slug)}'/></p>"
+                )
+
+    charts_part = (
+        "<details class='dialog-metrics-charts' open>"
+        f"<summary>{html.escape('Histograms' if en else '分布直方图（默认展开）')}</summary>"
+        + ("".join(chart_blocks) if chart_blocks else f"<p class='note'>{html.escape('No chart (need ≥5 points per metric or matplotlib off).' if en else '暂无图（每项至少 5 个有效点，或未启用图表）。')}</p>")
+        + "</details>"
+    )
+
+    return (
+        "<section class='dialog-metrics-sec' id='sec-dialog-metrics'>"
+        f"<h2>{html.escape(h2)}</h2>"
+        f"<p class='note'>{intro}</p>"
+        "<table class='inner'><thead><tr>"
+        f"<th>{html.escape(th_m)}</th><th>{html.escape(th_n)}</th>"
+        f"<th>{html.escape(th_lo)}</th><th>{html.escape(th_hi)}</th>"
+        f"<th>{html.escape(th_avg)}</th><th>{html.escape(th_med)}</th><th>{html.escape(th_p90)}</th>"
+        "</tr></thead><tbody>"
+        f"{''.join(rows_html)}</tbody></table>"
+        f"{charts_part}"
+        "</section>"
+    )
 
 
 def _signal_counts_by_weight(rows: List[dict]) -> Tuple[Counter, Counter]:
@@ -1315,6 +1660,7 @@ def _report_toc_links(html_lang: str = "zh-CN") -> List[Tuple[str, str]]:
             ("#sec-counts", "Counts by tier"),
             ("#sec-tiers", "Tier semantics"),
             ("#sec-charts", "Charts & tabs"),
+            ("#sec-dialog-metrics", "Dialogue & tokens"),
             ("#sec-macro-dist", "Tags & tools"),
             ("#sec-signal-cluster", "Signal clustering"),
             ("#sec-insight-fields", "Insight fields"),
@@ -1330,6 +1676,7 @@ def _report_toc_links(html_lang: str = "zh-CN") -> List[Tuple[str, str]]:
         ("#sec-counts", "各档条数"),
         ("#sec-tiers", "分档说明"),
         ("#sec-charts", "图表与 Tab"),
+        ("#sec-dialog-metrics", "对话与用量"),
         ("#sec-macro-dist", "标签/工具分布"),
         ("#sec-signal-cluster", "信号聚类"),
         ("#sec-insight-fields", "Insight 字段"),
@@ -2603,13 +2950,15 @@ def _build_charts_section_html(
     h2 = "Charts & signal lenses (tabs)" if en else "图表与双视角 Tab"
     merged_lead_en = (
         "Same batch: tier/model charts → "
+        "<a href='#sec-dialog-metrics'>dialogue / tokens / latency</a> → "
         "<a href='#sec-macro-dist'>tools &amp; semantic tags</a> → "
         "<a href='#sec-signal-cluster'>clustering</a> → two tabs that <em>re-weight</em> reads. "
         "Stacks = sample counts; signal bars = in-batch occurrences. "
         "Per row: Insight cards and case-study section below."
     )
     merged_lead_zh = (
-        "阅读顺序：分档/模型总览 → <a href='#sec-macro-dist'>工具与语义标签</a> → "
+        "阅读顺序：分档/模型总览 → <a href='#sec-dialog-metrics'>对话与 token/时延</a> → "
+        "<a href='#sec-macro-dist'>工具与语义标签</a> → "
         "<a href='#sec-signal-cluster'>信号聚类</a> → 两个 Tab 切换视角。"
         "堆叠与分档柱为<strong>样本数</strong>；信号柱为<strong>出现次数</strong>。"
         "单条核对请看 Insight 卡片与下文的 case study。"
@@ -3149,6 +3498,7 @@ def _html_page(
     attribution_table: str,
     exec_summary_html: str,
     charts_section_html: str,
+    dialog_metrics_html: str,
     drilldown_html: str,
     insight_legend_html: str,
     insight_section_html: str,
@@ -3399,6 +3749,7 @@ def _html_page(
 <tbody>{tier_rows}</tbody></table>
 {tier_legend}
 {charts_section_html}
+{dialog_metrics_html}
 {insight_legend_html}
 {insight_section_html}
 {drilldown_html}
@@ -3659,6 +4010,9 @@ def main() -> int:
         html_lang=html_page_lang,
         macro_distribution_html=macro_html,
     )
+    dialog_metrics_html = _dialog_shape_metrics_section_html(
+        rows, plt_mod, no_charts=args.no_charts, html_lang=html_page_lang
+    )
 
     out_path = Path(args.output)
     use_div = not args.no_audit_display_diversify
@@ -3759,6 +4113,7 @@ def main() -> int:
             att_html,
             exec_summary_html,
             charts_section_html,
+            dialog_metrics_html,
             drill_html,
             _insight_fields_legend_html(html_lang=html_page_lang),
             insight_section_html,

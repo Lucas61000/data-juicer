@@ -60,6 +60,7 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
             html = out.read_text(encoding="utf-8")
             self.assertIn("<!DOCTYPE html>", html)
             self.assertIn("sec-charts", html)
+            self.assertIn("sec-dialog-metrics", html)
 
     def test_safe_report_omits_pii_headlines_audit_report_keeps(self) -> None:
         rows = [
