@@ -48,7 +48,6 @@ dependencies = [
     "tomli",
     "tomli-w",
     "gitpython",
-    "mcp[cli]>=1.7.0",
     "dep-logic",
     "rank-bm25>=0.2.2",
 ]
@@ -64,11 +63,6 @@ generic = [
     "uvloop==0.21.0",  # avoid async error before it's fixed in uvloop
     "onnxruntime",  # ONNX runtime
     "cudf-cu12==25.4.0", # dataframe on GPU
-]
-
-# Analysis
-analysis = [
-    "wordcloud==1.9.4",  # For drawing word clouds
 ]
 
 # Computer Vision
@@ -160,17 +154,23 @@ ai_services = [
     "label-studio==1.17.0",  # Data labeling
 ]
 
+# tools, including analysis, mcp, ...
+tools = [
+    "wordcloud==1.9.4",  # For drawing word clouds
+    "mcp[cli]>=1.7.0",  # for mcp service
+]
+
 
 # All dependencies (default + all optional)
 all = [
     "py-data-juicer[generic]",
-    "py-data-juicer[analysis]",
     "py-data-juicer[vision]",
     "py-data-juicer[nlp]",
     "py-data-juicer[audio]",
     "py-data-juicer[distributed]",
     "py-data-juicer[dev]",
     "py-data-juicer[ai_services]",
+    "py-data-juicer[tools]",
 ]
 
 [project.scripts]
