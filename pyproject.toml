@@ -41,14 +41,12 @@ dependencies = [
     "wget",
     "streamlit",
     "Pillow",
-    "fastapi>=0.110",
     "mwparserfromhell",
     "regex", # regular expressions
     "tomli",
     "tomli-w",
     "gitpython",
     "dep-logic",
-    "rank-bm25>=0.2.2",
 ]
 
 [project.optional-dependencies]
@@ -157,7 +155,9 @@ ai_services = [
 # tools, including analysis, mcp, ...
 tools = [
     "wordcloud==1.9.4",  # For drawing word clouds
-    "mcp[cli]>=1.7.0",  # for mcp service
+    "mcp[cli]>=1.7.0",  # For mcp service
+    "rank-bm25>=0.2.2",  # For OP search
+    "fastapi>=0.110",  # For using data-juicer in a service way
 ]
 
 
