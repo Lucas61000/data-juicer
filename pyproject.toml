@@ -36,7 +36,6 @@ dependencies = [
     "emoji==2.2.0", # emoji handling
     "tabulate",
     "bs4",
-    "matplotlib",
     "requests",
     "wget",
     "streamlit",
@@ -154,6 +153,7 @@ ai_services = [
 
 # tools, including analysis, mcp, ...
 tools = [
+    "matplotlib",  # For drawing analysis results
     "wordcloud==1.9.4",  # For drawing word clouds
     "mcp[cli]>=1.7.0",  # For mcp service
     "rank-bm25>=0.2.2",  # For OP search

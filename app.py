@@ -7,7 +7,6 @@ import math
 import os
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -22,6 +21,8 @@ from data_juicer.utils.constant import Fields, StatsKeys
 from data_juicer.utils.lazy_loader import LazyLoader
 from data_juicer.utils.logger_utils import get_log_file_path
 from data_juicer.utils.model_utils import MODEL_ZOO, prepare_model
+
+plt = LazyLoader("matplotlib.pyplot")
 
 
 @st.cache_data
