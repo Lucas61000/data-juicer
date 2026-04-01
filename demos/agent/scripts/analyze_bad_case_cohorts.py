@@ -14,7 +14,7 @@ import json
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, List, Optional, Sequence, Tuple, Union
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(_SCRIPTS_DIR) not in sys.path:
@@ -23,13 +23,22 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from dj_export_row import get_dj_meta, iter_merged_export_rows
 
 
-def load_merged_rows(path: str, limit: Optional[int] = None) -> List[dict]:
-    """Load jsonl with optional ``*_stats.jsonl`` merge (same as CLI)."""
+def load_merged_rows(
+    path: Union[str, Sequence[str]],
+    limit: Optional[int] = None,
+) -> List[dict]:
+    """Load jsonl with optional ``*_stats.jsonl`` merge (same as CLI).
+
+    If ``path`` is a sequence of paths, read each file in order (no on-disk merge).
+    ``limit`` caps the total row count across all files.
+    """
+    paths: List[str] = [path] if isinstance(path, str) else list(path)
     rows: List[dict] = []
-    for _, row in iter_merged_export_rows(path):
-        if limit is not None and len(rows) >= limit:
-            break
-        rows.append(row)
+    for p in paths:
+        for _, row in iter_merged_export_rows(p):
+            if limit is not None and len(rows) >= limit:
+                return rows
+            rows.append(row)
     return rows
 
 

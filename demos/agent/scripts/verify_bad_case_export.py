@@ -9,6 +9,9 @@ Exit 0 if checks pass; non-zero if file missing or required keys absent.
 Example:
   python demos/agent/scripts/verify_bad_case_export.py \\
     --input ./outputs/agent_bad_case_smoke/processed.jsonl
+
+  python demos/agent/scripts/verify_bad_case_export.py \\
+    --input ./batch1/processed.jsonl --input ./batch2/processed.jsonl
 """
 
 from __future__ import annotations
@@ -45,7 +48,14 @@ def _check_row(row: dict, line_no: int) -> List[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--input", required=True, help="processed.jsonl from dj-process")
+    ap.add_argument(
+        "--input",
+        action="append",
+        dest="inputs",
+        required=True,
+        metavar="PATH",
+        help="processed.jsonl from dj-process (repeatable; checked in order)",
+    )
     ap.add_argument(
         "--min-rows",
         type=int,
@@ -59,28 +69,40 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    if not os.path.isfile(args.input):
-        print(f"ERROR: not found: {args.input}", file=sys.stderr)
-        return 2
+    for inp in args.inputs:
+        if not os.path.isfile(inp):
+            print(f"ERROR: not found: {inp}", file=sys.stderr)
+            return 2
 
     all_errs: List[str] = []
-    n_json = 0
-    for line_no, row in iter_merged_export_rows(args.input):
-        if not isinstance(row, dict):
-            all_errs.append(f"line {line_no}: root must be object")
-            continue
-        n_json += 1
-        all_errs.extend(_check_row(row, line_no))
-        if args.require_insight:
-            meta = get_dj_meta(row)
-            if not isinstance(meta.get("agent_insight_llm"), dict):
-                all_errs.append(
-                    f"line {line_no}: agent_insight_llm missing (need full pipeline)"
-                )
-
-    if n_json < args.min_rows:
+    n_json_total = 0
+    for inp in args.inputs:
+        n_json = 0
+        for line_no, row in iter_merged_export_rows(inp):
+            if not isinstance(row, dict):
+                all_errs.append(f"{inp}: line {line_no}: root must be object")
+                continue
+            n_json += 1
+            for msg in _check_row(row, line_no):
+                all_errs.append(f"{inp}: {msg}")
+            if args.require_insight:
+                meta = get_dj_meta(row)
+                if not isinstance(meta.get("agent_insight_llm"), dict):
+                    all_errs.append(
+                        f"{inp}: line {line_no}: agent_insight_llm missing (need full pipeline)"
+                    )
+        n_json_total += n_json
+        stats_side = infer_stats_jsonl_path(inp)
+        merged_note = ""
+        if os.path.isfile(stats_side):
+            merged_note = f" (merged with {os.path.basename(stats_side)} where needed)"
         print(
-            f"ERROR: expected at least {args.min_rows} JSON rows, got {n_json}",
+            f"OK: {inp} — checked {n_json} row(s), bad-case fields present.{merged_note}"
+        )
+
+    if n_json_total < args.min_rows:
+        print(
+            f"ERROR: expected at least {args.min_rows} JSON rows in total, got {n_json_total}",
             file=sys.stderr,
         )
         return 3
@@ -92,11 +114,6 @@ def main() -> int:
             print(f"... and {len(all_errs) - 50} more errors", file=sys.stderr)
         return 4
 
-    stats_side = infer_stats_jsonl_path(args.input)
-    merged_note = ""
-    if os.path.isfile(stats_side):
-        merged_note = f" (merged with {os.path.basename(stats_side)} where needed)"
-    print(f"OK: {args.input} — checked {n_json} row(s), bad-case fields present.{merged_note}")
     return 0
 
 

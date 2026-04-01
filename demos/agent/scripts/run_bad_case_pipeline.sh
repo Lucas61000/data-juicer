@@ -27,9 +27,10 @@ usage() {
   bash demos/agent/scripts/run_bad_case_pipeline.sh smoke
       dj-process 最小 09 配置 → 校验 → 分位数 → cohort → 切片示例 → HTML 报告（可 SKIP_AUTO_REPORT=1）
 
-  bash demos/agent/scripts/run_bad_case_pipeline.sh report [选项] [JSONL] [OUT.html]
+  bash demos/agent/scripts/run_bad_case_pipeline.sh report [选项] [JSONL...] [OUT.html]
       一键：校验 + 生成自助 HTML 报告（图表+表；进阶说明折叠在页内）
-      默认 JSONL: ./outputs/agent_quality/processed.jsonl
+      可写多个 JSONL（分批导出、无需先 cat 合并）；若最后一项路径以 .html/.htm 结尾则视为输出，其余均为输入。
+      无位置参数时默认输入: ./outputs/agent_quality/processed.jsonl
       默认开启：--bilingual、--llm-summary（无 API Key 时导读会降级为规则摘要并打 WARNING）
       选项：--no-bilingual | --no-llm-summary（显式关闭）
 
@@ -59,23 +60,48 @@ EOF
 }
 
 run_report() {
-  local input="${1:-$FULL_OUT}"
-  local out="${2:-}"
-  local use_bilingual="${3:-1}"
-  local use_llm="${4:-1}"
-  if [[ ! -f "$input" ]]; then
-    echo "ERROR: $input not found" >&2
-    exit 3
+  local use_bilingual="${1:-1}"
+  local use_llm="${2:-1}"
+  shift 2
+  local -a rest=("$@")
+  local -a inputs=()
+  local out=""
+  if [[ ${#rest[@]} -eq 0 ]]; then
+    inputs=("$FULL_OUT")
+  else
+    local last="${rest[-1]}"
+    if [[ "$last" == *.html ]] || [[ "$last" == *.htm ]]; then
+      out="$last"
+      if [[ ${#rest[@]} -gt 1 ]]; then
+        inputs=("${rest[@]:0:${#rest[@]}-1}")
+      else
+        inputs=("$FULL_OUT")
+      fi
+    else
+      inputs=("${rest[@]}")
+    fi
   fi
+  for f in "${inputs[@]}"; do
+    if [[ ! -f "$f" ]]; then
+      echo "ERROR: input not found: $f" >&2
+      exit 3
+    fi
+  done
   if [[ -z "$out" ]]; then
-    out="${input%.jsonl}_bad_case_report.html"
+    out="${inputs[0]%.jsonl}_bad_case_report.html"
   fi
-  echo "==> verify_bad_case_export.py"
-  "$PY" demos/agent/scripts/verify_bad_case_export.py --input "$input"
+  echo "==> verify_bad_case_export.py (${#inputs[@]} file(s))"
+  local -a _ver=(demos/agent/scripts/verify_bad_case_export.py)
+  for f in "${inputs[@]}"; do
+    _ver+=(--input "$f")
+  done
+  "$PY" "${_ver[@]}"
   echo "==> generate_bad_case_report.py -> $out"
-  # Avoid "${arr[@]}" on an empty array under `set -u` (some bash versions error).
   local -a _rep_args
-  _rep_args=(--input "$input" --output "$out")
+  _rep_args=(--output "$out")
+  for f in "${inputs[@]}"; do
+    _rep_args+=(--input "$f")
+  done
   if [[ "$use_bilingual" == "1" ]]; then
     _rep_args+=(--bilingual)
   fi
@@ -122,8 +148,8 @@ case "$cmd" in
     dj-process --config "$RECIPE_SMOKE"
     run_postprocess "$SMOKE_OUT"
     if [[ "${SKIP_AUTO_REPORT:-}" != "1" ]]; then
-      run_report "$SMOKE_OUT" "${SMOKE_OUT%.jsonl}_bad_case_report.html" \
-        "${BAD_CASE_REPORT_BILINGUAL:-1}" "${BAD_CASE_REPORT_LLM:-1}"
+      run_report "${BAD_CASE_REPORT_BILINGUAL:-1}" "${BAD_CASE_REPORT_LLM:-1}" \
+        "$SMOKE_OUT" "${SMOKE_OUT%.jsonl}_bad_case_report.html"
     fi
     ;;
   report)
@@ -140,9 +166,7 @@ case "$cmd" in
         *) _rpos+=("$1"); shift ;;
       esac
     done
-    _rin="${_rpos[0]:-$FULL_OUT}"
-    _rout="${_rpos[1]:-}"
-    run_report "$_rin" "$_rout" "$_rb" "$_rl"
+    run_report "$_rb" "$_rl" "${_rpos[@]}"
     ;;
   postprocess)
     run_postprocess "${2:-$SMOKE_OUT}"
@@ -181,8 +205,8 @@ EOF
       "$PY" demos/agent/scripts/verify_bad_case_export.py --input "$FULL_OUT"
     run_postprocess "$FULL_OUT"
     if [[ "${SKIP_AUTO_REPORT:-}" != "1" ]]; then
-      run_report "$FULL_OUT" "${FULL_OUT%.jsonl}_bad_case_report.html" \
-        "${BAD_CASE_REPORT_BILINGUAL:-1}" "${BAD_CASE_REPORT_LLM:-1}"
+      run_report "${BAD_CASE_REPORT_BILINGUAL:-1}" "${BAD_CASE_REPORT_LLM:-1}" \
+        "$FULL_OUT" "${FULL_OUT%.jsonl}_bad_case_report.html"
     fi
     ;;
   unittest)

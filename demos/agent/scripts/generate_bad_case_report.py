@@ -16,6 +16,13 @@
     --input ./outputs/agent_quality/processed.jsonl \\
     --output ./outputs/agent_quality/bad_case_report.html \\
     --llm-summary
+
+  # 多批 jsonl 按顺序读入（可与各自 *_stats.jsonl 对齐），无需先 cat 合并：
+
+  python demos/agent/scripts/generate_bad_case_report.py \\
+    --input ./batch_a/processed.jsonl \\
+    --input ./batch_b/processed.jsonl \\
+    --output ./merged_view_report.html
 """
 
 from __future__ import annotations
@@ -3489,9 +3496,52 @@ def _report_variant_banner_html(
     return f"<p class='note report-variant-banner'>{msg}</p>"
 
 
+def _data_source_summary_for_meta(paths: List[str], *, html_lang: str) -> str:
+    """One-line meta for page header; full paths for multi-input go to bottom <details>."""
+    resolved = [str(Path(p).resolve()) for p in paths]
+    en = html_lang == "en"
+    if len(resolved) == 1:
+        esc = html.escape(resolved[0])
+        return f"Data file <code>{esc}</code>" if en else f"数据文件 <code>{esc}</code>"
+    n = len(resolved)
+    if en:
+        return (
+            f"Data sources: <strong>{n}</strong> jsonl files (concatenated in order); "
+            f"<a href=\"#sec-data-provenance\">full paths</a> in the collapsible section "
+            "at the bottom (audit trail)."
+        )
+    return (
+        f"数据源 <strong>{n}</strong> 个 jsonl（按顺序拼接）；"
+        f"<a href=\"#sec-data-provenance\">完整路径</a>见页底折叠区（审计溯源）。"
+    )
+
+
+def _data_source_provenance_block(paths: List[str], *, html_lang: str) -> str:
+    """Bottom collapsible ordered list of input paths; empty when only one file."""
+    if len(paths) <= 1:
+        return ""
+    resolved = [str(Path(p).resolve()) for p in paths]
+    en = html_lang == "en"
+    items = "".join(f"<li><code>{html.escape(p)}</code></li>" for p in resolved)
+    summary = "Input file paths (audit trail)" if en else "数据来源路径（审计溯源）"
+    note = (
+        "Order matches <code>--input</code> when this report was generated."
+        if en
+        else "顺序与生成报告时的 <code>--input</code> 指定顺序一致。"
+    )
+    return (
+        "<details class='report-fold audit-provenance' id='sec-data-provenance'>"
+        f"<summary>{html.escape(summary)}</summary>"
+        "<div class='report-fold-body'>"
+        f"<p class='note'>{html.escape(note)}</p>"
+        "<ol class='provenance-list'>"
+        f"{items}</ol></div></details>"
+    )
+
+
 def _html_page(
     title: str,
-    input_path: str,
+    input_paths: List[str],
     n_rows: int,
     tier_cnt: Counter,
     cohort_rows: List[dict],
@@ -3680,6 +3730,10 @@ def _html_page(
         ".report-fold>summary{cursor:pointer;font-weight:600;font-size:0.95rem;list-style:none;}"
         ".report-fold>summary::-webkit-details-marker{display:none;}"
         ".report-fold-body{margin-top:8px;}"
+        "ol.provenance-list{margin:8px 0;padding-left:1.25rem;font-size:0.88rem;"
+        "line-height:1.55;word-break:break-word;}"
+        "ol.provenance-list code{font-size:0.86rem;}"
+        ".audit-provenance{margin-top:1.5rem;}"
         ".tier-fold ul.tier-legend{margin:0.4rem 0;padding-left:1.15rem;}"
         ".insight-fold{margin:1rem 0;}"
         ".ins-lenses{margin-top:10px;padding-top:8px;border-top:1px dashed #e0e0e0;}"
@@ -3723,6 +3777,13 @@ def _html_page(
         "<code>demos/agent/scripts/README.md</code>。</p>"
     )
 
+    input_sources_summary_html = _data_source_summary_for_meta(
+        input_paths, html_lang=html_lang
+    )
+    input_sources_provenance_html = _data_source_provenance_block(
+        input_paths, html_lang=html_lang
+    )
+
     return f"""<!DOCTYPE html>
 <html lang="{html.escape(html_lang)}"><head>
 <meta charset="utf-8"/>
@@ -3734,7 +3795,7 @@ def _html_page(
 {variant_banner}
 <div class="meta">
   生成时间 {html.escape(gen_at)} ·
-  数据文件 <code>{html.escape(input_path)}</code><br/>
+  {input_sources_summary_html}<br/>
   本报告载入 <strong>{n_rows}</strong> 条样本（若使用 --limit 则仅为其子集）
 </div>
 {bilingual_header}
@@ -3761,6 +3822,7 @@ def _html_page(
 {toc_mini}
 </main>
 </div>
+{input_sources_provenance_html}
 <details>
 <summary>进阶 / 调试资源</summary>
 {adv}
@@ -3815,7 +3877,14 @@ def _html_page(
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--input", required=True, help="processed.jsonl")
+    ap.add_argument(
+        "--input",
+        action="append",
+        dest="inputs",
+        required=True,
+        metavar="JSONL",
+        help="processed.jsonl（可重复；多文件按顺序拼接载入，各自仍可合并同名 *_stats.jsonl）",
+    )
     ap.add_argument("--output", required=True, help="Output .html path")
     ap.add_argument(
         "--title",
@@ -3930,9 +3999,9 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    rows = load_merged_rows(args.input, args.limit)
+    rows = load_merged_rows(args.inputs, args.limit)
     if not rows:
-        print("ERROR: no rows loaded; check --input path.", file=sys.stderr)
+        print("ERROR: no rows loaded; check --input path(s).", file=sys.stderr)
         return 2
 
     resolved_report_lang = infer_report_locale(
@@ -4106,7 +4175,7 @@ def main() -> int:
 
         page = _html_page(
             page_title,
-            str(Path(args.input).resolve()),
+            list(args.inputs),
             len(rows),
             tier_cnt,
             cohort,

@@ -62,6 +62,69 @@ class TestGenerateBadCaseReportSmoke(unittest.TestCase):
             self.assertIn("sec-charts", html)
             self.assertIn("sec-dialog-metrics", html)
 
+    def test_multi_input_jsonl_concatenates_rows(self) -> None:
+        row_a = {
+            "query": "a",
+            "response": "ra",
+            "__dj__meta__": {
+                "agent_bad_case_tier": "none",
+                "agent_request_model": "m",
+                "agent_pt": "20250101",
+            },
+            "__dj__stats__": {},
+        }
+        row_b = {
+            "query": "b",
+            "response": "rb",
+            "__dj__meta__": {
+                "agent_bad_case_tier": "high_precision",
+                "agent_request_model": "m",
+                "agent_pt": "20250101",
+            },
+            "__dj__stats__": {},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tdir = Path(tmp)
+            inp1 = tdir / "part1.jsonl"
+            inp2 = tdir / "part2.jsonl"
+            out = tdir / "out.html"
+            inp1.write_text(json.dumps(row_a, ensure_ascii=False) + "\n", encoding="utf-8")
+            inp2.write_text(json.dumps(row_b, ensure_ascii=False) + "\n", encoding="utf-8")
+            cmd = [
+                sys.executable,
+                str(_SCRIPT),
+                "--input",
+                str(inp1),
+                "--input",
+                str(inp2),
+                "--output",
+                str(out),
+                "--report-pii-variants",
+                "safe",
+                "--no-charts",
+                "--sample-headlines",
+                "0",
+                "--drilldown-limit",
+                "0",
+                "--no-drilldown-export",
+            ]
+            env = dict(**os.environ)
+            env.pop("BAD_CASE_REPORT_LLM", None)
+            proc = subprocess.run(
+                cmd,
+                cwd=str(_REPO),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+            html = out.read_text(encoding="utf-8")
+            self.assertIn("sec-data-provenance", html)
+            self.assertIn("2</strong> 个 jsonl", html)
+            self.assertIn(str(inp1.resolve()), html)
+            self.assertIn(str(inp2.resolve()), html)
+
     def test_safe_report_omits_pii_headlines_audit_report_keeps(self) -> None:
         rows = [
             {
