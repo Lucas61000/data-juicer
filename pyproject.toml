@@ -39,7 +39,6 @@ dependencies = [
     "matplotlib",
     "requests",
     "wget",
-    "python-docx",
     "streamlit",
     "Pillow",
     "fastapi>=0.110",
@@ -99,6 +98,7 @@ nlp = [
     "rouge",  # Text evaluation
     "pdfplumber",  # For PDF input and processing
     "spacy==3.8.7",
+    "python-docx",  # For docx input and processing
 ]
 
 # Audio Processing
