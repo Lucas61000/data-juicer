@@ -140,12 +140,12 @@ def _parse_json_dumps(params: Dict, prefix="<json_dumps>"):
 
 
 def _setup_cfg(params: Dict):
-    """convert string `cfg` to Namespace, and apply full config initialization."""
-    if cfg_str := params.get("cfg"):
-        if isinstance(cfg_str, str):
-            raw_cfg = json.loads(cfg_str)
-            cfg = get_init_configs(raw_cfg, load_configs_only=False)
-            params["cfg"] = cfg
+    """convert string or dict `cfg` to a fully initialized Namespace"""
+    cfg_val = params.get("cfg")
+    if cfg_val is not None and isinstance(cfg_val, (str, dict)):
+        if isinstance(cfg_val, str):
+            cfg_val = json.loads(cfg_val)
+        params["cfg"] = get_init_configs(cfg_val, load_configs_only=True)
     return params
 
 
