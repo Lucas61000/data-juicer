@@ -24,6 +24,8 @@ class Exporter:
         keep_stats_in_res_ds=False,
         keep_hashes_in_res_ds=False,
         export_stats=True,
+        encrypt_before_export=False,
+        encryption_key_path=None,
         **kwargs,
     ):
         """
@@ -42,6 +44,14 @@ class Exporter:
         :param keep_hashes_in_res_ds: whether to keep hashes in the result
             dataset.
         :param export_stats: whether to export the stats of dataset.
+        :param encrypt_before_export: whether to encrypt each exported file
+            in-place immediately after writing. Requires a valid Fernet key
+            accessible via ``encryption_key_path`` or the environment
+            variable ``DJ_ENCRYPTION_KEY``. S3 paths are skipped (use S3
+            SSE instead). Default: False.
+        :param encryption_key_path: path to a file containing the Fernet key.
+            Falls back to the ``DJ_ENCRYPTION_KEY`` environment variable when
+            ``None``. Only used when ``encrypt_before_export`` is True.
         """
         self.export_path = export_path
         self.export_shard_size = export_shard_size
@@ -59,6 +69,22 @@ class Exporter:
             )
         self.num_proc = num_proc
         self.max_shard_size_str = ""
+
+        # Set up encryption for local export
+        self.encrypt_before_export = encrypt_before_export
+        self._fernet = None
+        if encrypt_before_export:
+            if export_path.startswith("s3://"):
+                logger.warning(
+                    "encrypt_before_export is True but export_path is an S3 "
+                    "path. Local-file encryption is skipped for S3 exports. "
+                    "Use S3 server-side encryption (SSE) to protect data at rest."
+                )
+                self.encrypt_before_export = False
+            else:
+                from data_juicer.utils.encryption_utils import load_fernet_key
+
+                self._fernet = load_fernet_key(encryption_key_path)
 
         # Check if export_path is S3 and create storage_options if needed
         self.storage_options = None
@@ -168,6 +194,13 @@ class Exporter:
 
         return dataset.map(_parse_if_string, desc="Preparing meta/stats for UTF-8 export")
 
+    def _encrypt_local_file(self, path):
+        """Encrypt a local file in-place if encrypt_before_export is enabled."""
+        if self.encrypt_before_export and self._fernet is not None:
+            from data_juicer.utils.encryption_utils import encrypt_file
+
+            encrypt_file(path, path, self._fernet)
+
     def _export_impl(self, dataset, export_path, suffix, export_stats=True):
         """
         Export a dataset to specific path.
@@ -197,6 +230,7 @@ class Exporter:
                 if self.storage_options is not None:
                     export_kwargs["storage_options"] = self.storage_options
                 Exporter.to_jsonl(ds_stats, stats_file, **export_kwargs)
+                self._encrypt_local_file(stats_file)
 
         if self.export_ds:
             # fetch the corresponding export method according to the suffix
@@ -225,6 +259,7 @@ class Exporter:
                 if self.storage_options is not None:
                     export_kwargs["storage_options"] = self.storage_options
                 export_method(dataset, export_path, **export_kwargs)
+                self._encrypt_local_file(export_path)
             else:
                 # compute the dataset size and number of shards to split
                 if dataset._indices is not None:
@@ -292,6 +327,9 @@ class Exporter:
                     )
                 pool.close()
                 pool.join()
+                # Encrypt each local shard after all shards are written.
+                for fname in filenames:
+                    self._encrypt_local_file(fname)
 
     def export(self, dataset):
         """
@@ -337,6 +375,7 @@ class Exporter:
         """
         batch_size = 1000
         total = len(dataset)
+        os.makedirs(os.path.dirname(os.path.abspath(export_path)), exist_ok=True)
         with open(export_path, "w", encoding="utf-8") as f:
             for start in range(0, total, batch_size):
                 end = min(start + batch_size, total)

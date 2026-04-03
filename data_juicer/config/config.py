@@ -262,6 +262,33 @@ def build_base_parser() -> ArgumentParser:
         "and optionally aws_session_token and endpoint_url.",
     )
     parser.add_argument(
+        "--decrypt_after_reading",
+        type=bool,
+        default=False,
+        help="Whether to decrypt input dataset files after reading. When True, "
+        "each input file is decrypted in memory using a Fernet key before "
+        "being loaded by HuggingFace datasets. No plaintext file is written "
+        "to disk. HuggingFace cache is automatically disabled to prevent "
+        "plaintext Arrow files from being persisted. Default: False.",
+    )
+    parser.add_argument(
+        "--encrypt_before_export",
+        type=bool,
+        default=False,
+        help="Whether to encrypt output dataset files before writing to disk. "
+        "When True, each exported file is encrypted in-place with a Fernet "
+        "key immediately after being written. Default: False.",
+    )
+    parser.add_argument(
+        "--encryption_key_path",
+        type=Optional[str],
+        default=None,
+        help="Path to a file containing the Fernet encryption key (base64 "
+        "url-safe string). If not provided, the key is read from the "
+        "environment variable DJ_ENCRYPTION_KEY. Required when either "
+        "decrypt_after_reading or encrypt_before_export is True.",
+    )
+    parser.add_argument(
         "--keep_stats_in_res_ds",
         type=bool,
         default=False,
@@ -983,6 +1010,37 @@ def init_setup_from_cfg(cfg: Namespace, load_configs_only=False):
         if cfg.temp_dir is not None and not os.path.exists(cfg.temp_dir):
             os.makedirs(cfg.temp_dir, exist_ok=True)
         tempfile.tempdir = cfg.temp_dir
+
+    # encryption mode: force disable HF cache to prevent plaintext Arrow files
+    # from being persisted to disk, and validate the key early.
+    if cfg.get("decrypt_after_reading", False) or cfg.get("encrypt_before_export", False):
+        if cfg.get("use_cache", True):
+            logger.warning(
+                "Encryption mode is enabled: forcing use_cache=False to "
+                "prevent plaintext Arrow cache files from being written to disk."
+            )
+            from datasets import disable_caching
+
+            disable_caching()
+            cfg.use_cache = False
+            if cfg.cache_compress:
+                logger.warning("Disable cache compression due to disabled cache.")
+                cfg.cache_compress = None
+            import tempfile
+
+            logger.warning(
+                f"Set temp directory to store temp files to [{cfg.temp_dir}]. "
+                "For maximum security, set temp_dir to a memory-backed "
+                "filesystem such as /dev/shm."
+            )
+            if cfg.temp_dir is not None and not os.path.exists(cfg.temp_dir):
+                os.makedirs(cfg.temp_dir, exist_ok=True)
+            tempfile.tempdir = cfg.temp_dir
+        # Validate key availability early so the job fails fast on
+        # misconfiguration rather than deep into processing.
+        from data_juicer.utils.encryption_utils import load_fernet_key
+
+        load_fernet_key(cfg.get("encryption_key_path", None))
 
     # The checkpoint mode is not compatible with op fusion for now.
     if cfg.get("op_fusion", False):
