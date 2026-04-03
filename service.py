@@ -8,10 +8,9 @@ from typing import Dict
 from urllib.parse import parse_qs
 
 from fastapi import FastAPI, HTTPException, Request
-from jsonargparse import Namespace
 from pydantic import validate_call
 
-from data_juicer.config.config import get_default_cfg
+from data_juicer.config.config import get_default_cfg, get_init_configs
 from data_juicer.core.data.dataset_builder import DatasetBuilder
 from data_juicer.core.exporter import Exporter
 
@@ -141,12 +140,11 @@ def _parse_json_dumps(params: Dict, prefix="<json_dumps>"):
 
 
 def _setup_cfg(params: Dict):
-    """convert string `cfg` to Namespace"""
-    # TODO: Traverse method's signature and convert any arguments \
-    #  that should be Namespace but are passed as str
+    """convert string `cfg` to Namespace, and apply full config initialization."""
     if cfg_str := params.get("cfg"):
         if isinstance(cfg_str, str):
-            cfg = Namespace(**json.loads(cfg_str))
+            raw_cfg = json.loads(cfg_str)
+            cfg = get_init_configs(raw_cfg, load_configs_only=False)
             params["cfg"] = cfg
     return params
 
