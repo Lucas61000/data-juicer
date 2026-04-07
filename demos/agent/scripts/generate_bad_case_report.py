@@ -9,6 +9,10 @@
   token（meta / stats）与耗时（``agent_total_cost_time_ms`` 等）汇总表及可选直方图。
 - ``--llm-summary``：调用 OpenAI 兼容接口（默认读 ``DASHSCOPE_API_KEY`` / ``OPENAI_API_KEY``）。
 - 导读 HTTP 读超时默认 120s，可用 ``--llm-timeout-sec`` 或环境变量 ``BAD_CASE_REPORT_LLM_TIMEOUT_SEC``；超时自动重试 1 次。
+- **默认单遍流式扫描**（适合百万行量级，避免整表 ``list`` OOM）：tier / 信号 / cohort / 宏观标签等计数为全量精确；
+  Case study 与 Insight 仅从每档 **优先保留的有界候选池** 生成（``--drill-retention-cap``、``--insight-retention-cap``）；
+  对话指标直方图 / 分位数对每指标 **贮样近似**（``--dialog-metric-samples``）。小数据若要整表进内存可显式加 ``--eager-load-all-rows``（大表易 OOM）。
+- Case study 页内展示根字段 **message**（缺失时回退 **response**）；``*_drilldown_full.jsonl`` 同时含 ``message`` 与 ``response``。
 
 示例::
 
@@ -29,19 +33,22 @@ from __future__ import annotations
 
 import argparse
 import base64
+import heapq
 import html
 import io
 import json
 import os
+import random
 import re
 import socket
 import sys
 import urllib.error
 import urllib.request
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import DefaultDict, Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import DefaultDict, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 # HTML 分档展示语言（main 中根据 --report-lang / 环境变量 / meta 设定）
 _REPORT_LOCALE = "zh"
@@ -55,7 +62,12 @@ from bad_case_signal_support import (  # noqa: E402
     DIALOG_QUALITY_SCORE_META_KEYS,
     SIGNAL_SUPPORT_ROWS,
 )
-from dj_export_row import get_dj_meta, get_dj_stats  # noqa: E402
+from dj_export_row import get_dj_meta, get_dj_stats, iter_merged_export_rows  # noqa: E402
+
+# 流式报告：控制常驻内存的「详情」行数；全量计数仍逐行扫描。
+DEFAULT_DRILL_RETENTION_CAP = 48_000
+DEFAULT_INSIGHT_RETENTION_CAP = 14_000
+DEFAULT_DIALOG_METRIC_SAMPLES = 200_000
 
 # 机器枚举（jsonl / jq）不变；页面与图例用中文降低误解（原 high_precision ≠「高精度模型」）
 TIER_LABEL_ZH: Dict[str, str] = {
@@ -103,6 +115,307 @@ def infer_report_locale(
         if v:
             return _normalize_report_lang_token(str(v))
     return "zh"
+
+
+def _row_messages_str(row: dict) -> str:
+    """Prefer root ``messages`` (common in agent exports); fall back to ``response``."""
+    m = row.get("messages")
+    if m is None:
+        return str(row.get("response") or "")
+    if isinstance(m, str):
+        return m
+    return str(m)
+
+
+def _iter_all_merged_rows(paths: List[str]) -> Iterator[Tuple[int, dict]]:
+    """Chain ``iter_merged_export_rows`` for every input path; yield (global_index, row)."""
+    g = 0
+    for p in paths:
+        for _, row in iter_merged_export_rows(p):
+            yield g, row
+            g += 1
+
+
+def _heap_push_bounded_min_sort(
+    heap: List[Tuple[int, int, int, dict]],
+    sort_key: Tuple[int, int, int],
+    row: dict,
+    max_size: int,
+) -> None:
+    """Keep at most ``max_size`` rows with **smallest** lexicographic ``sort_key`` (best-first)."""
+    if max_size <= 0:
+        return
+    inv = (-sort_key[0], -sort_key[1], -sort_key[2], row)
+    if len(heap) < max_size:
+        heapq.heappush(heap, inv)
+        return
+    if inv > heap[0]:
+        heapq.heapreplace(heap, inv)
+
+
+def _heap_to_sorted_rows(heap: List[Tuple[int, int, int, dict]]) -> List[dict]:
+    items = sorted(heap, key=lambda t: (-t[0], -t[1], -t[2]))
+    return [t[3] for t in items]
+
+
+def _dialog_series_reservoir_add(
+    series: Dict[str, List[float]],
+    seen: Dict[str, int],
+    row: dict,
+    cap: int,
+    rng: random.Random,
+) -> None:
+    """Append numeric dialog-shape samples with per-key reservoir cap (approximate distribution)."""
+    if cap <= 0:
+        return
+    meta = get_dj_meta(row)
+    stats = get_dj_stats(row)
+    msgs = _row_messages_list(row)
+    if msgs is not None:
+        k = "messages_len"
+        v = float(len(msgs))
+        _reservoir_append(series, seen, k, v, cap, rng)
+        k = "user_turns_in_messages"
+        _reservoir_append(series, seen, k, float(_count_user_turns_in_messages(msgs)), cap, rng)
+        k = "tool_touch_msgs"
+        _reservoir_append(series, seen, k, float(_count_tool_touch_messages(msgs)), cap, rng)
+    atc = _coerce_int(meta.get("agent_turn_count"))
+    if atc is not None:
+        _reservoir_append(series, seen, "agent_turn_count", float(atc), cap, rng)
+    text = row.get("text")
+    if isinstance(text, str) and text:
+        _reservoir_append(series, seen, "text_chars", float(len(text)), cap, rng)
+    cl = _choices_list_len(row)
+    if cl is not None:
+        _reservoir_append(series, seen, "choices_len", float(cl), cap, rng)
+    pt = _meta_or_stats_int(meta, stats, "prompt_tokens")
+    if pt is not None:
+        _reservoir_append(series, seen, "prompt_tokens", float(pt), cap, rng)
+    ct = _meta_or_stats_int(meta, stats, "completion_tokens")
+    if ct is not None:
+        _reservoir_append(series, seen, "completion_tokens", float(ct), cap, rng)
+    tt = _meta_or_stats_int(meta, stats, "total_tokens")
+    if tt is not None:
+        _reservoir_append(series, seen, "total_tokens", float(tt), cap, rng)
+    lat = _latency_ms_from_row(row, meta)
+    if lat is not None:
+        _reservoir_append(series, seen, "latency_ms", float(lat), cap, rng)
+
+
+def _reservoir_append(
+    series: Dict[str, List[float]],
+    seen: Dict[str, int],
+    key: str,
+    val: float,
+    cap: int,
+    rng: random.Random,
+) -> None:
+    if key not in series:
+        series[key] = []
+        seen[key] = 0
+    seen[key] += 1
+    n = seen[key]
+    lst = series[key]
+    if len(lst) < cap:
+        lst.append(val)
+        return
+    j = rng.randint(1, n)
+    if j <= cap:
+        lst[j - 1] = val
+
+
+def _finalize_cohort_rows(
+    tier_counts: DefaultDict[Tuple[str, str, str], int],
+    signal_counts: DefaultDict[Tuple[str, str, str], Counter],
+) -> List[dict]:
+    """Same table shape as ``aggregate_cohort_stdlib`` output."""
+    models_pts = {(m, p) for (m, p, _) in tier_counts}
+    out: List[dict] = []
+    for model, pt in sorted(models_pts):
+        for tier in ("high_precision", "watchlist", "none"):
+            c = tier_counts.get((model, pt, tier), 0)
+            top_ct = signal_counts.get((model, pt, tier), Counter())
+            top = ", ".join(f"{k}:{v}" for k, v in top_ct.most_common(5))
+            out.append(
+                {
+                    "agent_request_model": model,
+                    "agent_pt": pt,
+                    "tier": tier,
+                    "count": c,
+                    "top_signal_codes": top,
+                }
+            )
+    return out
+
+
+@dataclass
+class StreamedReportSnapshot:
+    n_rows: int
+    tier_cnt: Counter
+    high_c: Counter
+    med_c: Counter
+    model_tier: Dict[str, Counter]
+    cohort_rows: List[dict]
+    macro_counters: Dict[str, Counter]
+    skill_stats: Tuple[int, int, int]
+    dialog_series: Dict[str, List[float]]
+    locale_probe_rows: List[dict]
+    hp_drill_pool: List[dict]
+    wl_drill_pool: List[dict]
+    hp_insight_pool: List[dict]
+    wl_insight_pool: List[dict]
+    n_hp_total: int
+    n_wl_total: int
+    insight_headline_hp: int
+    insight_headline_wl: int
+    insight_pii_omitted_hp: int
+    insight_pii_omitted_wl: int
+    drill_pool_truncated: bool
+
+
+def _stream_scan_report_inputs(
+    paths: List[str],
+    *,
+    row_limit: Optional[int],
+    drill_cap: int,
+    insight_cap: int,
+    dialog_sample_cap: int,
+    rng: random.Random,
+) -> StreamedReportSnapshot:
+    tier_cnt: Counter = Counter()
+    high_c: Counter = Counter()
+    med_c: Counter = Counter()
+    model_tier: DefaultDict[str, Counter] = defaultdict(Counter)
+    tier_sig_counts: DefaultDict[Tuple[str, str, str], Counter] = defaultdict(Counter)
+    tier_only_counts: DefaultDict[Tuple[str, str, str], int] = defaultdict(int)
+    macro_tool_primary: Counter = Counter()
+    macro_tool_all: Counter = Counter()
+    macro_skill_insight: Counter = Counter()
+    macro_skill_type: Counter = Counter()
+    macro_intent: Counter = Counter()
+    macro_topic: Counter = Counter()
+    macro_sentiment: Counter = Counter()
+    si_rows = 0
+    si_with = 0
+    si_slots = 0
+    dialog_series: Dict[str, List[float]] = {}
+    dialog_seen: Dict[str, int] = {}
+    locale_probe: deque = deque(maxlen=120)
+    hp_drill_h: List[Tuple[int, int, int, dict]] = []
+    wl_drill_h: List[Tuple[int, int, int, dict]] = []
+    hp_insight_h: List[Tuple[int, int, int, dict]] = []
+    wl_insight_h: List[Tuple[int, int, int, dict]] = []
+    n_hp = n_wl = 0
+    ih_hp = ih_wl = 0
+    pii_om_hp = pii_om_wl = 0
+    n_rows = 0
+    for g, row in _iter_all_merged_rows(paths):
+        if row_limit is not None and n_rows >= row_limit:
+            break
+        if not isinstance(row, dict):
+            n_rows += 1
+            continue
+        n_rows += 1
+        if len(locale_probe) < 120:
+            locale_probe.append(row)
+        meta = get_dj_meta(row)
+        tier = str(meta.get("agent_bad_case_tier", "none"))
+        tier_cnt[tier] += 1
+        model = str(meta.get("agent_request_model") or "_unknown")
+        model_tier[model][tier] += 1
+        for s in meta.get("agent_bad_case_signals") or []:
+            if not isinstance(s, dict) or not s.get("code"):
+                continue
+            code = str(s["code"])
+            w = s.get("weight")
+            if w == "high":
+                high_c[code] += 1
+            elif w == "medium":
+                med_c[code] += 1
+        pt_k = str(meta.get("agent_pt", "_unknown"))
+        key3 = (model, pt_k, tier)
+        tier_only_counts[key3] += 1
+        sigs = meta.get("agent_bad_case_signals") or []
+        if isinstance(sigs, list):
+            for s in sigs:
+                if isinstance(s, dict) and s.get("code"):
+                    tier_sig_counts[key3][str(s["code"])] += 1
+        ptt = meta.get("primary_tool_type")
+        if ptt is not None:
+            s = str(ptt).strip()
+            if s:
+                macro_tool_primary[s] += 1
+        _counter_add_row_unique_labels(macro_tool_all, _labels_from_meta_list(meta, "agent_tool_types"))
+        _counter_add_row_unique_labels(macro_skill_insight, _skill_insight_labels_from_meta(meta))
+        _counter_add_row_unique_labels(macro_skill_type, _labels_from_meta_list(meta, "agent_skill_types"))
+        _counter_add_row_unique_labels(macro_intent, _labels_from_meta_list(meta, "dialog_intent_labels"))
+        _counter_add_row_unique_labels(macro_topic, _labels_from_meta_list(meta, "dialog_topic_labels"))
+        _counter_add_row_unique_labels(macro_sentiment, _labels_from_meta_list(meta, "dialog_sentiment_labels"))
+        labs = _skill_insight_labels_from_meta(meta)
+        si_rows += 1
+        if labs:
+            si_with += 1
+            si_slots += len(labs)
+        _dialog_series_reservoir_add(
+            dialog_series, dialog_seen, row, dialog_sample_cap, rng
+        )
+        st = _insight_sort_tuple(row, g)
+        if tier == "high_precision":
+            n_hp += 1
+            _heap_push_bounded_min_sort(hp_drill_h, st, row, drill_cap)
+        elif tier == "watchlist":
+            n_wl += 1
+            _heap_push_bounded_min_sort(wl_drill_h, st, row, drill_cap)
+        ins = meta.get("agent_insight_llm") or {}
+        if isinstance(ins, dict) and (ins.get("headline") or "").strip():
+            if tier == "high_precision":
+                ih_hp += 1
+                if _exclude_insight_card_for_pii_row(row, ins):
+                    pii_om_hp += 1
+                _heap_push_bounded_min_sort(hp_insight_h, st, row, insight_cap)
+            elif tier == "watchlist":
+                ih_wl += 1
+                if _exclude_insight_card_for_pii_row(row, ins):
+                    pii_om_wl += 1
+                _heap_push_bounded_min_sort(wl_insight_h, st, row, insight_cap)
+    cohort_rows = _finalize_cohort_rows(tier_only_counts, tier_sig_counts)
+    macro_counters = {
+        "tool_primary": macro_tool_primary,
+        "tool_all": macro_tool_all,
+        "skill_insight": macro_skill_insight,
+        "skill_type": macro_skill_type,
+        "intent": macro_intent,
+        "topic": macro_topic,
+        "sentiment": macro_sentiment,
+    }
+    hp_drill = _heap_to_sorted_rows(hp_drill_h)
+    wl_drill = _heap_to_sorted_rows(wl_drill_h)
+    hp_ins = _heap_to_sorted_rows(hp_insight_h)
+    wl_ins = _heap_to_sorted_rows(wl_insight_h)
+    drill_trunc = (n_hp > len(hp_drill)) or (n_wl > len(wl_drill))
+    return StreamedReportSnapshot(
+        n_rows=n_rows,
+        tier_cnt=tier_cnt,
+        high_c=high_c,
+        med_c=med_c,
+        model_tier=dict(model_tier),
+        cohort_rows=cohort_rows,
+        macro_counters=macro_counters,
+        skill_stats=(si_rows, si_with, si_slots),
+        dialog_series=dialog_series,
+        locale_probe_rows=list(locale_probe),
+        hp_drill_pool=hp_drill,
+        wl_drill_pool=wl_drill,
+        hp_insight_pool=hp_ins,
+        wl_insight_pool=wl_ins,
+        n_hp_total=n_hp,
+        n_wl_total=n_wl,
+        insight_headline_hp=ih_hp,
+        insight_headline_wl=ih_wl,
+        insight_pii_omitted_hp=pii_om_hp,
+        insight_pii_omitted_wl=pii_om_wl,
+        drill_pool_truncated=drill_trunc,
+    )
 
 
 def _tier_zh(machine: str) -> str:
@@ -194,8 +507,9 @@ def _evidence_rows_for_signal(
         add("算子", "llm_quality_score_filter")
     elif code == "suspect_empty_or_trivial_final_response":
         add("sample.query 长度", len(row.get("query") or ""))
-        add("sample.response 长度", len(row.get("response") or ""))
-        add("说明", "agent_dialog_normalize 后的末轮 query/response")
+        add("sample.message 长度", len(_row_messages_str(row)))
+        add("sample.response 长度", len(str(row.get("response") or "")))
+        add("说明", "优先展示 message；response 为兼容字段（agent_dialog_normalize 末轮）")
     elif code == "high_token_usage":
         add("meta.total_tokens", meta.get("total_tokens"))
         add("算子", "usage_counter_mapper")
@@ -558,10 +872,16 @@ def _dialog_shape_metrics_section_html(
     *,
     no_charts: bool,
     html_lang: str,
+    series_override: Optional[Dict[str, List[float]]] = None,
+    sampled_note: str = "",
 ) -> str:
     """HTML: messages / turns / tokens / latency summary + optional histograms."""
     en = str(html_lang).lower().startswith("en")
-    series = _gather_dialog_shape_series(rows)
+    series = (
+        series_override
+        if series_override is not None
+        else _gather_dialog_shape_series(rows)
+    )
     labels = {
         "messages_len": (
             "messages list length (count of items)"
@@ -678,6 +998,8 @@ def _dialog_shape_metrics_section_html(
         else "统计范围与本报告其它章节一致（受 <code>--limit</code> 影响）。"
         "token 类字段优先读 <code>meta</code>，缺失时再读 <code>__dj__stats__</code>。"
     )
+    if sampled_note.strip():
+        intro = f"{intro} {sampled_note.strip()}"
     h2 = "Dialogue shape & token / latency" if en else "对话形态与 token / 时延"
     y_ct = "Rows" if en else "样本数"
 
@@ -1075,6 +1397,7 @@ def _row_text_has_pii_redaction_placeholder(row: dict) -> bool:
         v = row.get(k)
         if isinstance(v, str):
             parts.append(v)
+    parts.append(_row_messages_str(row))
     msgs = row.get("messages")
     if isinstance(msgs, str):
         parts.append(msgs)
@@ -1149,6 +1472,12 @@ def _row_has_pii_audit_signals(row: dict) -> bool:
     return _exclude_insight_card_for_pii_row(row, ins)
 
 
+def _filter_drill_pool_rows(rows: List[dict], *, exclude_pii: bool) -> List[dict]:
+    if not exclude_pii:
+        return list(rows)
+    return [r for r in rows if not _row_has_pii_audit_signals(r)]
+
+
 def _ordered_bad_case_row_lists(
     rows: List[dict],
     *,
@@ -1199,7 +1528,7 @@ def _row_headline_or_snippet_for_audit_cluster(row: dict) -> str:
         if h:
             return h
     q = str(row.get("query") or "")[:400]
-    r = str(row.get("response") or "")[:400]
+    r = str(_row_messages_str(row))[:600]
     blob = (q + "\n" + r).strip()
     return blob if blob else " "
 
@@ -1335,6 +1664,7 @@ def _row_to_drill_entry(row: dict) -> dict:
         "model": str(meta.get("agent_request_model") or ""),
         "pt": str(meta.get("agent_pt") or ""),
         "query": row.get("query") or "",
+        "message": _row_messages_str(row),
         "response": row.get("response") or "",
         "signals_json": _json_pretty(signals),
         "insight_json": _json_pretty(insight),
@@ -1373,6 +1703,7 @@ def _drilldown_section_html(
     export_rel: Optional[str] = None,
     html_lang: str = "zh-CN",
     use_display_diversify: bool = True,
+    scale_note_html: str = "",
 ) -> str:
     """Case study 清单：页内为两档配额 + 可选语义分桶抽样，全量可另存 jsonl。"""
     en = str(html_lang).lower().startswith("en")
@@ -1393,6 +1724,7 @@ def _drilldown_section_html(
             f"<p class='note'>{html.escape(empty)}</p>"
         )
     shown = len(drill)
+    scale_block = scale_note_html or ""
     extra_note = ""
     if total_count > shown:
         strat = (
@@ -1471,8 +1803,8 @@ def _drilldown_section_html(
             '<div class="field-grid">'
             "<section><h4>query</h4>"
             f"<pre class=\"drill-pre\">{html.escape(d['query'])}</pre></section>"
-            "<section><h4>response</h4>"
-            f"<pre class=\"drill-pre\">{html.escape(d['response'])}</pre></section>"
+            "<section><h4>message</h4>"
+            f"<pre class=\"drill-pre\">{html.escape(d.get('message') or d.get('response') or '')}</pre></section>"
             "<section><h4>agent_bad_case_signals（JSON）</h4>"
             f"<pre class=\"drill-pre\">{html.escape(d['signals_json'])}</pre></section>"
             "<section><h4>agent_insight_llm</h4>"
@@ -1483,18 +1815,18 @@ def _drilldown_section_html(
         )
     intro = (
         "<p class='note'>列表顺序：<strong>强怀疑区块在前，待观察区块在后</strong>。"
-        "点「展开字段」查看快照与各信号证据及全文 query/response；"
+        "点「展开字段」查看快照与各信号证据及全文 query / <strong>message</strong>（兼容字段 response）；"
         "<code>#编号</code> 可分享锚点；与上文 Insight 中 <code>request_id</code> 对应。</p>"
         if not en
         else (
             "<p class='note'>Order: <strong>high_precision block</strong>, then <strong>watchlist</strong>. "
-            "Expand for evidence tables and full query/response; <code>#</code> is the in-page anchor; "
-            "<code>request_id</code> matches Insight cards.</p>"
+            "Expand for evidence tables and full query/<strong>message</strong> (fallback: response); "
+            "<code>#</code> is the in-page anchor; <code>request_id</code> matches Insight cards.</p>"
         )
     )
     block = (
         f"<h2 id='sec-cases'>{html.escape(title)}</h2>"
-        f"{extra_note}{intro}"
+        f"{scale_block}{extra_note}{intro}"
         '<div class="drill-list">'
         f"{''.join(cards)}</div>"
     )
@@ -2480,6 +2812,8 @@ def _insight_section_rich_html(
     model_tier: Optional[Dict[str, Counter]] = None,
     hide_pii: bool = False,
     use_display_diversify: bool = True,
+    insight_candidate_pool: Optional[List[dict]] = None,
+    insight_pii_omitted_full_count: Optional[int] = None,
 ) -> str:
     """Insight cards from ``agent_insight_llm`` plus headline/audit clusters.
 
@@ -2496,7 +2830,27 @@ def _insight_section_rich_html(
         if tier == "watchlist"
         else "sec-insights"
     )
-    candidates, omitted_pii = _collect_tier_insight_candidates(rows, tier, hide_pii=hide_pii)
+    if insight_candidate_pool is not None:
+        candidates = []
+        for r in insight_candidate_pool:
+            meta = get_dj_meta(r)
+            if str(meta.get("agent_bad_case_tier", "")) != tier:
+                continue
+            ins = meta.get("agent_insight_llm") or {}
+            if not isinstance(ins, dict):
+                ins = {}
+            if not (ins.get("headline") or "").strip():
+                continue
+            if hide_pii and _exclude_insight_card_for_pii_row(r, ins):
+                continue
+            candidates.append(r)
+        omitted_pii = (
+            int(insight_pii_omitted_full_count or 0) if hide_pii else 0
+        )
+    else:
+        candidates, omitted_pii = _collect_tier_insight_candidates(
+            rows, tier, hide_pii=hide_pii
+        )
     if not candidates and omitted_pii == 0:
         return (
             f"<section class='insight-sec' id='{sec_id}'>"
@@ -2659,6 +3013,10 @@ def _insight_sections_html(
     model_tier: Optional[Dict[str, Counter]] = None,
     hide_pii: bool = False,
     use_display_diversify: bool = True,
+    insight_hp_pool: Optional[List[dict]] = None,
+    insight_wl_pool: Optional[List[dict]] = None,
+    insight_pii_omitted_hp: Optional[int] = None,
+    insight_pii_omitted_wl: Optional[int] = None,
 ) -> str:
     """Render insight sections for both high_precision and watchlist tiers."""
     blocks = [
@@ -2676,6 +3034,8 @@ def _insight_sections_html(
             model_tier=model_tier,
             hide_pii=hide_pii,
             use_display_diversify=use_display_diversify,
+            insight_candidate_pool=insight_hp_pool,
+            insight_pii_omitted_full_count=insight_pii_omitted_hp,
         ),
         _insight_section_rich_html(
             rows,
@@ -2691,6 +3051,8 @@ def _insight_sections_html(
             model_tier=model_tier,
             hide_pii=hide_pii,
             use_display_diversify=use_display_diversify,
+            insight_candidate_pool=insight_wl_pool,
+            insight_pii_omitted_full_count=insight_pii_omitted_wl,
         ),
     ]
     return "".join(blocks)
@@ -3324,10 +3686,17 @@ def _build_macro_distribution_section(
     plt_mod,
     no_charts: bool,
     html_lang: str,
+    *,
+    precomputed_counters: Optional[Dict[str, Counter]] = None,
+    precomputed_skill_stats: Optional[Tuple[int, int, int]] = None,
 ) -> str:
     en = str(html_lang).lower().startswith("en")
-    counters = _compute_macro_tag_counters(rows)
-    si_n_tot, si_n_with, si_slots = _skill_insight_coverage_stats(rows)
+    if precomputed_counters is not None and precomputed_skill_stats is not None:
+        counters = precomputed_counters
+        si_n_tot, si_n_with, si_slots = precomputed_skill_stats
+    else:
+        counters = _compute_macro_tag_counters(rows)
+        si_n_tot, si_n_with, si_slots = _skill_insight_coverage_stats(rows)
     if not any(counters[k] for k in counters):
         empty = (
             "No tool/skill/intent/topic/sentiment tags in meta for this batch."
@@ -3997,25 +4366,83 @@ def main() -> int:
         metavar="SEC",
         help="页首导读 HTTP 读超时秒数（默认 120 或环境变量 BAD_CASE_REPORT_LLM_TIMEOUT_SEC）",
     )
+    ap.add_argument(
+        "--eager-load-all-rows",
+        action="store_true",
+        help="整表读入内存再统计（小数据可用；百万级以上易 OOM。默认：单遍流式扫描 + 有界池）",
+    )
+    ap.add_argument(
+        "--drill-retention-cap",
+        type=int,
+        default=DEFAULT_DRILL_RETENTION_CAP,
+        metavar="N",
+        help="流式模式下每档（强怀疑/待观察）最多保留 N 条进入 case study 候选池（默认 48000）",
+    )
+    ap.add_argument(
+        "--insight-retention-cap",
+        type=int,
+        default=DEFAULT_INSIGHT_RETENTION_CAP,
+        metavar="N",
+        help="流式模式下每档最多保留 N 条带 headline 的 Insight 候选（默认 14000）",
+    )
+    ap.add_argument(
+        "--dialog-metric-samples",
+        type=int,
+        default=DEFAULT_DIALOG_METRIC_SAMPLES,
+        metavar="N",
+        help="对话/token/时延直方图与分位数每指标最多贮样 N 行（默认 200000，全量扫描计数）",
+    )
     args = ap.parse_args()
 
-    rows = load_merged_rows(args.inputs, args.limit)
-    if not rows:
-        print("ERROR: no rows loaded; check --input path(s).", file=sys.stderr)
-        return 2
+    snap: Optional[StreamedReportSnapshot] = None
+    rows: List[dict]
+    if args.eager_load_all_rows:
+        rows = load_merged_rows(args.inputs, args.limit)
+        if not rows:
+            print("ERROR: no rows loaded; check --input path(s).", file=sys.stderr)
+            return 2
+    else:
+        rows = []
+        rng = random.Random(31)
+        snap = _stream_scan_report_inputs(
+            list(args.inputs),
+            row_limit=args.limit,
+            drill_cap=max(1, int(args.drill_retention_cap)),
+            insight_cap=max(1, int(args.insight_retention_cap)),
+            dialog_sample_cap=max(0, int(args.dialog_metric_samples)),
+            rng=rng,
+        )
+        if snap.n_rows <= 0:
+            print("ERROR: no rows loaded; check --input path(s).", file=sys.stderr)
+            return 2
+        if snap.drill_pool_truncated:
+            print(
+                "NOTE: 大规模流式模式：case study / drill 导出仅从每档优先保留的候选池中选取；"
+                f"强怀疑 {snap.n_hp_total} 条 / 待观察 {snap.n_wl_total} 条（池上限各 {args.drill_retention_cap}）。"
+                "可调 --drill-retention-cap / --insight-retention-cap。",
+                file=sys.stderr,
+            )
+
+    n_rows = len(rows) if rows else (snap.n_rows if snap else 0)
 
     resolved_report_lang = infer_report_locale(
-        rows,
+        rows if rows else (snap.locale_probe_rows if snap else []),
         str(args.report_lang),
         os.environ.get("BAD_CASE_REPORT_LANG"),
     )
     set_report_locale(resolved_report_lang)
     html_page_lang = "en" if resolved_report_lang == "en" else "zh-CN"
 
-    tier_cnt = _tier_counts(rows)
-    high_c, med_c = _signal_counts_by_weight(rows)
-    model_tier = _model_tier_matrix(rows)
-    cohort = aggregate_cohort_stdlib(rows)
+    if snap is None:
+        tier_cnt = _tier_counts(rows)
+        high_c, med_c = _signal_counts_by_weight(rows)
+        model_tier = _model_tier_matrix(rows)
+        cohort = aggregate_cohort_stdlib(rows)
+    else:
+        tier_cnt = snap.tier_cnt
+        high_c, med_c = snap.high_c, snap.med_c
+        model_tier = snap.model_tier
+        cohort = snap.cohort_rows
     att_html = _attribution_table_html()
 
     chart_tier = chart_sig_high = chart_sig_med = chart_model = None
@@ -4041,8 +4468,8 @@ def main() -> int:
         if len(model_tier) >= 1:
             chart_model = _chart_by_model(model_tier, plt_mod)
 
-    rule_summary = _rule_based_exec_summary(len(rows), tier_cnt, high_c, med_c)
-    digest_llm = _build_llm_digest_compact(len(rows), tier_cnt, high_c, med_c, cohort)
+    rule_summary = _rule_based_exec_summary(n_rows, tier_cnt, high_c, med_c)
+    digest_llm = _build_llm_digest_compact(n_rows, tier_cnt, high_c, med_c, cohort)
     llm_summary: Optional[str] = None
     if args.llm_summary:
         key = (args.llm_api_key or "").strip()
@@ -4064,9 +4491,39 @@ def main() -> int:
     )
     exec_summary_html = _exec_summary_section_html(body_summary, summary_note)
 
-    macro_html = _build_macro_distribution_section(
-        rows, plt_mod, args.no_charts, html_page_lang
-    )
+    if snap is not None:
+        macro_html = _build_macro_distribution_section(
+            [],
+            plt_mod,
+            args.no_charts,
+            html_page_lang,
+            precomputed_counters=snap.macro_counters,
+            precomputed_skill_stats=snap.skill_stats,
+        )
+        dm_note = (
+            "大规模模式下对话指标直方图/分位数基于每指标贮样近似（见 --dialog-metric-samples）。"
+            if html_page_lang != "en"
+            else "Large-batch mode: histograms/quantiles use per-metric reservoir sampling "
+            "(see --dialog-metric-samples)."
+        )
+        dialog_metrics_html = _dialog_shape_metrics_section_html(
+            [],
+            plt_mod,
+            no_charts=args.no_charts,
+            html_lang=html_page_lang,
+            series_override=snap.dialog_series,
+            sampled_note=dm_note,
+        )
+    else:
+        macro_html = _build_macro_distribution_section(
+            rows, plt_mod, args.no_charts, html_page_lang
+        )
+        dialog_metrics_html = _dialog_shape_metrics_section_html(
+            rows,
+            plt_mod,
+            no_charts=args.no_charts,
+            html_lang=html_page_lang,
+        )
     charts_section_html = _build_charts_section_html(
         chart_tier=chart_tier,
         chart_model=chart_model,
@@ -4078,9 +4535,6 @@ def main() -> int:
         no_charts=args.no_charts,
         html_lang=html_page_lang,
         macro_distribution_html=macro_html,
-    )
-    dialog_metrics_html = _dialog_shape_metrics_section_html(
-        rows, plt_mod, no_charts=args.no_charts, html_lang=html_page_lang
     )
 
     out_path = Path(args.output)
@@ -4117,18 +4571,54 @@ def main() -> int:
         drill_show: List[dict] = []
         if args.drilldown_limit != 0:
             cap_export = args.drilldown_limit if args.drilldown_limit > 0 else None
-            drill_all = _build_drill_all_entries(rows, cap_export, exclude_pii=hide_pii)
-            total_drill = len(drill_all)
             display_n = max(0, args.drilldown_display_max)
-            if display_n:
-                pick_rows = _pick_balanced_diverse_drill_rows(
-                    rows,
-                    display_n,
-                    exclude_pii=hide_pii,
-                    semantic_max_k=insight_semantic_k,
-                    use_diversify=use_div,
+            scale_note = ""
+            if snap is not None:
+                total_drill = snap.n_hp_total + snap.n_wl_total
+                hp_f = _filter_drill_pool_rows(snap.hp_drill_pool, exclude_pii=hide_pii)
+                wl_f = _filter_drill_pool_rows(snap.wl_drill_pool, exclude_pii=hide_pii)
+                drill_all = _merge_drill_all_entries(hp_f, wl_f, cap_export)
+                combined = hp_f + wl_f
+                if snap.drill_pool_truncated:
+                    cap = int(args.drill_retention_cap)
+                    if str(html_page_lang).lower().startswith("en"):
+                        scale_note = (
+                            "<p class='note'>This batch has "
+                            f"<strong>{total_drill}</strong> high_precision+watchlist rows; "
+                            "in-page cards and drill JSONL are drawn from a "
+                            f"<strong>priority-retained pool of up to {cap}</strong> per tier "
+                            "(streaming mode; tune <code>--drill-retention-cap</code>).</p>"
+                        )
+                    else:
+                        scale_note = (
+                            "<p class='note'>本批强怀疑+待观察合计 <strong>"
+                            f"{total_drill}</strong> 条；页内与 drill 导出仅来自每档最多保留 "
+                            f"<strong>{cap}</strong> 条的优先池（流式模式，可调 "
+                            "<code>--drill-retention-cap</code>）。</p>"
+                        )
+                if display_n:
+                    pick_rows = _pick_balanced_diverse_drill_rows(
+                        combined,
+                        display_n,
+                        exclude_pii=False,
+                        semantic_max_k=insight_semantic_k,
+                        use_diversify=use_div,
+                    )
+                    drill_show = [_row_to_drill_entry(r) for r in pick_rows]
+            else:
+                drill_all = _build_drill_all_entries(
+                    rows, cap_export, exclude_pii=hide_pii
                 )
-                drill_show = [_row_to_drill_entry(r) for r in pick_rows]
+                total_drill = len(drill_all)
+                if display_n:
+                    pick_rows = _pick_balanced_diverse_drill_rows(
+                        rows,
+                        display_n,
+                        exclude_pii=hide_pii,
+                        semantic_max_k=insight_semantic_k,
+                        use_diversify=use_div,
+                    )
+                    drill_show = [_row_to_drill_entry(r) for r in pick_rows]
             if not args.no_drilldown_export and drill_all:
                 export_path = target_html.with_name(target_html.stem + "_drilldown_full.jsonl")
                 _write_drilldown_jsonl(export_path, drill_all)
@@ -4140,25 +4630,46 @@ def main() -> int:
                 export_rel=export_rel,
                 html_lang=html_page_lang,
                 use_display_diversify=use_div,
+                scale_note_html=scale_note,
             )
 
         anchor_by_rid = _request_id_to_drill_anchor(drill_show)
         insight_section_html = ""
         if args.sample_headlines > 0:
-            insight_section_html = _insight_sections_html(
-                rows,
-                args.sample_headlines,
-                max(1, int(args.insight_model_tab_limit)),
-                not args.no_insight_model_tabs,
-                anchor_by_rid,
-                html_lang=html_page_lang,
-                use_semantic_cluster=not args.no_insight_semantic_cluster,
-                semantic_max_k=insight_semantic_k,
-                model_tab_group=str(args.insight_model_tab_group),
-                model_tier=model_tier,
-                hide_pii=hide_pii,
-                use_display_diversify=use_div,
-            )
+            if snap is not None:
+                insight_section_html = _insight_sections_html(
+                    rows if rows else snap.locale_probe_rows,
+                    args.sample_headlines,
+                    max(1, int(args.insight_model_tab_limit)),
+                    not args.no_insight_model_tabs,
+                    anchor_by_rid,
+                    html_lang=html_page_lang,
+                    use_semantic_cluster=not args.no_insight_semantic_cluster,
+                    semantic_max_k=insight_semantic_k,
+                    model_tab_group=str(args.insight_model_tab_group),
+                    model_tier=model_tier,
+                    hide_pii=hide_pii,
+                    use_display_diversify=use_div,
+                    insight_hp_pool=snap.hp_insight_pool,
+                    insight_wl_pool=snap.wl_insight_pool,
+                    insight_pii_omitted_hp=snap.insight_pii_omitted_hp,
+                    insight_pii_omitted_wl=snap.insight_pii_omitted_wl,
+                )
+            else:
+                insight_section_html = _insight_sections_html(
+                    rows,
+                    args.sample_headlines,
+                    max(1, int(args.insight_model_tab_limit)),
+                    not args.no_insight_model_tabs,
+                    anchor_by_rid,
+                    html_lang=html_page_lang,
+                    use_semantic_cluster=not args.no_insight_semantic_cluster,
+                    semantic_max_k=insight_semantic_k,
+                    model_tab_group=str(args.insight_model_tab_group),
+                    model_tier=model_tier,
+                    hide_pii=hide_pii,
+                    use_display_diversify=use_div,
+                )
 
         variant_banner = _report_variant_banner_html(
             variant=variant,
@@ -4176,7 +4687,7 @@ def main() -> int:
         page = _html_page(
             page_title,
             list(args.inputs),
-            len(rows),
+            n_rows,
             tier_cnt,
             cohort,
             att_html,
