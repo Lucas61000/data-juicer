@@ -832,7 +832,7 @@
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Configuration used to create a dataset. &quot;</span>  <span class="c1"># noqa: E251</span>
         <span class="s2">&quot;The dataset will be created from this configuration if provided. &quot;</span>
-        <span class="s2">&quot;It must contain the `type` field to specify the dataset name.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;It must contain the `--type` field to specify the dataset name.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;--validators&quot;</span><span class="p">,</span>
@@ -850,6 +850,14 @@
         <span class="s2">&quot;options such as chunksize (JSON), columns (Parquet), or &quot;</span>
         <span class="s2">&quot;delimiter (CSV). See the HuggingFace Datasets docs for &quot;</span>
         <span class="s2">&quot;available options.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--read_options&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="n">Dict</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Read options passed through to PyArrow reading functions &quot;</span>
+        <span class="s2">&quot;(e.g., block_size for JSON reading). This configuration is &quot;</span>
+        <span class="s2">&quot;especially useful when reading large JSON files.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;--work_dir&quot;</span><span class="p">,</span>

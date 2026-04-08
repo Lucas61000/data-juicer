@@ -658,7 +658,7 @@
 
 
 <div class="viewcode-block" id="VLMRayVLLMEnginePipeline">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.html#data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.VLMRayVLLMEnginePipeline">[文档]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.html#data_juicer.ops.pipeline.VLMRayVLLMEnginePipeline">[文档]</a>
 <span class="nd">@OPERATORS</span><span class="o">.</span><span class="n">register_module</span><span class="p">(</span><span class="n">OP_NAME</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VLMRayVLLMEnginePipeline</span><span class="p">(</span><span class="n">RayVLLMEnginePipeline</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -670,7 +670,7 @@
     <span class="n">_accelerator</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span>
 
 <div class="viewcode-block" id="VLMRayVLLMEnginePipeline.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.html#data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.VLMRayVLLMEnginePipeline.__init__">[文档]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.html#data_juicer.ops.pipeline.VLMRayVLLMEnginePipeline.__init__">[文档]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">api_or_hf_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Qwen/Qwen2.5-7B-Instruct&quot;</span><span class="p">,</span>
@@ -733,7 +733,7 @@
 
 
 <div class="viewcode-block" id="VLMRayVLLMEnginePipeline.vision_preprocess">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.html#data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.VLMRayVLLMEnginePipeline.vision_preprocess">[文档]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.html#data_juicer.ops.pipeline.VLMRayVLLMEnginePipeline.vision_preprocess">[文档]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">vision_preprocess</span><span class="p">(</span>
         <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">query_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">image_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">system_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">sampling_params</span><span class="p">:</span> <span class="n">Dict</span>
@@ -764,7 +764,7 @@
 
 
 <div class="viewcode-block" id="VLMRayVLLMEnginePipeline.postprocess_fn">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.html#data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.VLMRayVLLMEnginePipeline.postprocess_fn">[文档]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.html#data_juicer.ops.pipeline.VLMRayVLLMEnginePipeline.postprocess_fn">[文档]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">postprocess_fn</span><span class="p">(</span><span class="n">row</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">response_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ori_columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
         <span class="n">output</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;generated_text&quot;</span><span class="p">]</span>
@@ -775,7 +775,7 @@
 
 
 <div class="viewcode-block" id="VLMRayVLLMEnginePipeline.run">
-<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.html#data_juicer.ops.pipeline.vlm_inference_with_ray_vllm_pipeline.VLMRayVLLMEnginePipeline.run">[文档]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.ops.pipeline.html#data_juicer.ops.pipeline.VLMRayVLLMEnginePipeline.run">[文档]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">exporter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tracer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reduce</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="c1"># keep original columns, for filter useless columns generated in the middle stages</span>
         <span class="n">ori_columns</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">columns</span><span class="p">()</span>
