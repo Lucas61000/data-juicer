@@ -758,7 +758,7 @@ Data-Juicer 中的算子分为以下 8 种类型。</p>
 <td><p>Aggregate for batched samples, such as summary or conclusion. 对批量样本进行汇总，如得出总结或结论。</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../api/data_juicer.ops.deduplicator.html#module-data_juicer.ops.deduplicator" title="data_juicer.ops.deduplicator"><span class="xref myst py py-mod">deduplicator</span></a></p></td>
-<td class="text-center"><p>10</p></td>
+<td class="text-center"><p>11</p></td>
 <td><p>Detects and removes duplicate samples. 识别、删除重复样本。</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="../api/data_juicer.ops.filter.html#module-data_juicer.ops.filter" title="data_juicer.ops.filter"><span class="xref myst py py-mod">filter</span></a></p></td>
@@ -880,55 +880,61 @@ Data-Juicer 中的算子分为以下 8 种类型。</p>
 <td><p><a class="reference internal" href="operators/deduplicator/document_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>document_minhash_deduplicator</p></td>
+<tr class="row-odd"><td><p>document_line_deduplicator</p></td>
+<td><p>🔤Text 💻CPU 🟡Beta</p></td>
+<td><p>Deduplicates at the line level across documents. 在文档间按行级别去重。</p></td>
+<td><p>-</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p>document_minhash_deduplicator</p></td>
 <td><p>🔤Text 💻CPU 🟢Stable</p></td>
 <td><p>Deduplicates samples at the document level using MinHash LSH. 使用MinHash LSH在文档级别删除重复样本。</p></td>
 <td><p><a class="reference internal" href="operators/deduplicator/document_minhash_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>document_simhash_deduplicator</p></td>
+<tr class="row-odd"><td><p>document_simhash_deduplicator</p></td>
 <td><p>🔤Text 💻CPU 🟢Stable</p></td>
 <td><p>Deduplicates samples at the document level using SimHash. 使用SimHash在文档级别删除重复的样本。</p></td>
 <td><p><a class="reference internal" href="operators/deduplicator/document_simhash_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>image_deduplicator</p></td>
+<tr class="row-even"><td><p>image_deduplicator</p></td>
 <td><p>🏞Image 💻CPU 🟢Stable</p></td>
 <td><p>Deduplicates samples at the document level by exact matching of images. 通过图像的精确匹配在文档级别删除重复的样本。</p></td>
 <td><p><a class="reference internal" href="operators/deduplicator/image_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>ray_basic_deduplicator</p></td>
+<tr class="row-odd"><td><p>ray_basic_deduplicator</p></td>
 <td><p>💻CPU 🔴Alpha</p></td>
 <td><p>Backend for deduplicator. deduplicator的后端。</p></td>
 <td><p>-</p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>ray_bts_minhash_deduplicator</p></td>
+<tr class="row-even"><td><p>ray_bts_minhash_deduplicator</p></td>
 <td><p>🔤Text 💻CPU 🟡Beta</p></td>
 <td><p>A distributed implementation of Union-Find with load balancing. 具有负载平衡的Union-Find的分布式实现。</p></td>
 <td><p><a class="reference internal" href="operators/deduplicator/ray_bts_minhash_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>ray_document_deduplicator</p></td>
+<tr class="row-odd"><td><p>ray_document_deduplicator</p></td>
 <td><p>🔤Text 💻CPU 🟡Beta</p></td>
 <td><p>Deduplicates samples at the document level using exact matching in Ray distributed mode. 在Ray分布式模式下使用精确匹配在文档级别删除重复的样本。</p></td>
 <td><p><a class="reference internal" href="operators/deduplicator/ray_document_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>ray_image_deduplicator</p></td>
+<tr class="row-even"><td><p>ray_image_deduplicator</p></td>
 <td><p>🏞Image 💻CPU 🟡Beta</p></td>
 <td><p>Deduplicates samples at the document level using exact matching of images in Ray distributed mode. 在光线分布模式下使用图像的精确匹配在文档级别删除重复样本。</p></td>
 <td><p><a class="reference internal" href="operators/deduplicator/ray_image_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-even"><td><p>ray_video_deduplicator</p></td>
+<tr class="row-odd"><td><p>ray_video_deduplicator</p></td>
 <td><p>🎬Video 💻CPU 🟡Beta</p></td>
 <td><p>Deduplicates samples at document-level using exact matching of videos in Ray distributed mode. 在Ray分布式模式下使用视频的精确匹配在文档级删除重复样本。</p></td>
 <td><p><a class="reference internal" href="operators/deduplicator/ray_video_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
 <td><p>-</p></td>
 </tr>
-<tr class="row-odd"><td><p>video_deduplicator</p></td>
+<tr class="row-even"><td><p>video_deduplicator</p></td>
 <td><p>🎬Video 💻CPU 🟢Stable</p></td>
 <td><p>Deduplicates samples at the document level using exact matching of videos. 使用视频的精确匹配在文档级别删除重复的样本。</p></td>
 <td><p><a class="reference internal" href="operators/deduplicator/video_deduplicator.html"><span class="std std-doc">info</span></a></p></td>
