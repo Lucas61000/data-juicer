@@ -865,6 +865,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">response_path</span> <span class="o">=</span> <span class="n">response_path</span> <span class="ow">or</span> <span class="s2">&quot;choices.0.message.content&quot;</span>
 
         <span class="n">client_args</span> <span class="o">=</span> <span class="n">filter_arguments</span><span class="p">(</span><span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;base_url&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">client_args</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_BASE_URL&quot;</span><span class="p">):</span>
+            <span class="n">client_args</span><span class="p">[</span><span class="s2">&quot;base_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_BASE_URL&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">(</span><span class="o">**</span><span class="n">client_args</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No model specified. Using the first available model from the server.&quot;</span><span class="p">)</span>
@@ -927,6 +929,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">response_path</span> <span class="o">=</span> <span class="n">response_path</span> <span class="ow">or</span> <span class="s2">&quot;data.0.embedding&quot;</span>
 
         <span class="n">client_args</span> <span class="o">=</span> <span class="n">filter_arguments</span><span class="p">(</span><span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;base_url&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">client_args</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_BASE_URL&quot;</span><span class="p">):</span>
+            <span class="n">client_args</span><span class="p">[</span><span class="s2">&quot;base_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_BASE_URL&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">(</span><span class="o">**</span><span class="n">client_args</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No model specified. Using the first available model from the server.&quot;</span><span class="p">)</span>
@@ -980,6 +984,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">response_path</span> <span class="o">=</span> <span class="n">response_path</span> <span class="ow">or</span> <span class="s2">&quot;output.0.content.0.text&quot;</span>
 
         <span class="n">client_args</span> <span class="o">=</span> <span class="n">filter_arguments</span><span class="p">(</span><span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;base_url&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">client_args</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_BASE_URL&quot;</span><span class="p">):</span>
+            <span class="n">client_args</span><span class="p">[</span><span class="s2">&quot;base_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_BASE_URL&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">(</span><span class="o">**</span><span class="n">client_args</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No model specified. Using the first available model from the server.&quot;</span><span class="p">)</span>
@@ -2109,7 +2115,19 @@
 
 <div class="viewcode-block" id="update_sampling_params">
 <a class="viewcode-back" href="../../../api/data_juicer.utils.model_utils.html#data_juicer.utils.model_utils.update_sampling_params">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">update_sampling_params</span><span class="p">(</span><span class="n">sampling_params</span><span class="p">,</span> <span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="n">enable_vllm</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">update_sampling_params</span><span class="p">(</span>
+    <span class="n">sampling_params</span><span class="p">,</span>
+    <span class="n">pretrained_model_name_or_path</span><span class="p">,</span>
+    <span class="n">enable_vllm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">fetch_generation_config_from_hf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update sampling_params with max_tokens/max_new_tokens from model or defaults.</span>
+
+<span class="sd">    When fetch_generation_config_from_hf is False (e.g. API-only models like</span>
+<span class="sd">    gemini-2.5-flash via DashScope), skip HuggingFace GenerationConfig fetch to</span>
+<span class="sd">    avoid connection errors. Default None means: fetch when enable_vllm or when</span>
+<span class="sd">    pretrained_model_name_or_path looks like an HF path (contains /).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">enable_vllm</span><span class="p">:</span>
         <span class="n">update_keys</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;max_tokens&quot;</span><span class="p">}</span>
     <span class="k">else</span><span class="p">:</span>
@@ -2123,15 +2141,20 @@
         <span class="s2">&quot;max_new_tokens&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">max</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span>
     <span class="p">}</span>
 
-    <span class="c1"># try to get the generation configs</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationConfig</span>
+    <span class="k">if</span> <span class="n">fetch_generation_config_from_hf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fetch_generation_config_from_hf</span> <span class="o">=</span> <span class="n">enable_vllm</span> <span class="ow">or</span> <span class="p">(</span><span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
 
-    <span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">check_model_home</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">model_generation_config</span> <span class="o">=</span> <span class="n">GenerationConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
-    <span class="k">except</span><span class="p">:</span>  <span class="c1"># noqa: E722</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No generation config found for the model &quot;</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">pretrained_model_name_or_path</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
-        <span class="n">model_generation_config</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">model_generation_config</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">fetch_generation_config_from_hf</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationConfig</span>
+
+        <span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">check_model_home</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">model_generation_config</span> <span class="o">=</span> <span class="n">GenerationConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;No generation config found for the model &quot;</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">pretrained_model_name_or_path</span><span class="si">}</span><span class="s2">]. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
 
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">update_keys</span><span class="p">:</span>
         <span class="c1"># if there is this param in the sampling_prams, compare it with the</span>
