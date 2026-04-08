@@ -800,7 +800,10 @@ like tokenization or encoding. Defaults to False.</p></li>
 <li><p><strong>processor_config</strong> -- A dictionary containing configuration parameters
 for initializing a Hugging Face processor. It is only relevant if
 <cite>return_processor</cite> is set to True.</p></li>
-<li><p><strong>model_params</strong> -- Additional parameters for configuring the API model.</p></li>
+<li><p><strong>model_params</strong> -- Additional parameters for configuring the API model.
+Environment variables <code class="docutils literal notranslate"><span class="pre">OPENAI_BASE_URL</span></code> / <code class="docutils literal notranslate"><span class="pre">OPENAI_API_URL</span></code> and
+<code class="docutils literal notranslate"><span class="pre">OPENAI_API_KEY</span></code> / <code class="docutils literal notranslate"><span class="pre">DASHSCOPE_API_KEY</span></code> are merged when not set here
+(OpenAI-compatible / DashScope REST).</p></li>
 </ul>
 </dd>
 <dt class="field-even">返回<span class="colon">:</span></dt>

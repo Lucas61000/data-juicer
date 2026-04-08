@@ -660,7 +660,7 @@
 
 
 <div class="viewcode-block" id="ProcessingStatus">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingStatus">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingStatus">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ProcessingStatus</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Processing status enumeration.&quot;&quot;&quot;</span>
 
@@ -673,7 +673,7 @@
 
 
 <div class="viewcode-block" id="OperationStatus">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.OperationStatus">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.OperationStatus">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">OperationStatus</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Status of a single operation.&quot;&quot;&quot;</span>
@@ -692,7 +692,7 @@
 
 
 <div class="viewcode-block" id="PartitionStatus">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.PartitionStatus">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.PartitionStatus">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PartitionStatus</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Status of a single partition.&quot;&quot;&quot;</span>
@@ -722,7 +722,7 @@
 
 
 <div class="viewcode-block" id="JobSnapshot">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.JobSnapshot">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.JobSnapshot">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">JobSnapshot</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete snapshot of job processing status.&quot;&quot;&quot;</span>
@@ -751,12 +751,12 @@
 
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ProcessingSnapshotAnalyzer</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Analyzer for processing snapshots.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.__init__">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the analyzer with work directory.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">work_dir</span><span class="p">)</span>
@@ -777,7 +777,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;events.jsonl&quot;</span>
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.load_events">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.load_events">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.load_events">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_events</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load events from events.jsonl file.&quot;&quot;&quot;</span>
         <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
@@ -795,7 +795,7 @@
 
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.load_dag_plan">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.load_dag_plan">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.load_dag_plan">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_dag_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load DAG execution plan.&quot;&quot;&quot;</span>
         <span class="n">dag_plan</span> <span class="o">=</span> <span class="p">{}</span>
@@ -812,7 +812,7 @@
 
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.load_job_summary">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.load_job_summary">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.load_job_summary">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_job_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load job summary if available.&quot;&quot;&quot;</span>
         <span class="n">summary</span> <span class="o">=</span> <span class="p">{}</span>
@@ -827,7 +827,7 @@
 
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.analyze_events">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.analyze_events">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.analyze_events">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">analyze_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">PartitionStatus</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">OperationStatus</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze events to determine processing status.&quot;&quot;&quot;</span>
         <span class="n">partition_statuses</span> <span class="o">=</span> <span class="p">{}</span>
@@ -953,7 +953,7 @@
 
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.determine_overall_status">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.determine_overall_status">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.determine_overall_status">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">determine_overall_status</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">partition_statuses</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">PartitionStatus</span><span class="p">],</span> <span class="n">operation_statuses</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">OperationStatus</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProcessingStatus</span><span class="p">:</span>
@@ -976,7 +976,7 @@
 
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.calculate_statistics">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.calculate_statistics">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.calculate_statistics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">calculate_statistics</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">partition_statuses</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">PartitionStatus</span><span class="p">],</span> <span class="n">operation_statuses</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">OperationStatus</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
@@ -1006,7 +1006,7 @@
 
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.generate_snapshot">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.generate_snapshot">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.generate_snapshot">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JobSnapshot</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a complete processing snapshot.&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating processing snapshot for work directory: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -1079,7 +1079,7 @@
 
 
 <div class="viewcode-block" id="ProcessingSnapshotAnalyzer.to_json_dict">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.to_json_dict">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.ProcessingSnapshotAnalyzer.to_json_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_json_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">:</span> <span class="n">JobSnapshot</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert snapshot to JSON-serializable dictionary with comprehensive progress tracking.&quot;&quot;&quot;</span>
         <span class="c1"># Load job summary for additional metadata</span>
@@ -1317,7 +1317,7 @@
 
 
 <div class="viewcode-block" id="create_snapshot">
-<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.snapshot.html#data_juicer.utils.job.create_snapshot">[docs]</a>
+<a class="viewcode-back" href="../../../../api/data_juicer.utils.job.html#data_juicer.utils.job.create_snapshot">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">create_snapshot</span><span class="p">(</span><span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">detailed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JobSnapshot</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create and display a processing snapshot for a work directory.&quot;&quot;&quot;</span>
     <span class="n">analyzer</span> <span class="o">=</span> <span class="n">ProcessingSnapshotAnalyzer</span><span class="p">(</span><span class="n">work_dir</span><span class="p">)</span>

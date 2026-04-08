@@ -788,7 +788,11 @@
     <span class="c1"># # role relation</span>
     <span class="n">role_relation</span> <span class="o">=</span> <span class="s2">&quot;role_relation&quot;</span>
     <span class="c1"># # html tables</span>
-    <span class="n">html_tables</span> <span class="o">=</span> <span class="s2">&quot;html_tables&quot;</span></div>
+    <span class="n">html_tables</span> <span class="o">=</span> <span class="s2">&quot;html_tables&quot;</span>
+    <span class="c1"># # LLM-based structured extraction (user-configurable output_schema)</span>
+    <span class="n">llm_extract</span> <span class="o">=</span> <span class="s2">&quot;llm_extract&quot;</span>
+    <span class="c1"># # LLM semantic ops: token/cost usage per call (prompt_tokens, completion_tokens, total_tokens, cost_estimate)</span>
+    <span class="n">llm_semantic_usage</span> <span class="o">=</span> <span class="s2">&quot;llm_semantic_usage&quot;</span></div>
 
 
 
@@ -927,6 +931,10 @@
     <span class="n">llm_perplexity</span> <span class="o">=</span> <span class="s2">&quot;llm_perplexity&quot;</span>
     <span class="n">llm_task_relevance</span> <span class="o">=</span> <span class="s2">&quot;llm_task_relevance&quot;</span>
     <span class="n">llm_task_relevance_record</span> <span class="o">=</span> <span class="s2">&quot;llm_task_relevance_record&quot;</span>
+    <span class="c1"># llm_condition_filter: True if sample satisfies the user-given condition</span>
+    <span class="n">llm_condition_filter_result</span> <span class="o">=</span> <span class="s2">&quot;llm_condition_filter_result&quot;</span>
+    <span class="c1"># llm_* semantic ops: token/cost usage (dict with prompt_tokens, completion_tokens, total_tokens, cost_estimate)</span>
+    <span class="n">llm_semantic_usage</span> <span class="o">=</span> <span class="s2">&quot;llm_semantic_usage&quot;</span>
 
     <span class="c1">#  === image ===</span>
     <span class="n">aspect_ratios</span> <span class="o">=</span> <span class="s2">&quot;aspect_ratios&quot;</span>

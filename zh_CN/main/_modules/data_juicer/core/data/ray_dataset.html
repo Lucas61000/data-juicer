@@ -1090,9 +1090,19 @@
 
 
 
+<span class="c1"># Ray renamed ArrowJSONDatasource -&gt; JSONDatasource in newer releases</span>
+<span class="n">_read_api</span> <span class="o">=</span> <span class="n">ray</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">read_api</span>
+<span class="n">_JSONDatasourceBase</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">_read_api</span><span class="p">,</span> <span class="s2">&quot;ArrowJSONDatasource&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">_read_api</span><span class="p">,</span> <span class="s2">&quot;JSONDatasource&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">_JSONDatasourceBase</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+        <span class="s2">&quot;ray.data.read_api has neither ArrowJSONDatasource nor JSONDatasource; &quot;</span>
+        <span class="s2">&quot;please upgrade or pin a compatible Ray version.&quot;</span>
+    <span class="p">)</span>
+
+
 <div class="viewcode-block" id="JSONStreamDatasource">
 <a class="viewcode-back" href="../../../../api/data_juicer.core.data.ray_dataset.html#data_juicer.core.data.ray_dataset.JSONStreamDatasource">[文档]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">JSONStreamDatasource</span><span class="p">(</span><span class="n">ray</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">read_api</span><span class="o">.</span><span class="n">ArrowJSONDatasource</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">JSONStreamDatasource</span><span class="p">(</span><span class="n">_JSONDatasourceBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A temp Datasource for reading json stream.</span>
 
