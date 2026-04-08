@@ -2,13 +2,12 @@ import os
 from multiprocessing import Pool
 from typing import Optional
 
-import pdfplumber
 from datasets import Dataset, concatenate_datasets, load_dataset
-from docx import Document
 from loguru import logger
 
 from data_juicer.utils.cache_utils import DATA_JUICER_CACHE_HOME
 from data_juicer.utils.file_utils import find_files_with_suffix
+from data_juicer.utils.lazy_loader import LazyLoader
 
 from .formatter import FORMATTERS, LocalFormatter, add_suffixes, unify_format
 
@@ -57,7 +56,8 @@ def extract_txt_from_docx(fn, tgt_path):
         :class:`io.BytesIO`) for in-memory decrypted content.
     :param tgt_path: path to save text file.
     """
-    doc = Document(fn)
+    docx = LazyLoader("docx", "python-docx")
+    doc = docx.Document(fn)
     text = [para.text for para in doc.paragraphs if para.text.strip()]
     # Derive the output filename from fn; fall back to a generic name for
     # file-like objects that expose a .name attribute.
@@ -77,6 +77,7 @@ def extract_txt_from_pdf(fn, tgt_path):
         :class:`io.BytesIO`) for in-memory decrypted content.
     :param tgt_path: path to save text file.
     """
+    pdfplumber = LazyLoader("pdfplumber")
     with pdfplumber.open(fn) as pdf:
         text = []
         for page in pdf.pages:
