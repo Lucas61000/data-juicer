@@ -398,11 +398,14 @@ class RayDataset(DJDataset):
         return self.data.to_pandas().to_dict(orient="records")
 
 
-# Ray: ArrowJSONDatasource vs JSONDatasource depends on version.
+# Ray renamed ArrowJSONDatasource -> JSONDatasource in newer releases
 _read_api = ray.data.read_api
-_JSONDatasourceBase = getattr(_read_api, "ArrowJSONDatasource", None)
+_JSONDatasourceBase = getattr(_read_api, "ArrowJSONDatasource", None) or getattr(_read_api, "JSONDatasource", None)
 if _JSONDatasourceBase is None:
-    _JSONDatasourceBase = getattr(_read_api, "JSONDatasource", None)
+    raise ImportError(
+        "ray.data.read_api has neither ArrowJSONDatasource nor JSONDatasource; "
+        "please upgrade or pin a compatible Ray version."
+    )
 
 
 class JSONStreamDatasource(_JSONDatasourceBase):
@@ -449,7 +452,7 @@ class JSONStreamDatasource(_JSONDatasourceBase):
                 except StopIteration:
                     return
         except pyarrow.lib.ArrowInvalid as e:
-            raise ValueError(f"Failed to read JSON file: {path}.") from e
+            raise ValueError(f"Failed to read JSON file: {path}. Underlying PyArrow Error: {e}") from e
 
 
 def read_json_stream(
