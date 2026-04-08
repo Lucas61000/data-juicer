@@ -655,7 +655,7 @@
 
 
 <div class="viewcode-block" id="parse_single_requirement">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.parse_single_requirement">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.parse_single_requirement">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_single_requirement</span><span class="p">(</span><span class="n">req_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="c1"># parse a single requirement specifier</span>
     <span class="n">req_str</span> <span class="o">=</span> <span class="n">req_str</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
@@ -690,7 +690,7 @@
 
 
 <div class="viewcode-block" id="parse_requirements_list">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.parse_requirements_list">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.parse_requirements_list">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_requirements_list</span><span class="p">(</span><span class="n">req_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
     <span class="c1"># parse the detailed requirements info from a list of pip package specifiers</span>
     <span class="n">parsed</span> <span class="o">=</span> <span class="p">[]</span>
@@ -708,7 +708,7 @@
 
 
 <div class="viewcode-block" id="parse_requirements_file">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.parse_requirements_file">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.parse_requirements_file">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_requirements_file</span><span class="p">(</span><span class="n">req_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="c1"># parse the detailed requirements info from a requirements file</span>
     <span class="n">req_list</span> <span class="o">=</span> <span class="p">[]</span>
@@ -723,7 +723,7 @@
 
 
 <div class="viewcode-block" id="Requirement">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.Requirement">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.Requirement">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Requirement</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -782,14 +782,14 @@
 
 
 <div class="viewcode-block" id="OPEnvSpec">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvSpec">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvSpec">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OPEnvSpec</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Specification of the environment dependencies for an operator.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="OPEnvSpec.__init__">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvSpec.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvSpec.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">pip_pkgs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -835,7 +835,7 @@
 
 
 <div class="viewcode-block" id="OPEnvSpec.to_dict">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvSpec.to_dict">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvSpec.to_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert the OPEnvSpec instance to a dictionary.</span>
@@ -854,7 +854,7 @@
 
 
 <div class="viewcode-block" id="OPEnvSpec.get_hash">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvSpec.get_hash">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvSpec.get_hash">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">op_env_spec_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
         <span class="n">serialized_spec</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">op_env_spec_dict</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -862,7 +862,7 @@
 
 
 <div class="viewcode-block" id="OPEnvSpec.get_requirement_name_list">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvSpec.get_requirement_name_list">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvSpec.get_requirement_name_list">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_requirement_name_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parsed_requirements</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
 </div>
@@ -870,7 +870,7 @@
 
 
 <div class="viewcode-block" id="op_requirements_to_op_env_spec">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.op_requirements_to_op_env_spec">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.op_requirements_to_op_env_spec">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">op_requirements_to_op_env_spec</span><span class="p">(</span>
     <span class="n">op_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">requirements</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -910,7 +910,7 @@
 
 
 <div class="viewcode-block" id="ConflictResolveStrategy">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.ConflictResolveStrategy">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.ConflictResolveStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ConflictResolveStrategy</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
     <span class="c1"># Strategies to resolve the dependency conflicts.</span>
     <span class="c1"># It decides how to handle the conflicts when merging OP environments.</span>
@@ -924,7 +924,7 @@
 
 
 <div class="viewcode-block" id="OPEnvManager">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvManager">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvManager">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OPEnvManager</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    OPEnvManager is a class that manages the environment dependencies for operators,</span>
@@ -932,7 +932,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="OPEnvManager.__init__">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvManager.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvManager.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">min_common_dep_num_to_combine</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
@@ -971,7 +971,7 @@
 
 
 <div class="viewcode-block" id="OPEnvManager.print_the_current_states">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvManager.print_the_current_states">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvManager.print_the_current_states">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">print_the_current_states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the current states of OPEnvManager, including:</span>
@@ -996,7 +996,7 @@
 
 
 <div class="viewcode-block" id="OPEnvManager.record_op_env_spec">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvManager.record_op_env_spec">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvManager.record_op_env_spec">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">record_op_env_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">op_env_spec</span><span class="p">:</span> <span class="n">OPEnvSpec</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Record the OP environment specification for an operator.</span>
@@ -1010,7 +1010,7 @@
 
 
 <div class="viewcode-block" id="OPEnvManager.merge_op_env_specs">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvManager.merge_op_env_specs">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvManager.merge_op_env_specs">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">merge_op_env_specs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_env_spec</span><span class="p">:</span> <span class="n">OPEnvSpec</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Merge the OP environment specification for an operator with existing OP environment specification.</span>
@@ -1046,7 +1046,7 @@
 
 
 <div class="viewcode-block" id="OPEnvManager.can_combine_op_env_specs">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvManager.can_combine_op_env_specs">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvManager.can_combine_op_env_specs">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">can_combine_op_env_specs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_env_spec</span><span class="p">:</span> <span class="n">OPEnvSpec</span><span class="p">,</span> <span class="n">second_env_spec</span><span class="p">:</span> <span class="n">OPEnvSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check if two OP environment specifications can be combined.</span>
@@ -1074,7 +1074,7 @@
 
 
 <div class="viewcode-block" id="OPEnvManager.try_to_combine_op_env_specs">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvManager.try_to_combine_op_env_specs">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvManager.try_to_combine_op_env_specs">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">try_to_combine_op_env_specs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_env_spec</span><span class="p">:</span> <span class="n">OPEnvSpec</span><span class="p">,</span> <span class="n">second_env_spec</span><span class="p">:</span> <span class="n">OPEnvSpec</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Try to combine the OP environment specification for an operator with existing OP environment specification.</span>
@@ -1131,7 +1131,7 @@
 
 
 <div class="viewcode-block" id="OPEnvManager.get_op_env_spec">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.OPEnvManager.get_op_env_spec">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.OPEnvManager.get_op_env_spec">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_op_env_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OPEnvSpec</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the OP environment specification for an operator.</span>
@@ -1263,7 +1263,7 @@
 
 
 <div class="viewcode-block" id="analyze_lazy_loaded_requirements_for_code_file">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.analyze_lazy_loaded_requirements_for_code_file">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.analyze_lazy_loaded_requirements_for_code_file">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">analyze_lazy_loaded_requirements_for_code_file</span><span class="p">(</span><span class="n">code_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">code_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fin</span><span class="p">:</span>
         <span class="n">code_content</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
@@ -1272,7 +1272,7 @@
 
 
 <div class="viewcode-block" id="analyze_lazy_loaded_requirements">
-<a class="viewcode-back" href="../../../api/data_juicer.ops.op_env.html#data_juicer.ops.op_env.analyze_lazy_loaded_requirements">[docs]</a>
+<a class="viewcode-back" href="../../../api/data_juicer.ops.html#data_juicer.ops.analyze_lazy_loaded_requirements">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">analyze_lazy_loaded_requirements</span><span class="p">(</span><span class="n">code_content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">ast</span>
 

@@ -1658,7 +1658,7 @@
 <span class="sd">        &quot;en&quot;]</span>
 <span class="sd">    :return: corresponding spacy model</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">spacy</span>
+    <span class="n">spacy</span> <span class="o">=</span> <span class="n">LazyLoader</span><span class="p">(</span><span class="s2">&quot;spacy&quot;</span><span class="p">)</span>
 
     <span class="k">assert</span> <span class="n">lang</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;zh&quot;</span><span class="p">,</span> <span class="s2">&quot;en&quot;</span><span class="p">],</span> <span class="s2">&quot;Diversity only support zh and en&quot;</span>
     <span class="n">model_name</span> <span class="o">=</span> <span class="n">name_pattern</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lang</span><span class="p">)</span>
