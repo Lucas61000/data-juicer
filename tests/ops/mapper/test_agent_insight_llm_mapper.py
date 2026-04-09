@@ -7,9 +7,10 @@ from data_juicer.ops.mapper.agent_insight_llm_mapper import (
     _build_evidence_pack,
 )
 from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
-class TestAgentInsightLLMMapper(unittest.TestCase):
+class TestAgentInsightLLMMapper(DataJuicerTestCaseBase):
 
     def test_skips_when_tier_not_in_run_for_tiers(self):
         op = AgentInsightLLMMapper(api_model="gpt-4o", run_for_tiers=["watchlist"])

@@ -6,9 +6,10 @@
 import unittest
 
 from data_juicer.ops.filter.llm_analysis_filter import LLMAnalysisFilter
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
-class LLMAnalysisFilterParseOutputTest(unittest.TestCase):
+class LLMAnalysisFilterParseOutputTest(DataJuicerTestCaseBase):
     def setUp(self):
         self.op = object.__new__(LLMAnalysisFilter)
         self.op.dim_required_keys = list(LLMAnalysisFilter.DEFAULT_DIM_REQUIRED_KEYS)

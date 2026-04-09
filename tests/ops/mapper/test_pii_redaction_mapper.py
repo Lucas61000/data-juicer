@@ -11,9 +11,10 @@ from data_juicer.ops.mapper.pii_redaction_mapper import (
     PLACEHOLDER_URL,
     PiiRedactionMapper,
 )
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
-class TestPiiRedactionExtended(unittest.TestCase):
+class TestPiiRedactionExtended(DataJuicerTestCaseBase):
     def _m(self, **kwargs):
         return PiiRedactionMapper(text_key="text", **kwargs)
 

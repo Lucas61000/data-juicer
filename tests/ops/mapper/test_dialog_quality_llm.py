@@ -23,6 +23,7 @@ from data_juicer.ops.mapper.dialog_quality_llm_utils import (
     normalize_score_1_5,
 )
 from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 _M = "data_juicer.ops.mapper.dialog_quality_llm_base"
 
@@ -37,7 +38,7 @@ _DIALOG_TURN_MAPPERS = (
 )
 
 
-class TestDialogQualityLlmUtils(unittest.TestCase):
+class TestDialogQualityLlmUtils(DataJuicerTestCaseBase):
     def test_extract_json(self):
         raw = 'x {"score": 4, "reason": "ok"} y'
         self.assertEqual(extract_json_object(raw).get("score"), 4)
@@ -92,7 +93,7 @@ class TestDialogQualityLlmUtils(unittest.TestCase):
         self.assertIn("a2", s[iy:])
 
 
-class TestDialogQualityMappersSmoke(unittest.TestCase):
+class TestDialogQualityMappersSmoke(DataJuicerTestCaseBase):
     @patch(_M + ".prepare_model")
     @patch(_M + ".get_model")
     def test_dialog_turn_mappers_write_meta(self, mock_get, mock_prepare):

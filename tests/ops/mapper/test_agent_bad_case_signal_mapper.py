@@ -7,9 +7,10 @@ from pathlib import Path
 
 from data_juicer.ops.mapper.agent_bad_case_signal_mapper import AgentBadCaseSignalMapper
 from data_juicer.utils.constant import Fields, MetaKeys, StatsKeys
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
-class TestAgentBadCaseSignalMapper(unittest.TestCase):
+class TestAgentBadCaseSignalMapper(DataJuicerTestCaseBase):
 
     def test_tool_fail_is_high_precision(self):
         op = AgentBadCaseSignalMapper()

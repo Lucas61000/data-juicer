@@ -11,8 +11,10 @@ from pathlib import Path
 _REPO = Path(__file__).resolve().parents[3]
 _SCRIPT = _REPO / "demos" / "agent" / "scripts" / "generate_bad_case_report.py"
 
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
-class TestGenerateBadCaseReportSmoke(unittest.TestCase):
+
+class TestGenerateBadCaseReportSmoke(DataJuicerTestCaseBase):
     def test_report_minimal_jsonl_no_charts(self) -> None:
         row = {
             "query": "hello",

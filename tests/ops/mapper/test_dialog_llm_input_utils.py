@@ -4,9 +4,10 @@
 import unittest
 
 from data_juicer.ops.mapper.dialog_llm_input_utils import build_dialog_turns_for_prompt
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
-class TestBuildDialogTurnsForPrompt(unittest.TestCase):
+class TestBuildDialogTurnsForPrompt(DataJuicerTestCaseBase):
     def test_dedupes_last_turn_when_same_as_query_response(self):
         sample = {
             "dialog_history": [("u1", "a1"), ("u2", "a2")],

@@ -9,9 +9,10 @@ from data_juicer.utils.agent_output_locale import (
     llm_filter_free_text_language_appendix,
     normalize_preferred_output_lang,
 )
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
-class TestAgentOutputLocale(unittest.TestCase):
+class TestAgentOutputLocale(DataJuicerTestCaseBase):
     def test_normalize(self):
         self.assertEqual(normalize_preferred_output_lang("zh-CN"), "zh")
         self.assertEqual(normalize_preferred_output_lang("EN"), "en")

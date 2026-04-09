@@ -397,7 +397,7 @@ class ModelUtilsTest(DataJuicerTestCaseBase):
         # No assertion needed, just checking it doesn't raise an exception
 
 
-class DashScopeOpenAICompatTest(unittest.TestCase):
+class DashScopeOpenAICompatTest(DataJuicerTestCaseBase):
     """Env merge + model remap for DashScope OpenAI-compatible REST."""
 
     def test_merge_env_from_openai_and_dashscope_aliases(self):

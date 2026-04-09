@@ -17,9 +17,10 @@ from data_juicer.ops.mapper.pii_llm_suspect_mapper import (
     ensure_spacy_pipeline_installed,
 )
 from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
-class TestPiiLlmSuspectHelpers(unittest.TestCase):
+class TestPiiLlmSuspectHelpers(DataJuicerTestCaseBase):
     def test_heuristic_long_digits(self):
         self.assertTrue(_heuristic_trigger("call me 13812345678"))
 
@@ -95,7 +96,7 @@ class TestPiiLlmSuspectHelpers(unittest.TestCase):
         self.assertEqual(obj, {"a": 1})
 
 
-class TestPiiLlmSuspectMapper(unittest.TestCase):
+class TestPiiLlmSuspectMapper(DataJuicerTestCaseBase):
     @patch("data_juicer.ops.mapper.pii_llm_suspect_mapper.prepare_model")
     @patch("data_juicer.ops.mapper.pii_llm_suspect_mapper.get_model")
     def test_heuristic_gate_skips(self, mock_get, mock_prepare):

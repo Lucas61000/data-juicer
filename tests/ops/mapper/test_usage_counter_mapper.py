@@ -5,9 +5,10 @@ import unittest
 
 from data_juicer.ops.mapper.usage_counter_mapper import UsageCounterMapper
 from data_juicer.utils.constant import Fields, MetaKeys
+from data_juicer.utils.unittest_utils import DataJuicerTestCaseBase
 
 
-class TestUsageCounterMapper(unittest.TestCase):
+class TestUsageCounterMapper(DataJuicerTestCaseBase):
     def test_dedupes_identical_top_level_and_choice_usage(self):
         """Same usage in response_usage and choices[0] must not double-count."""
         op = UsageCounterMapper(
