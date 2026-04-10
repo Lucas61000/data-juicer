@@ -12,7 +12,9 @@
 - **默认单遍流式扫描**（适合百万行量级，避免整表 ``list`` OOM）：tier / 信号 / cohort / 宏观标签等计数为全量精确；
   Case study 与 Insight 仅从每档 **优先保留的有界候选池** 生成（``--drill-retention-cap``、``--insight-retention-cap``）；
   对话指标直方图 / 分位数对每指标 **贮样近似**（``--dialog-metric-samples``）。小数据若要整表进内存可显式加 ``--eager-load-all-rows``（大表易 OOM）。
-- Case study 页内展示根字段 **message**（缺失时回退 **response**）；``*_drilldown_full.jsonl`` 同时含 ``message`` 与 ``response``。
+- Case study 展开区展示 **query**、**message**（``messages`` 数组则按角色分条排版；纯文本若含多轮
+  ``User:/Assistant:`` 等也会分段）、**response**（末轮/规范化字段）；``*_drilldown_full.jsonl`` 仍含
+  ``message`` 与 ``response`` 字符串字段。
 
 示例::
 
@@ -48,7 +50,7 @@ from collections import Counter, defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import DefaultDict, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
+from typing import Any, DefaultDict, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 # HTML 分档展示语言（main 中根据 --report-lang / 环境变量 / meta 设定）
 _REPORT_LOCALE = "zh"
@@ -125,6 +127,165 @@ def _row_messages_str(row: dict) -> str:
     if isinstance(m, str):
         return m
     return str(m)
+
+
+def _extract_openai_style_content_text(content: Any) -> str:
+    """Flatten ``message.content`` (str / multimodal list / nested dict)."""
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts: List[str] = []
+        for block in content:
+            if isinstance(block, dict):
+                if block.get("type") == "text" and block.get("text") is not None:
+                    parts.append(str(block.get("text") or ""))
+                elif block.get("text") is not None:
+                    parts.append(str(block.get("text") or ""))
+                elif block.get("content") is not None:
+                    parts.append(_extract_openai_style_content_text(block.get("content")))
+            elif isinstance(block, str):
+                parts.append(block)
+        return "\n".join(x for x in parts if x).strip()
+    if isinstance(content, dict):
+        for k in ("text", "value", "content"):
+            if k in content and content[k] not in (None, ""):
+                return _extract_openai_style_content_text(content[k])
+        return ""
+    return str(content).strip()
+
+
+def _tool_calls_short_summary(msg: dict) -> str:
+    tcs = msg.get("tool_calls")
+    if not isinstance(tcs, list) or not tcs:
+        return ""
+    names: List[str] = []
+    for tc in tcs:
+        if not isinstance(tc, dict):
+            continue
+        fn = tc.get("function")
+        if isinstance(fn, dict) and fn.get("name"):
+            names.append(str(fn["name"]))
+        elif tc.get("name"):
+            names.append(str(tc["name"]))
+    if not names:
+        return "[tool_calls]"
+    tail = "…]" if len(names) > 12 else "]"
+    return "[tool_calls: " + ", ".join(names[:12]) + tail
+
+
+def _dict_message_turn_plain(msg: dict) -> str:
+    body = _extract_openai_style_content_text(msg.get("content"))
+    extra = _tool_calls_short_summary(msg)
+    if body and extra:
+        return body + "\n" + extra
+    return body or extra
+
+
+def _normalize_dialog_role_token(raw: str) -> str:
+    t = (raw or "").strip()
+    tl = t.lower()
+    if tl in ("user", "assistant", "system", "tool"):
+        return tl
+    return {"用户": "user", "助手": "assistant", "系统": "system", "工具": "tool"}.get(t, "other")
+
+
+def _role_badge_label(role_key: str, *, lang_en: bool) -> str:
+    r = (role_key or "").strip().lower()
+    if lang_en:
+        if not r or r == "other":
+            return "?"
+        return r.capitalize()
+    return {
+        "user": "用户",
+        "assistant": "助手",
+        "tool": "工具",
+        "system": "系统",
+        "other": "?",
+    }.get(r, r or "?")
+
+
+def _messages_list_to_conv_html(msgs: List[Any], *, lang_en: bool) -> Optional[str]:
+    if not isinstance(msgs, list) or not msgs:
+        return None
+    if not all(isinstance(m, dict) for m in msgs):
+        return None
+    chunks: List[str] = []
+    for msg in msgs:
+        role_lc = str(msg.get("role") or "").strip().lower()
+        rkey = role_lc if role_lc in ("user", "assistant", "tool", "system") else "other"
+        if rkey == "other" and msg.get("role") is not None:
+            label = html.escape(str(msg.get("role")).strip() or "?")
+        else:
+            label = html.escape(_role_badge_label(rkey, lang_en=lang_en))
+        raw = _dict_message_turn_plain(msg)
+        body = (
+            html.escape(raw)
+            if raw
+            else "<span class='conv-empty'>(empty)</span>"
+        )
+        rcls = rkey if rkey in ("user", "assistant", "tool", "system") else "other"
+        esc_r = html.escape(rcls)
+        chunks.append(
+            f'<div class="conv-turn conv-{esc_r}">'
+            f'<div class="conv-role">{label}</div>'
+            f'<div class="conv-body">{body}</div></div>'
+        )
+    return '<div class="conv-thread">' + "".join(chunks) + "</div>"
+
+
+def _plain_text_multi_turn_html(text: str, *, lang_en: bool) -> Optional[str]:
+    """Detect ``User:`` / ``Assistant:`` (or CN labels) at line starts; build same layout as messages[]."""
+    s = text.strip()
+    if len(s) < 8:
+        return None
+    rx = re.compile(r"(?m)^\s*(User|Assistant|System|用户|助手|系统)\s*:\s*")
+    matches = list(rx.finditer(s))
+    if len(matches) < 2:
+        return None
+    chunks: List[str] = []
+    for i, m in enumerate(matches):
+        role_key = _normalize_dialog_role_token(m.group(1))
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(s)
+        segment = s[start:end].strip()
+        rcls = role_key if role_key in ("user", "assistant", "tool", "system") else "other"
+        label = html.escape(_role_badge_label(role_key, lang_en=lang_en))
+        body = (
+            html.escape(segment)
+            if segment
+            else "<span class='conv-empty'>(empty)</span>"
+        )
+        esc_r = html.escape(rcls)
+        chunks.append(
+            f'<div class="conv-turn conv-{esc_r}">'
+            f'<div class="conv-role">{label}</div>'
+            f'<div class="conv-body">{body}</div></div>'
+        )
+    return '<div class="conv-thread">' + "".join(chunks) + "</div>"
+
+
+def _drill_message_panel_html(row: dict, *, lang_en: bool) -> str:
+    """HTML for case-study ``message`` panel (formatted thread or ``<pre>`` fallback)."""
+    msgs = row.get("messages")
+    if isinstance(msgs, list) and msgs:
+        conv = _messages_list_to_conv_html(msgs, lang_en=lang_en)
+        if conv:
+            return f'<div class="conv-scroll">{conv}</div>'
+    if isinstance(msgs, str) and msgs.strip():
+        alt = _plain_text_multi_turn_html(msgs, lang_en=lang_en)
+        if alt:
+            return f'<div class="conv-scroll">{alt}</div>'
+        return f'<pre class="drill-pre drill-pre--msg">{html.escape(msgs)}</pre>'
+    root_msg = row.get("message")
+    if isinstance(root_msg, str) and root_msg.strip():
+        alt = _plain_text_multi_turn_html(root_msg, lang_en=lang_en)
+        if alt:
+            return f'<div class="conv-scroll">{alt}</div>'
+        return f'<pre class="drill-pre drill-pre--msg">{html.escape(root_msg)}</pre>'
+    fb = _row_messages_str(row)
+    return f'<pre class="drill-pre drill-pre--msg">{html.escape(fb)}</pre>'
 
 
 def _iter_all_merged_rows(paths: List[str]) -> Iterator[Tuple[int, dict]]:
@@ -1627,7 +1788,7 @@ def _request_id_to_drill_anchor(drill: List[dict]) -> Dict[str, str]:
     return out
 
 
-def _row_to_drill_entry(row: dict) -> dict:
+def _row_to_drill_entry(row: dict, *, lang_en: bool = False) -> dict:
     meta = get_dj_meta(row)
     tier = str(meta.get("agent_bad_case_tier", ""))
     rid = (
@@ -1665,6 +1826,7 @@ def _row_to_drill_entry(row: dict) -> dict:
         "pt": str(meta.get("agent_pt") or ""),
         "query": row.get("query") or "",
         "message": _row_messages_str(row),
+        "message_html": _drill_message_panel_html(row, lang_en=lang_en),
         "response": row.get("response") or "",
         "signals_json": _json_pretty(signals),
         "insight_json": _json_pretty(insight),
@@ -1676,7 +1838,7 @@ def _row_to_drill_entry(row: dict) -> dict:
 
 def _drill_export_payload(d: dict) -> dict:
     """JSONL-friendly row (drop pre-rendered HTML)."""
-    skip = frozenset({"evidence_snapshot_html", "signal_evidence_html"})
+    skip = frozenset({"evidence_snapshot_html", "signal_evidence_html", "message_html"})
     return {k: v for k, v in d.items() if k not in skip}
 
 
@@ -1784,6 +1946,12 @@ def _drilldown_section_html(
         pt = html.escape(d["pt"] or "—")
         ev_snap = d.get("evidence_snapshot_html") or ""
         sig_ev = d.get("signal_evidence_html") or ""
+        msg_panel = d.get("message_html") or (
+            f'<pre class="drill-pre drill-pre--msg">'
+            f"{html.escape(d.get('message') or '')}</pre>"
+        )
+        rsp_txt = d.get("response")
+        rsp_txt = rsp_txt if isinstance(rsp_txt, str) else (str(rsp_txt) if rsp_txt is not None else "")
         cards.append(
             f'<div class="drill-card" id="{anchor}">'
             '<div class="drill-summary">'
@@ -1803,8 +1971,10 @@ def _drilldown_section_html(
             '<div class="field-grid">'
             "<section><h4>query</h4>"
             f"<pre class=\"drill-pre\">{html.escape(d['query'])}</pre></section>"
-            "<section><h4>message</h4>"
-            f"<pre class=\"drill-pre\">{html.escape(d.get('message') or d.get('response') or '')}</pre></section>"
+            "<section class='drill-field-wide'><h4>message</h4>"
+            f"{msg_panel}</section>"
+            "<section class='drill-field-wide'><h4>response</h4>"
+            f"<pre class=\"drill-pre drill-pre--response\">{html.escape(rsp_txt)}</pre></section>"
             "<section><h4>agent_bad_case_signals（JSON）</h4>"
             f"<pre class=\"drill-pre\">{html.escape(d['signals_json'])}</pre></section>"
             "<section><h4>agent_insight_llm</h4>"
@@ -1815,12 +1985,14 @@ def _drilldown_section_html(
         )
     intro = (
         "<p class='note'>列表顺序：<strong>强怀疑区块在前，待观察区块在后</strong>。"
-        "点「展开字段」查看快照与各信号证据及全文 query / <strong>message</strong>（兼容字段 response）；"
+        "点「展开字段」查看快照与各信号证据、<strong>query</strong>、<strong>message</strong>（多轮 "
+        "<code>messages</code> 会按角色分条排版）、<strong>response</strong>（末轮/规范化字段）；"
         "<code>#编号</code> 可分享锚点；与上文 Insight 中 <code>request_id</code> 对应。</p>"
         if not en
         else (
             "<p class='note'>Order: <strong>high_precision block</strong>, then <strong>watchlist</strong>. "
-            "Expand for evidence tables and full query/<strong>message</strong> (fallback: response); "
+            "Expand for evidence tables, <strong>query</strong>, <strong>message</strong> "
+            "(multi-turn <code>messages[]</code> rendered by role), and <strong>response</strong>; "
             "<code>#</code> is the in-page anchor; <code>request_id</code> matches Insight cards.</p>"
         )
     )
@@ -4014,6 +4186,23 @@ def _html_page(
         "pre.drill-pre{margin:0;white-space:pre-wrap;word-break:break-word;"
         "max-height:320px;overflow:auto;font-size:0.82rem;line-height:1.45;"
         "background:#1e1e1e;color:#d4d4d4;padding:10px;border-radius:6px;}"
+        "pre.drill-pre--msg,pre.drill-pre--response{max-height:420px;}"
+        "@media(min-width:900px){.field-grid section.drill-field-wide{grid-column:1/-1;}}"
+        ".conv-scroll{max-height:420px;overflow:auto;border-radius:6px;border:1px solid #333;"
+        "background:#252526;}"
+        ".conv-thread{display:flex;flex-direction:column;gap:10px;padding:10px 12px;}"
+        ".conv-turn{border-radius:6px;border-left:4px solid #666;padding:8px 12px;"
+        "background:#1e1e1e;}"
+        ".conv-user{border-left-color:#3794ff;}"
+        ".conv-assistant{border-left-color:#89d185;}"
+        ".conv-tool{border-left-color:#cca700;}"
+        ".conv-system{border-left-color:#9d9d9d;}"
+        ".conv-other{border-left-color:#888;}"
+        ".conv-role{font-size:0.72rem;font-weight:700;text-transform:uppercase;"
+        "letter-spacing:0.04em;color:#858585;margin-bottom:5px;}"
+        ".conv-body{font-size:0.84rem;line-height:1.5;color:#d4d4d4;white-space:pre-wrap;"
+        "word-break:break-word;}"
+        ".conv-empty{color:#888;font-style:italic;font-size:0.82rem;}"
         ".tier-mach{font-size:0.78rem;color:#888;}"
         ".tier-legend li{margin:6px 0;}"
         "table.inner{font-size:0.82rem;margin:0.5rem 0;width:100%;}"
@@ -4604,7 +4793,13 @@ def main() -> int:
                         semantic_max_k=insight_semantic_k,
                         use_diversify=use_div,
                     )
-                    drill_show = [_row_to_drill_entry(r) for r in pick_rows]
+                    drill_show = [
+                        _row_to_drill_entry(
+                            r,
+                            lang_en=str(html_page_lang).lower().startswith("en"),
+                        )
+                        for r in pick_rows
+                    ]
             else:
                 drill_all = _build_drill_all_entries(
                     rows, cap_export, exclude_pii=hide_pii
@@ -4618,7 +4813,13 @@ def main() -> int:
                         semantic_max_k=insight_semantic_k,
                         use_diversify=use_div,
                     )
-                    drill_show = [_row_to_drill_entry(r) for r in pick_rows]
+                    drill_show = [
+                        _row_to_drill_entry(
+                            r,
+                            lang_en=str(html_page_lang).lower().startswith("en"),
+                        )
+                        for r in pick_rows
+                    ]
             if not args.no_drilldown_export and drill_all:
                 export_path = target_html.with_name(target_html.stem + "_drilldown_full.jsonl")
                 _write_drilldown_jsonl(export_path, drill_all)
